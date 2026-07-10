@@ -24,17 +24,17 @@ class Fee {
 
   factory Fee.fromJson(Map<String, dynamic> json) {
     return Fee(
-      id: json['id'] as String,
-      childId: json['childId'] as String,
-      type: json['type'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      dueDate: DateTime.parse(json['dueDate'] as String),
+      id: json['id']?.toString() ?? '',
+      childId: json['childId']?.toString() ?? '',
+      type: json['type']?.toString() ?? '',
+      amount: (json['amount'] is num) ? (json['amount'] as num).toDouble() : double.tryParse(json['amount']?.toString() ?? '0') ?? 0,
+      dueDate: DateTime.tryParse(json['dueDate']?.toString() ?? '') ?? DateTime.now(),
       paidDate: json['paidDate'] != null 
-          ? DateTime.parse(json['paidDate'] as String) 
+          ? DateTime.tryParse(json['paidDate'].toString()) 
           : null,
-      isPaid: json['isPaid'] as bool,
-      paymentMethod: json['paymentMethod'] as String?,
-      reference: json['reference'] as String?,
+      isPaid: json['isPaid'] as bool? ?? false,
+      paymentMethod: json['paymentMethod']?.toString(),
+      reference: json['reference']?.toString(),
     );
   }
 

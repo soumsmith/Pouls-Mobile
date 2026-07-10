@@ -30,18 +30,18 @@ class Note {
 
   factory Note.fromJson(Map<String, dynamic> json) {
     return Note(
-      id: json['id'] as String,
-      childId: json['childId'] as String,
-      subject: json['subject'] as String,
-      grade: (json['grade'] as num).toDouble(),
-      coefficient: (json['coefficient'] as num).toDouble(),
-      date: DateTime.parse(json['date'] as String),
-      assignmentNumber: json['assignmentNumber'] as String,
-      average: json['average'] != null ? (json['average'] as num).toDouble() : null,
-      rank: json['rank'] as int?,
-      totalStudents: json['totalStudents'] as int?,
-      mention: json['mention'] as String?,
-      noteSur: json['noteSur'] != null ? (json['noteSur'] as num).toDouble() : null,
+      id: json['id']?.toString() ?? '',
+      childId: json['childId']?.toString() ?? '',
+      subject: json['subject']?.toString() ?? '',
+      grade: (json['grade'] is num) ? (json['grade'] as num).toDouble() : double.tryParse(json['grade']?.toString() ?? '0') ?? 0,
+      coefficient: (json['coefficient'] is num) ? (json['coefficient'] as num).toDouble() : double.tryParse(json['coefficient']?.toString() ?? '0') ?? 0,
+      date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+      assignmentNumber: json['assignmentNumber']?.toString() ?? '',
+      average: json['average'] != null ? ((json['average'] is num) ? (json['average'] as num).toDouble() : double.tryParse(json['average'].toString())) : null,
+      rank: json['rank'] is int ? json['rank'] : int.tryParse(json['rank']?.toString() ?? ''),
+      totalStudents: json['totalStudents'] is int ? json['totalStudents'] : int.tryParse(json['totalStudents']?.toString() ?? ''),
+      mention: json['mention']?.toString(),
+      noteSur: json['noteSur'] != null ? ((json['noteSur'] is num) ? (json['noteSur'] as num).toDouble() : double.tryParse(json['noteSur'].toString())) : null,
     );
   }
 

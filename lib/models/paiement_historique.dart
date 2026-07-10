@@ -22,14 +22,14 @@ class PaiementHistorique {
 
   factory PaiementHistorique.fromJson(Map<String, dynamic> json) {
     return PaiementHistorique(
-      paiementId: json['paiement_id'] as int,
-      exercice: json['exercice'] as String,
-      dateEnregistrement: json['dateenreg'] as String,
-      numeroRecu: json['numero_recu'] as String,
-      montant: json['montant'] as int,
-      montantLettres: json['montant_lettres'] as String,
-      caissier: json['caissier'] as String,
-      modePaiement: json['mode_paiement'] as String,
+      paiementId: json['paiement_id'] is int ? json['paiement_id'] : int.tryParse(json['paiement_id']?.toString() ?? '0') ?? 0,
+      exercice: json['exercice']?.toString() ?? '',
+      dateEnregistrement: json['dateenreg']?.toString() ?? '',
+      numeroRecu: json['numero_recu']?.toString() ?? '',
+      montant: json['montant'] is int ? json['montant'] : int.tryParse(json['montant']?.toString() ?? '0') ?? 0,
+      montantLettres: json['montant_lettres']?.toString() ?? '',
+      caissier: json['caissier']?.toString() ?? '',
+      modePaiement: json['mode_paiement']?.toString() ?? '',
     );
   }
 

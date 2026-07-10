@@ -20,16 +20,16 @@ class AppNotification {
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
-      id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      title: json['title'] as String? ?? 'Notification',
-      body: json['body'] as String? ?? '',
+      id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      title: json['title']?.toString() ?? 'Notification',
+      body: json['body']?.toString() ?? '',
       data: json['data'] as Map<String, dynamic>?,
       timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'] as String)
+          ? DateTime.tryParse(json['timestamp'].toString()) ?? DateTime.now()
           : DateTime.now(),
       isRead: json['isRead'] as bool? ?? false,
       type: json['type'] != null
-          ? NotificationType.fromString(json['type'] as String)
+          ? NotificationType.fromString(json['type'].toString())
           : null,
     );
   }

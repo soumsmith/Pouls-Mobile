@@ -239,7 +239,9 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
   Future<void> _visitSchool() async {
     final code = widget.blog.codeecole?.trim() ?? '';
     if (code.isEmpty) {
-      _showSnack('Code école non disponible', _C.rose);
+      if (MainScreenWrapper.maybeOf(context) != null) {
+        MainScreenWrapper.of(context).updateCurrentIndex(2);
+      }
       return;
     }
     try {

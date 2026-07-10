@@ -824,7 +824,12 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
 
   Future<void> _visitSchool() async {
     final code = widget.event.codeecole.trim();
-    if (code.isEmpty) return;
+    if (code.isEmpty) {
+      if (MainScreenWrapper.maybeOf(context) != null) {
+        MainScreenWrapper.of(context).updateCurrentIndex(2);
+      }
+      return;
+    }
     try {
       final ecoleDetail = await EcoleApiService.getEcoleDetail(code);
       final ecole = Ecole(

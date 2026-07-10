@@ -27,12 +27,12 @@ class Message {
 
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
-      id: json['id'] as String,
-      parentId: json['parentId'] as String,
-      subject: json['subject'] as String,
-      content: json['content'] as String,
-      date: DateTime.parse(json['date'] as String),
-      sender: json['sender'] as String,
+      id: json['id']?.toString() ?? '',
+      parentId: json['parentId']?.toString() ?? '',
+      subject: json['subject']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+      sender: json['sender']?.toString() ?? '',
       isRead: json['isRead'] as bool? ?? false,
       type: MessageType.values.firstWhere(
         (e) => e.toString() == json['type'],

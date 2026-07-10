@@ -44,9 +44,9 @@ class Matiere {
 
   factory Matiere.fromJson(Map<String, dynamic> json) {
     return Matiere(
-      id: json['id'] as int,
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       code: json['code'] as String?,
-      libelle: json['libelle'] as String,
+      libelle: json['libelle']?.toString() ?? '',
       codeVieEcole: json['code_vie_ecole'] as String?,
       pec: json['pec'],
       bonus: json['bonus'],

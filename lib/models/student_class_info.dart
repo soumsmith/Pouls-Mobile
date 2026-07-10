@@ -16,11 +16,11 @@ class StudentClassInfo {
 
   factory StudentClassInfo.fromJson(Map<String, dynamic> json) {
     return StudentClassInfo(
-      classe: ClasseInfo.fromJson(json['classe']),
-      ecole: EcoleInfo.fromJson(json['ecole']),
-      effectifClasse: json['effectifClasse'] as int,
-      eleve: EleveInfo.fromJson(json['eleve']),
-      identifiantVieEcole: json['identifiantVieEcole'] as String,
+      classe: ClasseInfo.fromJson(json['classe'] ?? {}),
+      ecole: EcoleInfo.fromJson(json['ecole'] ?? {}),
+      effectifClasse: json['effectifClasse'] is int ? json['effectifClasse'] : int.tryParse(json['effectifClasse']?.toString() ?? '0') ?? 0,
+      eleve: EleveInfo.fromJson(json['eleve'] ?? {}),
+      identifiantVieEcole: json['identifiantVieEcole']?.toString() ?? '',
     );
   }
 
@@ -53,9 +53,9 @@ class ClasseInfo {
 
   factory ClasseInfo.fromJson(Map<String, dynamic> json) {
     return ClasseInfo(
-      code: json['code'] as String,
-      id: json['id'] as int,
-      libelle: json['libelle'] as String,
+      code: json['code']?.toString() ?? '',
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      libelle: json['libelle']?.toString() ?? '',
     );
   }
 
@@ -86,9 +86,9 @@ class EcoleInfo {
 
   factory EcoleInfo.fromJson(Map<String, dynamic> json) {
     return EcoleInfo(
-      code: json['code'] as String,
-      id: json['id'] as int,
-      libelle: json['libelle'] as String,
+      code: json['code']?.toString() ?? '',
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      libelle: json['libelle']?.toString() ?? '',
     );
   }
 
@@ -125,12 +125,12 @@ class EleveInfo {
 
   factory EleveInfo.fromJson(Map<String, dynamic> json) {
     return EleveInfo(
-      id: json['id'] as int,
-      matricule: json['matricule'] as String,
-      nom: json['nom'] as String,
-      prenom: json['prenom'] as String,
-      sexe: json['sexe'] as String,
-      urlPhoto: json['urlPhoto'] as String?,
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      matricule: json['matricule']?.toString() ?? '',
+      nom: json['nom']?.toString() ?? '',
+      prenom: json['prenom']?.toString() ?? '',
+      sexe: json['sexe']?.toString() ?? '',
+      urlPhoto: json['urlPhoto']?.toString(),
     );
   }
 

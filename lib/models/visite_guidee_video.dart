@@ -22,13 +22,13 @@ class VisiteGuideeVideo {
   factory VisiteGuideeVideo.fromJson(Map<String, dynamic> json) {
     return VisiteGuideeVideo(
       id: json['id'] as int?,
-      typeVideo: (json['typevideo'] ?? json['type_video'] ?? '') as String,
-      youtubeUrl: (json['video_youtube'] ?? json['youtube_url'] ?? '') as String,
-      title: json['title'] as String?,
-      description: json['description'] as String?,
+      typeVideo: json['typevideo']?.toString() ?? json['type_video']?.toString() ?? '',
+      youtubeUrl: json['video_youtube']?.toString() ?? json['youtube_url']?.toString() ?? '',
+      title: json['title']?.toString(),
+      description: json['description']?.toString(),
       code: json['codeecole']?.toString() ?? json['code']?.toString() ?? json['ecole']?.toString() ?? '',
       etablissement: json['nomecole']?.toString() ?? json['etablissement']?.toString() ?? '',
-      slug: json['slug'] as String?,
+      slug: json['slug']?.toString(),
     );
   }
 

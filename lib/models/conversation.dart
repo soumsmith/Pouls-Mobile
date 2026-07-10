@@ -31,23 +31,23 @@ class Conversation {
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
     return Conversation(
-      id: json['id'] as int,
-      parentId: json['parent_id'] as int,
-      schoolId: json['school_id'] as int,
-      studentId: json['student_id'] as String,
-      subject: json['subject'] as String,
-      lastMessageAt: DateTime.parse(json['last_message_at'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      unreadCount: json['unread_count'] as int,
-      participants: (json['participants'] as List<dynamic>)
-          .map((p) => Participant.fromJson(p as Map<String, dynamic>))
-          .toList(),
-      school: SchoolInfo.fromJson(json['school'] as Map<String, dynamic>),
-      student: StudentInfo.fromJson(json['student'] as Map<String, dynamic>),
-      messages: (json['messages'] as List<dynamic>)
-          .map((m) => Message.fromJson(m as Map<String, dynamic>))
-          .toList(),
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      parentId: json['parent_id'] is int ? json['parent_id'] : int.tryParse(json['parent_id']?.toString() ?? '0') ?? 0,
+      schoolId: json['school_id'] is int ? json['school_id'] : int.tryParse(json['school_id']?.toString() ?? '0') ?? 0,
+      studentId: json['student_id']?.toString() ?? '',
+      subject: json['subject']?.toString() ?? '',
+      lastMessageAt: DateTime.tryParse(json['last_message_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+      unreadCount: json['unread_count'] is int ? json['unread_count'] : int.tryParse(json['unread_count']?.toString() ?? '0') ?? 0,
+      participants: (json['participants'] as List<dynamic>?)
+          ?.map((p) => Participant.fromJson(p as Map<String, dynamic>))
+          .toList() ?? [],
+      school: SchoolInfo.fromJson(json['school'] as Map<String, dynamic>? ?? {}),
+      student: StudentInfo.fromJson(json['student'] as Map<String, dynamic>? ?? {}),
+      messages: (json['messages'] as List<dynamic>?)
+          ?.map((m) => Message.fromJson(m as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
 
@@ -86,17 +86,17 @@ class Participant {
 
   factory Participant.fromJson(Map<String, dynamic> json) {
     return Participant(
-      id: json['id'] as int,
-      conversationId: json['conversation_id'] as int,
-      participantType: json['participant_type'] as String,
-      participantId: json['participant_id'] as int,
-      schoolId: json['school_id'] as int,
-      staffPseudo: json['staff_pseudo'] as String?,
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      conversationId: json['conversation_id'] is int ? json['conversation_id'] : int.tryParse(json['conversation_id']?.toString() ?? '0') ?? 0,
+      participantType: json['participant_type']?.toString() ?? '',
+      participantId: json['participant_id'] is int ? json['participant_id'] : int.tryParse(json['participant_id']?.toString() ?? '0') ?? 0,
+      schoolId: json['school_id'] is int ? json['school_id'] : int.tryParse(json['school_id']?.toString() ?? '0') ?? 0,
+      staffPseudo: json['staff_pseudo']?.toString(),
       lastReadAt: json['last_read_at'] != null
-          ? DateTime.parse(json['last_read_at'] as String)
+          ? DateTime.tryParse(json['last_read_at'].toString())
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 }
@@ -110,9 +110,9 @@ class SchoolInfo {
 
   factory SchoolInfo.fromJson(Map<String, dynamic> json) {
     return SchoolInfo(
-      clientId: json['client_id'] as int,
-      nom: json['nom'] as String,
-      code: json['code'] as String,
+      clientId: json['client_id'] is int ? json['client_id'] : int.tryParse(json['client_id']?.toString() ?? '0') ?? 0,
+      nom: json['nom']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
     );
   }
 }
@@ -134,11 +134,11 @@ class StudentInfo {
 
   factory StudentInfo.fromJson(Map<String, dynamic> json) {
     return StudentInfo(
-      uid: json['uid'] as String,
-      nom: json['nom'] as String,
-      prenoms: json['prenoms'] as String,
-      classe: json['classe'] as String,
-      photo: json['photo'] as String?,
+      uid: json['uid']?.toString() ?? '',
+      nom: json['nom']?.toString() ?? '',
+      prenoms: json['prenoms']?.toString() ?? '',
+      classe: json['classe']?.toString() ?? '',
+      photo: json['photo']?.toString(),
     );
   }
 
@@ -175,18 +175,18 @@ class Message {
 
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
-      id: json['id'] as int,
-      conversationId: json['conversation_id'] as int,
-      senderType: json['sender_type'] as String,
-      senderId: json['sender_id'] as int?,
-      schoolId: json['school_id'] as int,
-      senderPseudo: json['sender_pseudo'] as String,
-      body: json['body'] as String,
-      messageType: json['message_type'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      conversationId: json['conversation_id'] is int ? json['conversation_id'] : int.tryParse(json['conversation_id']?.toString() ?? '0') ?? 0,
+      senderType: json['sender_type']?.toString() ?? '',
+      senderId: json['sender_id'] is int ? json['sender_id'] : int.tryParse(json['sender_id']?.toString() ?? ''),
+      schoolId: json['school_id'] is int ? json['school_id'] : int.tryParse(json['school_id']?.toString() ?? '0') ?? 0,
+      senderPseudo: json['sender_pseudo']?.toString() ?? '',
+      body: json['body']?.toString() ?? '',
+      messageType: json['message_type']?.toString() ?? '',
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
       deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'] as String)
+          ? DateTime.tryParse(json['deleted_at'].toString())
           : null,
     );
   }

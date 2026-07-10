@@ -23,16 +23,16 @@ class EventRatingComment {
 
   factory EventRatingComment.fromJson(Map<String, dynamic> json) {
     return EventRatingComment(
-      id: json['id'] as String,
-      eventSlug: json['event_slug'] as String,
-      userId: json['user_id'] as String,
-      userName: json['user_name'] as String,
-      userAvatar: json['user_avatar'] as String? ?? '',
-      rating: json['rating'] as int,
-      comment: json['comment'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      id: json['id']?.toString() ?? '',
+      eventSlug: json['event_slug']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
+      userName: json['user_name']?.toString() ?? '',
+      userAvatar: json['user_avatar']?.toString() ?? '',
+      rating: json['rating'] is int ? json['rating'] : int.tryParse(json['rating']?.toString() ?? '0') ?? 0,
+      comment: json['comment']?.toString() ?? '',
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
       updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at'] as String) 
+          ? DateTime.tryParse(json['updated_at'].toString()) 
           : null,
     );
   }
@@ -98,14 +98,23 @@ class EventRatingSummary {
   });
 
   factory EventRatingSummary.fromJson(Map<String, dynamic> json) {
+    Map<int, int> distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+    try {
+      if (json['rating_distribution'] is Map) {
+        (json['rating_distribution'] as Map).forEach((key, value) {
+          final intKey = int.tryParse(key.toString());
+          final intValue = value is int ? value : int.tryParse(value?.toString() ?? '0') ?? 0;
+          if (intKey != null) {
+            distribution[intKey] = intValue;
+          }
+        });
+      }
+    } catch (_) {}
+
     return EventRatingSummary(
-      averageRating: (json['average_rating'] as num).toDouble(),
-      totalRatings: json['total_ratings'] as int,
-      ratingDistribution: Map<int, int>.from(
-        (json['rating_distribution'] as Map<String, dynamic>).map(
-          (key, value) => MapEntry(int.parse(key), value as int),
-        ),
-      ),
+      averageRating: (json['average_rating'] is num) ? (json['average_rating'] as num).toDouble() : double.tryParse(json['average_rating']?.toString() ?? '0') ?? 0,
+      totalRatings: json['total_ratings'] is int ? json['total_ratings'] : int.tryParse(json['total_ratings']?.toString() ?? '0') ?? 0,
+      ratingDistribution: distribution,
     );
   }
 

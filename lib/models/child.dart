@@ -56,16 +56,16 @@ class Child {
 
   factory Child.fromJson(Map<String, dynamic> json) {
     return Child(
-      id: json['id'] as String,
-      firstName: json['firstName'] as String,
-      lastName: json['lastName'] as String,
-      establishment: json['establishment'] as String,
-      grade: json['grade'] as String,
-      photoUrl: json['photoUrl'] as String?,
-      parentId: json['parentId'] as String,
-      matricule: json['matricule'] as String?,
-      ecoleCode: json['ecoleCode'] as String?,
-      paramEcole: json['paramEcole'] as String?,
+      id: json['id']?.toString() ?? '',
+      firstName: json['firstName']?.toString() ?? '',
+      lastName: json['lastName']?.toString() ?? '',
+      establishment: json['establishment']?.toString() ?? '',
+      grade: json['grade']?.toString() ?? '',
+      photoUrl: json['photoUrl']?.toString(),
+      parentId: json['parentId']?.toString() ?? '',
+      matricule: json['matricule']?.toString(),
+      ecoleCode: json['ecoleCode']?.toString(),
+      paramEcole: json['paramEcole']?.toString(),
     );
   }
 

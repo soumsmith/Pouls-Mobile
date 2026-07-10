@@ -26,24 +26,26 @@ class TimetableEntry {
   String get timeRange => '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')} - ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
 
   factory TimetableEntry.fromJson(Map<String, dynamic> json) {
-    final startParts = (json['startTime'] as String).split(':');
-    final endParts = (json['endTime'] as String).split(':');
+    final startStr = json['startTime']?.toString() ?? '00:00';
+    final endStr = json['endTime']?.toString() ?? '00:00';
+    final startParts = startStr.split(':');
+    final endParts = endStr.split(':');
     
     return TimetableEntry(
-      id: json['id'] as String,
-      childId: json['childId'] as String,
-      dayOfWeek: json['dayOfWeek'] as String,
+      id: json['id']?.toString() ?? '',
+      childId: json['childId']?.toString() ?? '',
+      dayOfWeek: json['dayOfWeek']?.toString() ?? '',
       startTime: TimeOfDay(
-        hour: int.parse(startParts[0]),
-        minute: int.parse(startParts[1]),
+        hour: int.tryParse(startParts[0]) ?? 0,
+        minute: startParts.length > 1 ? (int.tryParse(startParts[1]) ?? 0) : 0,
       ),
       endTime: TimeOfDay(
-        hour: int.parse(endParts[0]),
-        minute: int.parse(endParts[1]),
+        hour: int.tryParse(endParts[0]) ?? 0,
+        minute: endParts.length > 1 ? (int.tryParse(endParts[1]) ?? 0) : 0,
       ),
-      subject: json['subject'] as String,
-      room: json['room'] as String?,
-      teacher: json['teacher'] as String?,
+      subject: json['subject']?.toString() ?? '',
+      room: json['room']?.toString(),
+      teacher: json['teacher']?.toString(),
     );
   }
 

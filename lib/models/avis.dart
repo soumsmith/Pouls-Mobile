@@ -21,13 +21,13 @@ class Avis {
 
   factory Avis.fromJson(Map<String, dynamic> json) {
     return Avis(
-      id: json['id'] as int,
-      nom: json['nom'] as String,
-      etablissement: json['etablissement'] as String?,
-      statut: json['statut'] as int,
-      contenu: json['contenu'] as String,
-      photo: json['photo'] as String?,
-      createdAt: json['created_at'] as String,
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      nom: json['nom']?.toString() ?? '',
+      etablissement: json['etablissement']?.toString(),
+      statut: json['statut'] is int ? json['statut'] : int.tryParse(json['statut']?.toString() ?? '0') ?? 0,
+      contenu: json['contenu']?.toString() ?? '',
+      photo: json['photo']?.toString(),
+      createdAt: json['created_at']?.toString() ?? '',
     );
   }
 

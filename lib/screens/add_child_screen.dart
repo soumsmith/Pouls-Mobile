@@ -19,6 +19,7 @@ import '../config/app_dimensions.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/recommendation_bottom_sheet.dart';
+import '../widgets/components/custom_error_state.dart';
 import '../widgets/snackbar.dart';
 import '../services/recommendation_service.dart';
 import 'login_screen.dart';
@@ -69,6 +70,7 @@ class _AddChildScreenState extends State<AddChildScreen>
   bool _isLoading = false;
   bool _isSearching = false;
   bool _isLoadingEcoles = false;
+  bool _hasAttemptedLoad = false;
   Eleve? _foundEleve;
   Ecole? _foundEcole;
   String? _errorMessage;
@@ -234,6 +236,7 @@ class _AddChildScreenState extends State<AddChildScreen>
       setState(() {
         _ecoles = ecoles;
         _isLoadingEcoles = false;
+        _hasAttemptedLoad = true;
       });
       if (ecoles.isEmpty && mounted) {
         _showSnackbar('Aucune école disponible', isError: true);
@@ -242,6 +245,7 @@ class _AddChildScreenState extends State<AddChildScreen>
       setState(() {
         _isLoadingEcoles = false;
         _errorMessage = 'Erreur chargement des écoles';
+        _hasAttemptedLoad = true;
       });
       final errorStr = e.toString().toLowerCase();
       final isNetworkError =
@@ -815,36 +819,37 @@ class _AddChildScreenState extends State<AddChildScreen>
       child: Column(
         children: [
           // Header du panneau
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenOrangeLight,
-                    borderRadius: BorderRadius.circular(10),
+          if (_ecoles.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.screenOrangeLight,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.search_rounded,
+                      color: AppColors.screenOrange,
+                      size: 18,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.search_rounded,
-                    color: AppColors.screenOrange,
-                    size: 18,
+                  const SizedBox(width: 12),
+                  Text(
+                    'Recherche',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(17),
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.screenTextPrimary,
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Recherche',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(17),
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimary,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
           // Formulaire
           Padding(
@@ -853,24 +858,26 @@ class _AddChildScreenState extends State<AddChildScreen>
               children: [
                 // Champ école
                 _buildEcoleField(),
-                const SizedBox(height: 14),
-                // Champ matricule
-                _buildMatriculeField(),
-                // Message erreur
-                if (_errorMessage != null) ...[
-                  const SizedBox(height: 12),
-                  _buildErrorBanner(),
+                if (_ecoles.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  // Champ matricule
+                  _buildMatriculeField(),
+                  // Message erreur
+                  if (_errorMessage != null && _errorMessage != 'Erreur chargement des écoles') ...[
+                    const SizedBox(height: 12),
+                    _buildErrorBanner(),
+                  ],
+                  const SizedBox(height: 20),
+                  // Bouton rechercher
+                  _buildOrangeButton(
+                    label: _isSearching
+                        ? 'Recherche en cours...'
+                        : 'Rechercher mon enfant',
+                    onTap: _isSearching ? null : _searchEleve,
+                    isLoading: _isSearching,
+                    icon: Icons.search_rounded,
+                  ),
                 ],
-                const SizedBox(height: 20),
-                // Bouton rechercher
-                _buildOrangeButton(
-                  label: _isSearching
-                      ? 'Recherche en cours...'
-                      : 'Rechercher mon enfant',
-                  onTap: _isSearching ? null : _searchEleve,
-                  isLoading: _isSearching,
-                  icon: Icons.search_rounded,
-                ),
               ],
             ),
           ),
@@ -881,19 +888,59 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   // ─── ÉCOLE FIELD ───────────────────────────────────────────────────────────
   Widget _buildEcoleField() {
+    if (_isLoadingEcoles && !_hasAttemptedLoad) {
+      return _buildLoadingField('Chargement des écoles...');
+    }
+    if (_isLoadingEcoles && _ecoles.isEmpty) {
+      final isNetworkError = _errorMessage?.contains('SocketException') == true ||
+          _errorMessage?.contains('ClientException') == true ||
+          _errorMessage?.contains('Connection') == true;
+      final title = _errorMessage != null
+          ? (isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement')
+          : 'Chargement des écoles...';
+      final message = _errorMessage ?? 'Veuillez patienter pendant le chargement...';
+
+      return Column(
+        children: [
+          CustomErrorState(
+            title: title,
+            message: message,
+            onRetry: _loadEcoles,
+            retryText: 'Réessayer',
+            buttonIsLight: true,
+            buttonWidth: 200,
+            isLoading: true,
+          ),
+          const SizedBox(height: 12),
+          _buildRecommendSchoolButton(),
+        ],
+      );
+    }
     if (_isLoadingEcoles) {
       return _buildLoadingField('Chargement des écoles...');
     }
     if (_ecoles.isEmpty) {
+      final isNetworkError = _errorMessage?.contains('SocketException') == true ||
+          _errorMessage?.contains('ClientException') == true ||
+          _errorMessage?.contains('Connection') == true;
+      final title = _errorMessage != null
+          ? (isNetworkError ? 'Erreur de connexion' : 'Erreur de chargement')
+          : 'Aucune école disponible';
+      final message = _errorMessage ?? 'Aucune école n\'a pu être chargée pour le moment.';
+
       return Column(
         children: [
-          _buildEmptyEcoleField(),
-          const SizedBox(height: 10),
+          CustomErrorState(
+            title: title,
+            message: message,
+            onRetry: _loadEcoles,
+            retryText: 'Réessayer',
+            buttonIsLight: true,
+            buttonWidth: 200,
+            isLoading: false,
+          ),
+          const SizedBox(height: 12),
           _buildRecommendSchoolButton(),
-          if (_errorMessage != null) ...[
-            const SizedBox(height: 10),
-            _buildRetryButton(),
-          ],
         ],
       );
     }
@@ -955,31 +1002,6 @@ class _AddChildScreenState extends State<AddChildScreen>
     );
   }
 
-  Widget _buildEmptyEcoleField() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F0),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: Colors.red[400], size: 18),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text(
-              'Aucune école disponible',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildRetryButton() {
     return GestureDetector(
@@ -999,12 +1021,16 @@ class _AddChildScreenState extends State<AddChildScreen>
               size: 16,
             ),
             const SizedBox(width: 8),
-            Text(
-              'Réessayer',
-              style: TextStyle(
-                color: AppColors.screenOrange,
-                fontWeight: FontWeight.w700,
-                fontSize: _textSizeService.getScaledFontSize(13),
+            Flexible(
+              child: Text(
+                'Réessayer',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.screenOrange,
+                  fontWeight: FontWeight.w700,
+                  fontSize: _textSizeService.getScaledFontSize(12),
+                ),
               ),
             ),
           ],
@@ -1031,12 +1057,16 @@ class _AddChildScreenState extends State<AddChildScreen>
               size: 16,
             ),
             const SizedBox(width: 8),
-            Text(
-              'Recommander une école',
-              style: TextStyle(
-                color: AppColors.screenOrange,
-                fontWeight: FontWeight.w700,
-                fontSize: _textSizeService.getScaledFontSize(13),
+            Flexible(
+              child: Text(
+                'Recommander une école',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.screenOrange,
+                  fontWeight: FontWeight.w700,
+                  fontSize: _textSizeService.getScaledFontSize(12),
+                ),
               ),
             ),
           ],

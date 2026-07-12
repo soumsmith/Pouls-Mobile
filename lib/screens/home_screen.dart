@@ -1081,7 +1081,8 @@ class _HomeScreenState extends State<HomeScreen> {
         title: event.title,
         subtitle: event.nomecole,
         actionText: uiData['date'] as String,
-        actionTextColor: uiData['color'] as Color,
+        actionTextColor: AppColors.screenTextSecondaryThemed(context),
+        actionTextFontSize: 11.0,
         tag: typeBilleterie,
         color: tagColor ?? (uiData['color'] as Color),
         imagePath: event.image,
@@ -1196,7 +1197,8 @@ class _HomeScreenState extends State<HomeScreen> {
         title: blog.title,
         subtitle: blog.nomecole,
         actionText: uiData['date'] as String,
-        actionTextColor: uiData['color'] as Color,
+        actionTextColor: AppColors.screenTextSecondaryThemed(context),
+        actionTextFontSize: 11.0,
         color: uiData['color'] as Color,
         imagePath: blog.image,
         iconData: Icons.article,
@@ -1306,7 +1308,8 @@ class _HomeScreenState extends State<HomeScreen> {
         title: astuce.title,
         subtitle: 'Astuces & Conseils',
         actionText: uiData['date'] as String,
-        actionTextColor: uiData['color'] as Color,
+        actionTextColor: AppColors.screenTextSecondaryThemed(context),
+        actionTextFontSize: 11.0,
         color: uiData['color'] as Color,
         imagePath: uiData['image'] as String?,
         iconData: Icons.lightbulb_outline,
@@ -1366,15 +1369,17 @@ class _HomeScreenState extends State<HomeScreen> {
           .where((a) => a.youtubeUrl != null && a.youtubeUrl!.isNotEmpty)
           .toList();
       final allVideos = allVideoAstuces
-          .map((a) => VisiteGuideeVideo(
-                id: a.id,
-                typeVideo: 'astuce',
-                youtubeUrl: a.youtubeUrl!,
-                title: a.title,
-                description: a.content,
-                code: a.codeecole,
-                slug: a.slug,
-              ))
+          .map(
+            (a) => VisiteGuideeVideo(
+              id: a.id,
+              typeVideo: 'astuce',
+              youtubeUrl: a.youtubeUrl!,
+              title: a.title,
+              description: a.content,
+              code: a.codeecole,
+              slug: a.slug,
+            ),
+          )
           .toList();
       final tappedIndex = allVideoAstuces.indexWhere((a) => a.id == astuce.id);
       MainScreenWrapper.of(context).navigateToExtraScreen(
@@ -2591,7 +2596,8 @@ class _HomeScreenState extends State<HomeScreen> {
         title: 'Partager l\'application',
         itemTitle: 'Invitez vos amis à suivre leurs enfants',
         shareText:
-            'Découvrez Parents Responsable, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}',
+            'Découvrez Parents Responsable, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\n'
+            'Téléchargez l\'application ici :\n${AppConfig.storeUrl}',
       ),
     );
   }
@@ -3167,6 +3173,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Section Coulisses de l'Excellence
       if (_hasCoulisseExcellenceData) ...[
+        const SizedBox(height: 24),
         SectionRow(
           title: 'COULISSES DE L\'EXCELLENCE',
           onSeeMore: () {

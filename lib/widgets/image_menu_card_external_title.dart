@@ -22,6 +22,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final Color? textColor;
   final String? actionText;
   final Color? actionTextColor;
+  final double? actionTextFontSize;
   final String? tag;
   final double? width;
   final double? height;
@@ -68,6 +69,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.textColor,
     this.actionText,
     this.actionTextColor,
+    this.actionTextFontSize,
     this.tag,
     this.width,
     this.height,
@@ -271,8 +273,9 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                     child: Text(
                       actionText!,
                       style: TextStyle(
-                        fontSize: textSizeService
-                            .getScaledFontSize(13),
+                        fontSize: textSizeService.getScaledFontSize(
+                          actionTextFontSize ?? 13,
+                        ),
                         fontWeight: FontWeight.w700,
                         color: actionTextColor ??
                             color ??

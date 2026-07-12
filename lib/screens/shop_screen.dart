@@ -990,7 +990,16 @@ class _LibraryScreenState extends State<LibraryScreen>
       ];
     }
 
-    if (_error != null) return [SliverToBoxAdapter(child: _buildErrorState())];
+    if (_error != null) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: _buildErrorState(),
+          ),
+        ),
+      ];
+    }
     if (_filteredProducts.isEmpty)
       return [
         SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState()),

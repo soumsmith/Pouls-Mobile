@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import 'custom_button.dart';
 
-class CustomErrorState extends StatelessWidget {
+class CustomErrorState extends StatefulWidget {
   final String title;
   final String message;
-  final VoidCallback? onRetry;
+  final dynamic onRetry;
   final String retryText;
   final IconData icon;
   final Color? iconColor;
@@ -14,9 +14,10 @@ class CustomErrorState extends StatelessWidget {
   final bool buttonHasBorder;
   final Color? buttonBorderColor;
   final double? buttonWidth;
+  final bool? isLoading;
 
   const CustomErrorState({
-    Key? key,
+    super.key,
     this.title = 'Oups, un problème est survenu',
     required this.message,
     this.onRetry,
@@ -28,13 +29,42 @@ class CustomErrorState extends StatelessWidget {
     this.buttonHasBorder = true,
     this.buttonBorderColor,
     this.buttonWidth,
-  }) : super(key: key);
+    this.isLoading,
+  });
+
+  @override
+  State<CustomErrorState> createState() => _CustomErrorStateState();
+}
+
+class _CustomErrorStateState extends State<CustomErrorState> {
+  bool _internalLoading = false;
+
+  bool get _activeLoading => widget.isLoading ?? _internalLoading;
+
+  Future<void> _handleRetry() async {
+    if (widget.onRetry == null) return;
+    setState(() {
+      _internalLoading = true;
+    });
+    try {
+      final result = widget.onRetry();
+      if (result is Future) {
+        await result;
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _internalLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color defaultErrorColor = isDark ? const Color(0xFFEF4444) : const Color(0xFFDC2626);
-    final Color activeIconColor = iconColor ?? defaultErrorColor;
+    final Color activeIconColor = widget.iconColor ?? defaultErrorColor;
 
     return Center(
       child: Padding(
@@ -60,7 +90,7 @@ class CustomErrorState extends StatelessWidget {
                     color: activeIconColor.withOpacity(isDark ? 0.25 : 0.15),
                   ),
                   child: Icon(
-                    icon,
+                    widget.icon,
                     size: 24,
                     color: activeIconColor,
                   ),
@@ -69,7 +99,7 @@ class CustomErrorState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              title,
+              widget.title,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -80,7 +110,7 @@ class CustomErrorState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              message,
+              widget.message,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -88,17 +118,18 @@ class CustomErrorState extends StatelessWidget {
                 height: 1.4,
               ),
             ),
-            if (onRetry != null) ...[
+            if (widget.onRetry != null) ...[
               const SizedBox(height: 24),
               CustomButton(
-                width: buttonWidth ?? 200,
-                text: retryText,
-                onPressed: onRetry,
+                width: widget.buttonWidth ?? 200,
+                text: widget.retryText,
+                onPressed: _activeLoading ? null : _handleRetry,
                 icon: Icons.refresh_rounded,
-                color: buttonColor ?? AppColors.screenOrange,
-                borderColor: buttonBorderColor,
-                isLight: buttonIsLight,
-                hasBorder: buttonHasBorder,
+                color: widget.buttonColor ?? AppColors.screenOrange,
+                borderColor: widget.buttonBorderColor,
+                isLight: widget.buttonIsLight,
+                hasBorder: widget.buttonHasBorder,
+                isLoading: _activeLoading,
                 height: 44,
                 fontSize: 14,
               ),

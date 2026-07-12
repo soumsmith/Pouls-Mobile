@@ -15,18 +15,18 @@ import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/components/custom_error_state.dart';
 
 class NotesScreenJson extends StatefulWidget {
-  final String matricule;
-  final String anneeId;
-  final String classeId;
-  final String anneeLibelle;
+  final String? matricule;
+  final String? anneeId;
+  final String? classeId;
+  final String? anneeLibelle;
   final String? ecoleId;
 
   const NotesScreenJson({
     super.key,
-    required this.matricule,
-    required this.anneeId,
-    required this.classeId,
-    required this.anneeLibelle,
+    this.matricule,
+    this.anneeId,
+    this.classeId,
+    this.anneeLibelle,
     this.ecoleId,
   });
 
@@ -110,17 +110,19 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         });
 
         // Tenter de matcher l'année courante pour avoir son libellé exact
-        final currentYear = years.firstWhere(
-          (y) => y['id'].toString() == _anneeId,
-          orElse: () => null,
-        );
-        if (currentYear != null) {
-          setState(() {
-            _selectedYear =
-                currentYear['customLibelle'] ??
-                currentYear['libelle'] ??
-                _selectedYear;
-          });
+        if (_anneeId != null) {
+          final currentYear = years.firstWhere(
+            (y) => y['id'].toString() == _anneeId,
+            orElse: () => null,
+          );
+          if (currentYear != null) {
+            setState(() {
+              _selectedYear =
+                  currentYear['customLibelle'] ??
+                  currentYear['libelle'] ??
+                  _selectedYear;
+            });
+          }
         }
       } else {
         setState(() => _isLoadingYears = false);
@@ -182,6 +184,15 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   Future<void> _loadApiData() async {
+    if (_studentMatricule == null || _anneeId == null || _classeId == null) {
+      if (mounted) {
+        setState(() {
+          _bulletinData = null;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
     try {
       final periode = _getPeriodeNumberFromString(_selectedTrimester);
       final apiData = await _notesApiService.getNotesForStudent(
@@ -680,14 +691,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   List<Widget> _buildContentSlivers() {
     if (_bulletinData == null) {
       return [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildEmptyState(),
-              ],
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              child: _buildEmptyState(),
             ),
           ),
         ),
@@ -1989,6 +1998,24 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   // ─── EMPTY STATE ──────────────────────────────────────────────────────────
   Widget _buildEmptyState() {
+    if (_studentMatricule == null || _anneeId == null || _classeId == null) {
+      return CustomErrorState(
+        title: 'Informations indisponibles',
+        message: 'Les informations scolaires de cet élève ne sont pas complètes pour consulter ses notes.',
+        icon: Icons.error_outline_rounded,
+        iconColor: AppColors.screenOrange,
+        onRetry: () async {
+          setState(() {
+            _isLoading = true;
+          });
+          await _loadSchoolYears();
+          await _loadApiData();
+        },
+        retryText: 'Actualiser',
+        buttonIsLight: true,
+        buttonWidth: 200,
+      );
+    }
     return CustomErrorState(
       title: 'Aucune note disponible',
       message: 'Modifiez les filtres pour afficher des résultats',

@@ -21,6 +21,7 @@ class ReusableBottomSheet extends StatelessWidget {
   final bool showScrollToTopFab;
   final Widget? fixedBottomWidget;
   final bool wrapWithScrollView;
+  final bool useDraggable;
 
   const ReusableBottomSheet({
     super.key,
@@ -41,6 +42,7 @@ class ReusableBottomSheet extends StatelessWidget {
     this.showScrollToTopFab = false,
     this.fixedBottomWidget,
     this.wrapWithScrollView = true,
+    this.useDraggable = true,
   });
 
   /// Méthode statique utilitaire pour afficher facilement le BottomSheet
@@ -64,6 +66,8 @@ class ReusableBottomSheet extends StatelessWidget {
     bool showScrollToTopFab = false,
     Widget? fixedBottomWidget,
     bool wrapWithScrollView = true,
+    bool useDraggable = true,
+    bool useKeyboardPadding = true,
   }) {
     return showModalBottomSheet<T>(
       context: context,
@@ -72,12 +76,8 @@ class ReusableBottomSheet extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isDismissible: isDismissible,
       constraints: const BoxConstraints(maxWidth: double.infinity),
-      builder: (context) => Padding(
-        // padding bottom pour éviter que le clavier ne cache le contenu
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: ReusableBottomSheet(
+      builder: (context) {
+        final sheet = ReusableBottomSheet(
           content: content,
           title: title,
           subtitle: subtitle,
@@ -95,13 +95,75 @@ class ReusableBottomSheet extends StatelessWidget {
           showScrollToTopFab: showScrollToTopFab,
           fixedBottomWidget: fixedBottomWidget,
           wrapWithScrollView: wrapWithScrollView,
-        ),
-      ),
+          useDraggable: useDraggable,
+        );
+        return useKeyboardPadding
+            ? Padding(
+                // padding bottom pour éviter que le clavier ne cache le contenu
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: sheet,
+              )
+            : sheet;
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!useDraggable) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final bgColor = isDark ? Colors.grey[900]! : Colors.white;
+
+      Widget contentContainer = Container(
+        height: MediaQuery.of(context).size.height * initialChildSize,
+        decoration: BoxDecoration(
+          color: useGlassEffect ? bgColor.withOpacity(0.85) : bgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildDragHandle(),
+            _buildHeader(context),
+            Divider(
+              height: 1,
+              thickness: 0.7,
+              color: isDark ? Colors.white12 : Colors.black.withOpacity(0.05),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Padding(
+                padding: contentPadding,
+                child: content,
+              ),
+            ),
+            if (fixedBottomWidget != null) fixedBottomWidget!,
+          ],
+        ),
+      );
+
+      if (useGlassEffect) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: contentContainer,
+          ),
+        );
+      }
+
+      return contentContainer;
+    }
+
     // Utilisation de DraggableScrollableSheet pour rendre le bottom sheet adaptatif
     return DraggableScrollableSheet(
       initialChildSize: initialChildSize,

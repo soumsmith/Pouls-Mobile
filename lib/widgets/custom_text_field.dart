@@ -19,6 +19,8 @@ class CustomTextField extends StatelessWidget {
   final VoidCallback? onTap;
   final bool obscureText;
   final Widget? suffixIcon;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
 
   const CustomTextField({
     Key? key,
@@ -37,6 +39,8 @@ class CustomTextField extends StatelessWidget {
     this.onTap,
     this.obscureText = false,
     this.suffixIcon,
+    this.textInputAction,
+    this.onSubmitted,
   }) : super(key: key);
 
   @override
@@ -69,6 +73,8 @@ class CustomTextField extends StatelessWidget {
         TextField(
           controller: controller,
           keyboardType: keyboardType ?? TextInputType.text,
+          textInputAction: textInputAction ?? TextInputAction.done,
+          onSubmitted: onSubmitted ?? (_) => FocusScope.of(context).unfocus(),
           maxLines: maxLines,
           inputFormatters: inputFormatters,
           readOnly: readOnly,

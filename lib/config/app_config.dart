@@ -64,16 +64,18 @@ class AppConfig {
   static const bool SHOW_ADS = true;
   static const int AD_INTERVAL = 6;
 
-
   // ─── External URLs ───────────────────────────────────────────────────────
-  static const String TUTEUR_ADOM_URL = 'https://tuteur-adom.pouls-scolaire.net/';
+  static const String TUTEUR_ADOM_URL =
+      'https://tuteur-adom.pouls-scolaire.net/';
 
   // ─── Store URLs pour le Partage ──────────────────────────────────────────
-  static const String IOS_STORE_URL = 'https://apps.apple.com/app/parent-responsable/id6763526336';
-  static const String ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr';
+  static const String IOS_STORE_URL =
+      'https://apps.apple.com/app/parent-responsable/id6763526336';
+  static const String ANDROID_STORE_URL =
+      'https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr';
 
   /// Retourne les URLs des stores pour le partage
   static String get storeUrl {
-    return 'Play Store : $ANDROID_STORE_URL\nApp Store : $IOS_STORE_URL';
+    return 'Play Store : $ANDROID_STORE_URL\n\nApp Store : $IOS_STORE_URL';
   }
 }

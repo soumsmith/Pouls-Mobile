@@ -14,6 +14,7 @@ import '../../services/theme_service.dart';
 import '../../widgets/components/custom_select_input.dart';
 import '../../widgets/components/custom_text_input.dart';
 import '../../widgets/components/custom_button.dart';
+import '../../widgets/components/custom_error_state.dart';
 import '../../widgets/snackbar.dart';
 import 'integration_result_dialog.dart';
 import 'reusable_bottom_sheet.dart';
@@ -469,7 +470,17 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.isLoadingEcoles)
+        if (widget.isLoadingEcoles && widget.ecoles.isEmpty)
+          CustomErrorState(
+            title: 'Aucune école disponible',
+            message: 'Impossible de charger la liste des écoles pour le moment.',
+            onRetry: widget.onRetryEcoles,
+            retryText: 'Réessayer',
+            buttonIsLight: true,
+            buttonWidth: 200,
+            isLoading: true,
+          )
+        else if (widget.isLoadingEcoles)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
@@ -499,35 +510,14 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             ),
           )
         else if (widget.ecoles.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF3D1E1E) : const Color(0xFFFFF0F0),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.red.withOpacity(0.2)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.red[400], size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Aucune école disponible',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? Colors.white : AppColors.screenTextPrimary,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: widget.onRetryEcoles,
-                  child: const Text(
-                    'Réessayer',
-                    style: TextStyle(color: AppColors.screenOrange),
-                  ),
-                ),
-              ],
-            ),
+          CustomErrorState(
+            title: 'Aucune école disponible',
+            message: 'Impossible de charger la liste des écoles pour le moment.',
+            onRetry: widget.onRetryEcoles,
+            retryText: 'Réessayer',
+            buttonIsLight: true,
+            buttonWidth: 200,
+            isLoading: false,
           )
         else
           CustomSelectInput(
@@ -543,41 +533,43 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             isDarkMode: widget.isDarkMode,
             required: true,
           ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDark 
-                ? const Color(0xFF0D47A1).withOpacity(0.25) 
-                : const Color(0xFFE3F2FD),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
+        if (widget.ecoles.isNotEmpty && !widget.isLoadingEcoles) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
               color: isDark 
-                  ? const Color(0xFF1565C0).withOpacity(0.3) 
-                  : const Color(0xFF1565C0).withOpacity(0.2),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.info_outline, 
-                color: isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0), 
-                size: 16,
+                  ? const Color(0xFF222222) 
+                  : const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark 
+                    ? const Color(0xFF333333) 
+                    : const Color(0xFFE5E7EB),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Sélectionnez une école pour consulter le statut de la demande d\'intégration',
-                  style: TextStyle(
-                    color: isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded, 
+                  color: isDark ? Colors.white54 : Colors.grey[600], 
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Sélectionnez une école pour consulter le statut de la demande d\'intégration',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -628,25 +620,29 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDark 
-                ? const Color(0xFFFFB300).withOpacity(0.15) 
-                : const Color(0xFFFFF8E1),
+                ? const Color(0xFF222222) 
+                : const Color(0xFFF3F4F6),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isDark 
-                  ? const Color(0xFFFFB300).withOpacity(0.3) 
-                  : const Color(0xFFFFB300).withOpacity(0.2),
+                  ? const Color(0xFF333333) 
+                  : const Color(0xFFE5E7EB),
             ),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.info_outline, color: Color(0xFFFFB300), size: 16),
-              SizedBox(width: 8),
+              Icon(
+                Icons.info_outline_rounded, 
+                color: isDark ? Colors.white54 : Colors.grey[600], 
+                size: 16,
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Le matricule permet d\'identifier l\'élève dans le système',
                   style: TextStyle(
-                    color: Color(0xFFFFB300),
-                    fontSize: 13,
+                    color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

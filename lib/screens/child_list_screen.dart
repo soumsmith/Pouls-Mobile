@@ -1194,75 +1194,52 @@ class _ChildListScreenState extends State<ChildListScreen>
   // ─── NAVIGATION OPTIMISÉE ────────────────────────────────────
 
   Future<void> _navigateToNotes() async {
-    if (_matricule == null) {
-      CartSnackBar.showOverlay(
-        context,
-        productName: 'Attention',
-        message: 'Matricule élève non disponible',
-        backgroundColor: Colors.orange,
-        icon: Icons.warning_amber_rounded,
+    if (_matricule != null && _anneeId != null && _classeId != null) {
+      _doNavigateToNotes();
+      return;
+    }
+
+    // Tenter de récupérer l'année scolaire et la classe si possible
+    if (_ecoleId != null && (_anneeId == null || _classeId == null)) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
-      return;
-    }
 
-    if (_anneeId != null && _classeId != null) {
-      _doNavigateToNotes();
-      return;
-    }
-
-    // Afficher un loader pendant qu'on essaie de récupérer l'année
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      ),
-    );
-
-    try {
-      if (_ecoleId != null && _anneeId == null) {
-        final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(
-          _ecoleId!,
-        );
-        setState(() {
-          _anneeId = anneeScolaire.anneeOuverteCentraleId;
-        });
+      try {
+        if (_anneeId == null) {
+          final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(
+            _ecoleId!,
+          );
+          setState(() {
+            _anneeId = anneeScolaire.anneeOuverteCentraleId;
+          });
+        }
+        if (_anneeId != null && _classeId == null) {
+          await _loadStudentClassInfo();
+        }
+      } catch (e) {
+        print("Erreur de récupération à la volée: $e");
       }
-      if (_anneeId != null && _classeId != null) {
-        await _loadStudentClassInfo();
-      }
-    } catch (e) {
-      print("Erreur de récupération à la volée: $e");
-    }
 
-    // Fermer le loader
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
-
-    if (_anneeId != null && _classeId != null) {
-      _doNavigateToNotes();
-    } else {
       if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Attention',
-          message:
-              'Informations élève non disponibles. Veuillez réessayer plus tard.',
-          backgroundColor: Colors.orange,
-          icon: Icons.warning_amber_rounded,
-        );
+        Navigator.of(context).pop();
       }
     }
+
+    _doNavigateToNotes();
   }
 
   void _doNavigateToNotes() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => NotesScreenJson(
-          matricule: _matricule!,
-          anneeId: _anneeId!.toString(),
-          classeId: _classeId!.toString(),
+          matricule: _matricule,
+          anneeId: _anneeId?.toString(),
+          classeId: _classeId?.toString(),
           anneeLibelle:
               'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
           ecoleId: _ecoleId?.toString(),

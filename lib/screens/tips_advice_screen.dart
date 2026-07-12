@@ -18,6 +18,7 @@ import '../services/ad_service.dart';
 import '../models/ad_model.dart';
 import '../utils/ad_injector.dart';
 import '../widgets/ad_banner_card.dart';
+import '../widgets/components/section_row.dart';
 
 class TipsAdviceScreen extends StatefulWidget {
   const TipsAdviceScreen({super.key});
@@ -356,7 +357,8 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
 
     return [
       if (videos.isNotEmpty) _buildVideosSection(videos),
-      if (videos.isNotEmpty && articles.isNotEmpty) _buildSeparator(),
+      const SliverToBoxAdapter(child: SizedBox(height: 32)),
+      // if (videos.isNotEmpty && articles.isNotEmpty) _buildSeparator(),
       if (articles.isNotEmpty) ..._buildArticlesSection(articles),
       const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
     ];
@@ -377,17 +379,8 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Text(
-              'Vidéos à la une',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.screenTextPrimaryThemed(context),
-              ),
-            ),
-          ),
+          SectionRow(title: 'Vidéos à la une'),
+          const SizedBox(height: 12),
           SizedBox(
             height: cardHeight,
             child: ListView.builder(
@@ -433,15 +426,17 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
                       showPlayIcon: true,
                       onTap: () {
                         final allVideos = videos
-                            .map((a) => VisiteGuideeVideo(
-                                  id: a.id,
-                                  typeVideo: 'astuce',
-                                  youtubeUrl: a.youtubeUrl!,
-                                  title: a.title,
-                                  description: a.content,
-                                  code: a.codeecole,
-                                  slug: a.slug,
-                                ))
+                            .map(
+                              (a) => VisiteGuideeVideo(
+                                id: a.id,
+                                typeVideo: 'astuce',
+                                youtubeUrl: a.youtubeUrl!,
+                                title: a.title,
+                                description: a.content,
+                                code: a.codeecole,
+                                slug: a.slug,
+                              ),
+                            )
                             .toList();
                         MainScreenWrapper.of(context).navigateToExtraScreen(
                           VisiteGuideeVideoFeedScreen(
@@ -574,19 +569,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
 
   List<Widget> _buildArticlesSection(List<dynamic> articles) {
     return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Text(
-            'Articles récents',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.screenTextPrimaryThemed(context),
-            ),
-          ),
-        ),
-      ),
+      SliverToBoxAdapter(child: SectionRow(title: 'Articles récents')),
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverList(
@@ -763,7 +746,7 @@ class _AstuceCard extends StatelessWidget {
                       Icon(
                         Icons.calendar_today_rounded,
                         size: 12,
-                        color: color,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -771,7 +754,7 @@ class _AstuceCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: color,
+                          color: AppColors.screenTextSecondaryThemed(context),
                         ),
                       ),
                     ],

@@ -116,6 +116,10 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
       imagePath: widget.imagePath,
       iconBackgroundColor: widget.imageBackgroundColor,
       imageBorderRadius: widget.imageBorderRadius,
+      initialChildSize: 0.8,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      useDraggable: false,
       contentPadding: const EdgeInsets.all(0),
       fixedBottomWidget: widget.allowRating ? _buildComposeAvisBar() : null,
       content: _isLoadingAvis
@@ -133,8 +137,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
               : _avis.isEmpty
                   ? _buildEmptyAvisView()
                   : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 16,
@@ -250,10 +253,12 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
     return Container(
       color: Colors.transparent,
       padding: EdgeInsets.fromLTRB(
-        0,
+        20,
         8,
-        0,
-        MediaQuery.of(context).padding.bottom + 8,
+        20,
+        MediaQuery.of(context).padding.bottom +
+            MediaQuery.of(context).viewInsets.bottom +
+            8,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -393,21 +398,27 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
 
   // Vue d'erreur
   Widget _buildErrorView() {
-    return CustomErrorState(
-      title: 'Erreur de chargement',
-      message: _avisError!,
-      icon: Icons.error_outline,
-      iconColor: Colors.red[400],
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: CustomErrorState(
+        title: 'Erreur de chargement',
+        message: _avisError!,
+        icon: Icons.error_outline,
+        iconColor: Colors.red[400],
+      ),
     );
   }
 
   // Vue vide (aucun avis)
   Widget _buildEmptyAvisView() {
-    return const CustomErrorState(
-      title: 'Aucun avis pour le moment',
-      message: 'Soyez le premier à donner votre avis!',
-      icon: Icons.rate_review_outlined,
-      iconColor: Color(0xFF0288D1),
+    return const SingleChildScrollView(
+      physics: BouncingScrollPhysics(),
+      child: CustomErrorState(
+        title: 'Aucun avis pour le moment',
+        message: 'Soyez le premier à donner votre avis!',
+        icon: Icons.rate_review_outlined,
+        iconColor: Color(0xFF0288D1),
+      ),
     );
   }
 
@@ -469,21 +480,16 @@ void showRatingBottomSheet(
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: RatingBottomSheet(
-        schoolId: schoolId,
-        schoolName: schoolName,
-        schoolColor: schoolColor,
-        onRatingSubmitted: onRatingSubmitted,
-        allowRating: allowRating,
-        imagePath: imagePath,
-        imageBackgroundColor: imageBackgroundColor,
-        imageBorderRadius: imageBorderRadius,
-        popOnSuccess: popOnSuccess,
-      ),
+    builder: (context) => RatingBottomSheet(
+      schoolId: schoolId,
+      schoolName: schoolName,
+      schoolColor: schoolColor,
+      onRatingSubmitted: onRatingSubmitted,
+      allowRating: allowRating,
+      imagePath: imagePath,
+      imageBackgroundColor: imageBackgroundColor,
+      imageBorderRadius: imageBorderRadius,
+      popOnSuccess: popOnSuccess,
     ),
   );
 }

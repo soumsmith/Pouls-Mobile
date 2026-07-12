@@ -11,6 +11,7 @@ import 'package:parents_responsable/widgets/components/custom_date_input.dart';
 import 'package:parents_responsable/widgets/components/custom_select_input.dart';
 import 'package:parents_responsable/widgets/components/custom_button.dart';
 import 'package:parents_responsable/widgets/components/custom_text_input.dart';
+import 'package:parents_responsable/widgets/components/custom_error_state.dart';
 import 'package:parents_responsable/widgets/custom_file_field.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/widgets/snackbar.dart';
@@ -42,9 +43,11 @@ void showIntegrationBottomSheet({
     imagePath: imagePath,
     iconBackgroundColor: imageBackgroundColor,
     imageBorderRadius: imageBorderRadius,
-    initialChildSize: 0.85,
+    initialChildSize: 0.95,
     minChildSize: 0.5,
-    maxChildSize: 0.9,
+    maxChildSize: 0.95,
+    useDraggable: false,
+    useKeyboardPadding: false,
     wrapWithScrollView: false,
     content: IntegrationFormContent(
       ecole: ecole,
@@ -112,6 +115,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   String? _selectedEcoleName;
   String? _selectedEcoleParametre;
   bool _isLoadingEcoles = false;
+  bool _hasAttemptedLoad = false;
   String? _ecoleErrorMessage;
 
   // ── Champs de formulaire ─────────────────────────────────────────────────
@@ -268,6 +272,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       setState(() {
         _ecoles = ecoles;
         _isLoadingEcoles = false;
+        _hasAttemptedLoad = true;
       });
       if (ecoles.isEmpty && mounted) {
         _showSnack('Aucun établissement disponible', isError: true);
@@ -276,6 +281,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       setState(() {
         _isLoadingEcoles = false;
         _ecoleErrorMessage = 'Erreur chargement des établissements';
+        _hasAttemptedLoad = true;
       });
       final errorStr = e.toString().toLowerCase();
       final isNetworkError =
@@ -712,8 +718,22 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         ),
 
         // ── Navigation buttons ────────────────────────────────────────────
-        _buildNavigationButtons(),
-        const BottomSpacer(),
+        Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildNavigationButtons(),
+              SizedBox(
+                height: MediaQuery.of(context).viewInsets.bottom > 0
+                    ? 12.0
+                    : 40.0,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -911,18 +931,32 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   Widget _buildEcoleField() {
+    if (_isLoadingEcoles && !_hasAttemptedLoad) {
+      return _buildLoadingField('Chargement des établissements...');
+    }
+    if (_isLoadingEcoles && _ecoles.isEmpty) {
+      return CustomErrorState(
+        title: 'Chargement des établissements...',
+        message: 'Veuillez patienter pendant le chargement...',
+        onRetry: _loadEcoles,
+        retryText: 'Réessayer',
+        buttonIsLight: true,
+        buttonWidth: 200,
+        isLoading: true,
+      );
+    }
     if (_isLoadingEcoles) {
       return _buildLoadingField('Chargement des établissements...');
     }
     if (_ecoles.isEmpty) {
-      return Column(
-        children: [
-          _buildEmptyEcoleField(errorMessage: _ecoleErrorMessage),
-          if (_ecoleErrorMessage != null) ...[
-            const SizedBox(height: 10),
-            _buildRetryButton(),
-          ],
-        ],
+      return CustomErrorState(
+        title: 'Aucun établissement disponible',
+        message: _ecoleErrorMessage ?? 'Impossible de charger la liste des établissements pour le moment.',
+        onRetry: _loadEcoles,
+        retryText: 'Réessayer',
+        buttonIsLight: true,
+        buttonWidth: 200,
+        isLoading: false,
       );
     }
     return Column(
@@ -987,43 +1021,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     );
   }
 
-  Widget _buildEmptyEcoleField({String? errorMessage}) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F0),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: Colors.red[400], size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              errorMessage ?? 'Aucun établissement disponible',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRetryButton() {
-    return CustomButton(
-      text: 'Réessayer',
-      onPressed: _loadEcoles,
-      color: AppColors.screenOrange,
-      isLight: true,
-      icon: Icons.refresh_rounded,
-      height: 44,
-      fontSize: 13,
-    );
-  }
 
   Widget _buildErrorBanner(String message) {
     return Container(

@@ -21,10 +21,12 @@ class RatingChildrenListScreen extends StatefulWidget {
   });
 
   @override
-  State<RatingChildrenListScreen> createState() => _RatingChildrenListScreenState();
+  State<RatingChildrenListScreen> createState() =>
+      _RatingChildrenListScreenState();
 }
 
-class _RatingChildrenListScreenState extends State<RatingChildrenListScreen> with SingleTickerProviderStateMixin {
+class _RatingChildrenListScreenState extends State<RatingChildrenListScreen>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _schools = [];
   bool _isLoading = true;
 
@@ -64,9 +66,10 @@ class _RatingChildrenListScreenState extends State<RatingChildrenListScreen> wit
       final Map<String, Map<String, dynamic>> uniqueSchools = {};
       for (final child in children) {
         // Fallback: si pas de code, utiliser le nom de l'établissement comme clé
-        final schoolId = child.ecoleCode ?? child.paramEcole ?? child.establishment;
+        final schoolId =
+            child.ecoleCode ?? child.paramEcole ?? child.establishment;
         final schoolName = child.establishment;
-        
+
         if (!uniqueSchools.containsKey(schoolId)) {
           uniqueSchools[schoolId] = {
             'schoolId': schoolId,
@@ -114,9 +117,8 @@ class _RatingChildrenListScreenState extends State<RatingChildrenListScreen> wit
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: (isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
-        statusBarColor: Colors.transparent,
-      ),
+      value: (isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+          .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.screenBg(context),
         body: FadeTransition(
@@ -124,7 +126,7 @@ class _RatingChildrenListScreenState extends State<RatingChildrenListScreen> wit
           child: CustomScrollView(
             slivers: [
               CustomSliverAppBar(
-                title: 'Donner un avis',
+                title: 'Donner un avis sur une école',
                 isDark: false,
                 surfaceTintColor: Colors.transparent,
                 automaticallyImplyLeading: true,
@@ -148,27 +150,13 @@ class _RatingChildrenListScreenState extends State<RatingChildrenListScreen> wit
                         ),
                       )
                     : _schools.isEmpty
-                        ? SliverFillRemaining(child: _buildEmptyState())
-                        : SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final school = _schools[index];
-                                return Column(
-                                  children: [
-                                    _buildSchoolListItem(school),
-                                    if (index < _schools.length - 1)
-                                      Divider(
-                                        height: 1,
-                                        indent: 72,
-                                        endIndent: 16,
-                                        color: AppColors.screenDividerThemed(context),
-                                      ),
-                                  ],
-                                );
-                              },
-                              childCount: _schools.length,
-                            ),
-                          ),
+                    ? SliverFillRemaining(child: _buildEmptyState())
+                    : SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final school = _schools[index];
+                          return _buildSchoolListItem(school);
+                        }, childCount: _schools.length),
+                      ),
               ),
             ],
           ),
@@ -181,45 +169,137 @@ class _RatingChildrenListScreenState extends State<RatingChildrenListScreen> wit
     final String schoolId = schoolData['schoolId'];
     final String schoolName = schoolData['schoolName'];
     final List<Child> enrolledChildren = schoolData['children'];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ListTile(
-      onTap: () => _onSchoolTapped(schoolId, schoolName),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: CircleAvatar(
-        radius: 28,
-        backgroundColor: widget.actionColor.withOpacity(0.1),
-        child: Icon(
-          Icons.school_outlined,
-          color: widget.actionColor,
-          size: 28,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E2A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.05)
+              : Colors.black.withOpacity(0.05),
+          width: 1,
         ),
-      ),
-      title: Text(
-        schoolName,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: AppColors.screenTextPrimaryThemed(context),
-        ),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 4),
-          Text(
-            enrolledChildren.length == 1
-                ? '1 enfant inscrit'
-                : '${enrolledChildren.length} enfants inscrits',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.screenTextSecondaryThemed(context),
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: AppColors.screenTextSecondaryThemed(context),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _onSchoolTapped(schoolId, schoolName),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // School Avatar
+                  Container(
+                    width: 52,
+                    height: 52,
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey[800] : Colors.grey[100],
+                      shape: BoxShape.circle,
+                    ),
+                    child: widget.imagePath != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.asset(
+                              widget.imagePath!,
+                              fit: BoxFit.contain,
+                            ),
+                          )
+                        : Center(
+                            child: Icon(
+                              Icons.school_rounded,
+                              color: widget.actionColor,
+                              size: 26,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 16),
+                  // School Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          schoolName,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.screenTextPrimaryThemed(context),
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        // Badge Enfant Inscrit
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: widget.actionColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.face_rounded,
+                                size: 12,
+                                color: widget.actionColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                enrolledChildren.length == 1
+                                    ? '1 enfant inscrit'
+                                    : '${enrolledChildren.length} enfants inscrits',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: widget.actionColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Chevron
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.black.withOpacity(0.03),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.screenTextSecondaryThemed(context),
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -236,11 +316,7 @@ class _RatingChildrenListScreenState extends State<RatingChildrenListScreen> wit
               color: widget.actionColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.child_care,
-              size: 36,
-              color: widget.actionColor,
-            ),
+            child: Icon(Icons.child_care, size: 36, color: widget.actionColor),
           ),
           const SizedBox(height: 16),
           Text(

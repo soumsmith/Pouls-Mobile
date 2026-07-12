@@ -11,6 +11,7 @@ import '../../services/theme_service.dart';
 import '../../widgets/components/custom_select_input.dart';
 import '../../widgets/components/custom_text_input.dart';
 import '../../widgets/components/custom_button.dart';
+import '../../widgets/components/custom_error_state.dart';
 import '../../widgets/snackbar.dart';
 import '../../config/app_colors.dart';
 import '../../screens/inscription_screen.dart' as inscription;
@@ -67,6 +68,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
   // État
   List<Ecole> _ecoles = [];
   bool _isLoadingEcoles = false;
+  bool _hasAttemptedLoad = false;
   String? _selectedEcoleCode;
   String? _selectedEcoleName;
   String? _selectedParamEcole;
@@ -90,9 +92,19 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
     setState(() => _isLoadingEcoles = true);
     try {
       final ecoles = await _poulsApiService.getAllEcoles();
-      if (mounted) setState(() => _ecoles = ecoles);
+      if (mounted) {
+        setState(() {
+          _ecoles = ecoles;
+          _hasAttemptedLoad = true;
+        });
+      }
     } catch (e) {
       debugPrint('Error loading ecoles: $e');
+      if (mounted) {
+        setState(() {
+          _hasAttemptedLoad = true;
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoadingEcoles = false);
     }
@@ -244,7 +256,51 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Sélection de l'école
-        if (_isLoadingEcoles)
+        if (_isLoadingEcoles && !_hasAttemptedLoad)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E2A) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? Colors.white : const Color(0xFF1A1A2A),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Chargement des écoles...',
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                    color: isDark ? Colors.white70 : const Color(0xFF8A8A9E),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (_isLoadingEcoles && _ecoles.isEmpty)
+          CustomErrorState(
+            title: 'Chargement des écoles...',
+            message: 'Veuillez patienter pendant le chargement...',
+            onRetry: _loadEcoles,
+            retryText: 'Réessayer',
+            buttonIsLight: true,
+            buttonWidth: 200,
+            isLoading: true,
+          )
+        else if (_isLoadingEcoles)
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 14,
@@ -279,39 +335,14 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
             ),
           )
         else if (_ecoles.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF0F0),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.red.withOpacity(0.2)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Colors.red[400],
-                  size: 18,
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'Aucune école disponible',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF1A1A2A),
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: _loadEcoles,
-                  child: const Text(
-                    'Réessayer',
-                    style: TextStyle(color: Color(0xFFFF7A3C)),
-                  ),
-                ),
-              ],
-            ),
+          CustomErrorState(
+            title: 'Aucune école disponible',
+            message: 'Impossible de charger la liste des écoles pour le moment.',
+            onRetry: _loadEcoles,
+            retryText: 'Réessayer',
+            buttonIsLight: true,
+            buttonWidth: 200,
+            isLoading: false,
           )
         else
           CustomSelectInput(

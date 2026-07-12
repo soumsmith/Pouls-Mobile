@@ -224,7 +224,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0x00F8F8F8),
+                      AppColors.screenSurfaceThemed(context).withOpacity(0.0),
                       AppColors.screenSurfaceThemed(context),
                     ],
                   ),

@@ -200,13 +200,13 @@ class AppColors {
 
   static Color bottomNavBg(BuildContext context) {
     return isDarkMode(context)
-        ? const Color(0xFF1E1E2A).withOpacity(0.92)
+        ? const Color(0xFF0D0D0D).withOpacity(0.96)
         : Colors.white.withOpacity(0.92);
   }
 
   static Color bottomNavBorder(BuildContext context) {
     return isDarkMode(context)
-        ? const Color(0xFF2A2A35)
+        ? const Color(0xFF1C1C1E)
         : const Color(0xFFEEEEEE);
   }
 

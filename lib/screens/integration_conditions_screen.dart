@@ -5,6 +5,7 @@ import '../models/integration_condition.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/custom_error_state.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../config/app_config.dart';
 
 class IntegrationConditionsScreen extends StatefulWidget {
   final String ecoleSigle;
@@ -37,7 +38,7 @@ class _IntegrationConditionsScreenState extends State<IntegrationConditionsScree
 
     try {
       final url = Uri.parse(
-          'https://api2.vie-ecoles.com/api/vie-ecoles/condition-integrations?ecole=${widget.ecoleSigle}');
+          '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/condition-integrations?ecole=${widget.ecoleSigle}');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {

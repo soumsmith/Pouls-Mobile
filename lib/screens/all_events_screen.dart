@@ -386,7 +386,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0x00F8F8F8),
+                      AppColors.screenSurfaceThemed(context).withOpacity(0.0),
                       AppColors.screenSurfaceThemed(context),
                     ],
                   ),

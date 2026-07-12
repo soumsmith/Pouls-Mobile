@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../utils/api_exception_handler.dart';
+import '../config/app_config.dart';
 
 class KitsService {
   /// Récupère les kits scolaires pour une école et un niveau donnés
   static Future<List<Map<String, dynamic>>> getKitsByNiveau(String ecole, String niveau) async {
     final encodedEcole = Uri.encodeComponent(ecole);
     final encodedNiveau = Uri.encodeComponent(niveau);
-    final url = 'https://api2.vie-ecoles.com/api/ecoles/kits-disponibles?ecole=$encodedEcole&niveau=$encodedNiveau';
+    final url = '${AppConfig.VIE_ECOLES_API_BASE_URL}/ecoles/kits-disponibles?ecole=$encodedEcole&niveau=$encodedNiveau';
     print('🔗 URL (GET): $url');
 
     try {

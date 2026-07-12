@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../services/text_size_service.dart';
+import '../../services/avis_service.dart';
 import '../components/custom_error_state.dart';
 import 'reusable_bottom_sheet.dart';
 
@@ -40,6 +41,35 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
   bool _isLoadingAvis = false;
   List<Map<String, dynamic>> _avis = [];
   String? _avisError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvis();
+  }
+
+  Future<void> _loadAvis() async {
+    setState(() {
+      _isLoadingAvis = true;
+      _avisError = null;
+    });
+    try {
+      final loadedAvis = await AvisService().getAvisForUI(widget.schoolId);
+      if (mounted) {
+        setState(() {
+          _avis = loadedAvis;
+          _isLoadingAvis = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _avisError = e.toString();
+          _isLoadingAvis = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -82,7 +112,8 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
       _ratingController.clear();
       _commentController.clear();
 
-      // Les avis seront rechargés par le parent si nécessaire
+      // Recharger les avis localement
+      _loadAvis();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

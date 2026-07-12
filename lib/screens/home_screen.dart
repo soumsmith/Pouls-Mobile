@@ -465,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('https://api2.vie-ecoles.com/api/vie-ecoles/flash-infos'),
+        Uri.parse('${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/flash-infos'),
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);

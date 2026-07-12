@@ -16,6 +16,8 @@ import 'dart:convert';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../services/auth_service.dart';
 import '../config/app_config.dart';
+import '../services/theme_service.dart';
+import '../screens/login_screen.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange = Color(0xFFFF6B2C);
@@ -41,6 +43,8 @@ class _MenuItem {
   final Color color;
   final VoidCallback onTap;
   final int badgeCount;
+  final bool isToggle;
+  final bool toggleValue;
 
   const _MenuItem({
     required this.title,
@@ -49,6 +53,8 @@ class _MenuItem {
     required this.color,
     required this.onTap,
     this.badgeCount = 0,
+    this.isToggle = false,
+    this.toggleValue = false,
   });
 }
 
@@ -63,6 +69,7 @@ class BottomSheetMenu extends StatefulWidget {
 
 class _BottomSheetMenuState extends State<BottomSheetMenu> {
   final CartService _cartService = MockCartService();
+  final ThemeService _themeService = ThemeService();
   int _cartItemCount = 0;
   int _ticketCount = 0;
 
@@ -100,46 +107,104 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
     }
   }
 
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Déconnexion ?',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        content: const Text(
+          'Êtes-vous sûr de vouloir vous déconnecter ?',
+          style: TextStyle(color: _kTextSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(
+              'Annuler',
+              style: TextStyle(color: _kTextSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'Déconnexion',
+              style: TextStyle(
+                color: Colors.red[400],
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      Navigator.of(context).pop(); // Fermer le bottom sheet menu
+      await AuthService.instance.logout();
+      if (mounted) {
+        Navigator.of(widget.parentContext).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
   // ── Build ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141414) : _kCard,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : const Color(0x18000000),
-            blurRadius: 32,
-            offset: const Offset(0, -8),
+    return AnimatedBuilder(
+      animation: _themeService,
+      builder: (context, child) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF141414) : _kCard,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.3)
+                    : const Color(0x18000000),
+                blurRadius: 32,
+                offset: const Offset(0, -8),
+              ),
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.1)
+                    : const Color(0x08000000),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
           ),
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.1)
-                : const Color(0x08000000),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              BottomSheetHeader(
+                icon: Icons.grid_view_rounded,
+                iconColor: _kOrange,
+                title: 'Menu',
+                description: 'Navigation principale',
+                onClose: () => Navigator.of(context).pop(),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: _buildMenuList(),
+                ),
+              ),
+              _buildLogoutButton(),
+              const SizedBox(height: 8),
+              const BottomSpacer(),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          BottomSheetHeader(
-            icon: Icons.grid_view_rounded,
-            iconColor: _kOrange,
-            title: 'Menu',
-            description: 'Navigation principale',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-          _buildMenuList(),
-          const SizedBox(height: 16),
-          const BottomSpacer(),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -157,107 +222,161 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
     );
   }
 
-  List<_MenuItem> _buildItems() => [
-    _MenuItem(
-      title: 'Messages',
-      subtitle: 'Vos messages et communications',
-      icon: Icons.message_rounded,
-      color: const Color(0xFF2196F3),
-      onTap: () {
-        Navigator.of(context).pop();
-        MainScreenWrapper.of(
-          widget.parentContext,
-        ).navigateToExtraScreen(const MessagesScreen());
-      },
-    ),
-    _MenuItem(
-      title: 'Passer Premium',
-      subtitle: 'Découvrez nos offres exclusives',
-      icon: Icons.star_rounded,
-      color: Colors.amber.shade600,
-      onTap: () {
-        Navigator.of(context).pop();
-        Navigator.push(
-          widget.parentContext,
-          MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
-        );
-      },
-    ),
-    _MenuItem(
-      title: 'Mes Tickets',
-      subtitle: 'Voir vos tickets achetés',
-      icon: Icons.confirmation_number_rounded,
-      color: const Color(0xFF10B981),
-      badgeCount: _ticketCount,
-      onTap: () {
-        Navigator.of(context).pop();
-        MainScreenWrapper.of(
-          widget.parentContext,
-        ).navigateToExtraScreen(const MyTicketsScreen());
-      },
-    ),
-    _MenuItem(
-      title: 'Tuteur à domicile',
-      subtitle: 'Trouver un tuteur pour vos enfants',
-      icon: Icons.school_rounded,
-      color: const Color(0xFF8B5CF6),
-      onTap: () async {
-        Navigator.of(context).pop();
-        final url = Uri.parse(AppConfig.TUTEUR_ADOM_URL);
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url, mode: LaunchMode.externalApplication);
-        }
-      },
-    ),
-    _MenuItem(
-      title: 'Profil',
-      subtitle: 'Gérer votre profil et informations',
-      icon: Icons.person_rounded,
-      color: const Color(0xFF2196F3),
-      onTap: () {
-        Navigator.of(context).pop();
-        MainScreenWrapper.of(
-          widget.parentContext,
-        ).navigateToExtraScreen(const ProfileScreen());
-      },
-    ),
-    _MenuItem(
-      title: 'Utilisateurs parrainés',
-      subtitle: 'Voir vos filleuls et vos points',
-      icon: Icons.group_add_rounded,
-      color: const Color(0xFFFF6B2C),
-      onTap: () {
-        Navigator.of(context).pop();
-        MainScreenWrapper.of(
-          widget.parentContext,
-        ).navigateToExtraScreen(const ReferredUsersScreen());
-      },
-    ),
-    _MenuItem(
-      title: 'Aide & Support',
-      subtitle: 'FAQ, contact et assistance',
-      icon: Icons.help_rounded,
-      color: const Color(0xFF4CAF50),
-      onTap: () {
-        Navigator.of(context).pop();
-        MainScreenWrapper.of(
-          widget.parentContext,
-        ).navigateToExtraScreen(const HelpSupportScreen());
-      },
-    ),
-    _MenuItem(
-      title: 'Paramètres',
-      subtitle: 'Préférences et configuration',
-      icon: Icons.settings_rounded,
-      color: const Color(0xFF64748B),
-      onTap: () {
-        Navigator.of(context).pop();
-        MainScreenWrapper.of(
-          widget.parentContext,
-        ).navigateToExtraScreen(const NewSettingsScreen());
-      },
-    ),
-  ];
+  Widget _buildLogoutButton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+      child: GestureDetector(
+        onTap: _confirmLogout,
+        child: Container(
+          width: double.infinity,
+          height: 50,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.red.withOpacity(isDark ? 0.3 : 0.2),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.logout_rounded,
+                color: isDark ? Colors.red[400] : Colors.red[600],
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Déconnexion',
+                style: TextStyle(
+                  color: isDark ? Colors.red[400] : Colors.red[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<_MenuItem> _buildItems() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return [
+      _MenuItem(
+        title: 'Messages',
+        subtitle: 'Vos messages et communications',
+        icon: Icons.message_rounded,
+        color: const Color(0xFF2196F3),
+        onTap: () {
+          Navigator.of(context).pop();
+          MainScreenWrapper.of(
+            widget.parentContext,
+          ).navigateToExtraScreen(const MessagesScreen());
+        },
+      ),
+      _MenuItem(
+        title: 'Passer Premium',
+        subtitle: 'Découvrez nos offres exclusives',
+        icon: Icons.star_rounded,
+        color: Colors.amber.shade600,
+        onTap: () {
+          Navigator.of(context).pop();
+          Navigator.push(
+            widget.parentContext,
+            MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
+          );
+        },
+      ),
+      _MenuItem(
+        title: 'Mes Tickets',
+        subtitle: 'Voir vos tickets achetés',
+        icon: Icons.confirmation_number_rounded,
+        color: const Color(0xFF10B981),
+        badgeCount: _ticketCount,
+        onTap: () {
+          Navigator.of(context).pop();
+          MainScreenWrapper.of(
+            widget.parentContext,
+          ).navigateToExtraScreen(const MyTicketsScreen());
+        },
+      ),
+      _MenuItem(
+        title: 'Tuteur à domicile',
+        subtitle: 'Trouver un tuteur pour vos enfants',
+        icon: Icons.school_rounded,
+        color: const Color(0xFF8B5CF6),
+        onTap: () async {
+          Navigator.of(context).pop();
+          final url = Uri.parse(AppConfig.TUTEUR_ADOM_URL);
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.externalApplication);
+          }
+        },
+      ),
+      _MenuItem(
+        title: 'Profil',
+        subtitle: 'Gérer votre profil et informations',
+        icon: Icons.person_rounded,
+        color: const Color(0xFF2196F3),
+        onTap: () {
+          Navigator.of(context).pop();
+          MainScreenWrapper.of(
+            widget.parentContext,
+          ).navigateToExtraScreen(const ProfileScreen());
+        },
+      ),
+      _MenuItem(
+        title: 'Utilisateurs parrainés',
+        subtitle: 'Voir vos filleuls et vos points',
+        icon: Icons.group_add_rounded,
+        color: const Color(0xFFFF6B2C),
+        onTap: () {
+          Navigator.of(context).pop();
+          MainScreenWrapper.of(
+            widget.parentContext,
+          ).navigateToExtraScreen(const ReferredUsersScreen());
+        },
+      ),
+      _MenuItem(
+        title: 'Aide & Support',
+        subtitle: 'FAQ, contact et assistance',
+        icon: Icons.help_rounded,
+        color: const Color(0xFF4CAF50),
+        onTap: () {
+          Navigator.of(context).pop();
+          MainScreenWrapper.of(
+            widget.parentContext,
+          ).navigateToExtraScreen(const HelpSupportScreen());
+        },
+      ),
+      _MenuItem(
+        title: 'Paramètres',
+        subtitle: 'Préférences et configuration',
+        icon: Icons.settings_rounded,
+        color: const Color(0xFF64748B),
+        onTap: () {
+          Navigator.of(context).pop();
+          MainScreenWrapper.of(
+            widget.parentContext,
+          ).navigateToExtraScreen(const NewSettingsScreen());
+        },
+      ),
+      _MenuItem(
+        title: 'Thème sombre',
+        subtitle: isDark ? 'Activé' : 'Désactivé',
+        icon: isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+        color: const Color(0xFFF59E0B),
+        isToggle: true,
+        toggleValue: isDark,
+        onTap: () => _themeService.toggleTheme(),
+      ),
+    ];
+  }
 }
 
 // ─── Menu Tile ────────────────────────────────────────────────────────────────
@@ -356,20 +475,34 @@ class _MenuTileState extends State<_MenuTile> {
 
                 const SizedBox(width: 8),
 
-                // ── Arrow ─────────────────────────────────
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(8),
+                // ── Arrow or Switch ───────────────────────
+                if (item.isToggle)
+                  Transform.scale(
+                    scale: 0.85,
+                    child: Switch(
+                      value: item.toggleValue,
+                      onChanged: (_) => item.onTap(),
+                      activeThumbColor: item.color,
+                      activeTrackColor: item.color.withOpacity(0.25),
+                      inactiveThumbColor: isDark ? Colors.white54 : textSecondary,
+                      inactiveTrackColor: divider,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  )
+                else
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: surface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 13,
+                      color: textSecondary,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 13,
-                    color: textSecondary,
-                  ),
-                ),
               ],
             ),
           ),

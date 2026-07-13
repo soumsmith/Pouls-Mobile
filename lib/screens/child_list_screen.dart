@@ -1725,6 +1725,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       minChildSize: 0.95,
       maxChildSize: 0.95,
       showScrollToTopFab: true,
+      useDraggable: false,
+      useKeyboardPadding: false,
       content: StatefulBuilder(
         builder: (context, setModalState) {
           _ordersModalSetState = setModalState;

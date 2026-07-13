@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:ui'; // Pour l'effet de verre
 import '../components/bottom_spacer.dart';
 import '../scroll_to_top_fab.dart';
+import '../../config/app_colors.dart';
 
-class ReusableBottomSheet extends StatelessWidget {
+class ReusableBottomSheet extends StatefulWidget {
   final Widget content;
   final String title;
   final String? subtitle;
@@ -22,6 +23,7 @@ class ReusableBottomSheet extends StatelessWidget {
   final Widget? fixedBottomWidget;
   final bool wrapWithScrollView;
   final bool useDraggable;
+  final bool useKeyboardPadding;
 
   const ReusableBottomSheet({
     super.key,
@@ -43,7 +45,11 @@ class ReusableBottomSheet extends StatelessWidget {
     this.fixedBottomWidget,
     this.wrapWithScrollView = true,
     this.useDraggable = true,
+    this.useKeyboardPadding = true,
   });
+
+  @override
+  State<ReusableBottomSheet> createState() => _ReusableBottomSheetState();
 
   /// Méthode statique utilitaire pour afficher facilement le BottomSheet
   static Future<T?> show<T>({
@@ -96,6 +102,7 @@ class ReusableBottomSheet extends StatelessWidget {
           fixedBottomWidget: fixedBottomWidget,
           wrapWithScrollView: wrapWithScrollView,
           useDraggable: useDraggable,
+          useKeyboardPadding: useKeyboardPadding,
         );
         return useKeyboardPadding
             ? Padding(
@@ -109,17 +116,35 @@ class ReusableBottomSheet extends StatelessWidget {
       },
     );
   }
+}
+
+class _ReusableBottomSheetState extends State<ReusableBottomSheet> {
+  ScrollController? _localScrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.useDraggable) {
+      _localScrollController = ScrollController();
+    }
+  }
+
+  @override
+  void dispose() {
+    _localScrollController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!useDraggable) {
+    if (!widget.useDraggable) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
-      final bgColor = isDark ? Colors.grey[900]! : Colors.white;
+      final bgColor = AppColors.bottomSheetBg(context);
 
       Widget contentContainer = Container(
-        height: MediaQuery.of(context).size.height * initialChildSize,
+        height: MediaQuery.of(context).size.height * widget.initialChildSize,
         decoration: BoxDecoration(
-          color: useGlassEffect ? bgColor.withOpacity(0.85) : bgColor,
+          color: widget.useGlassEffect ? bgColor.withOpacity(0.85) : bgColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
@@ -141,17 +166,48 @@ class ReusableBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: Padding(
-                padding: contentPadding,
-                child: content,
+              child: Stack(
+                children: [
+                  widget.wrapWithScrollView
+                      ? SingleChildScrollView(
+                          controller: _localScrollController,
+                          physics: const BouncingScrollPhysics(),
+                          padding: widget.contentPadding,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              widget.content,
+                              if (!widget.useKeyboardPadding)
+                                SizedBox(
+                                  height: MediaQuery.of(context).viewInsets.bottom,
+                                ),
+                              const BottomSpacer(),
+                            ],
+                          ),
+                        )
+                      : Padding(
+                          padding: widget.contentPadding,
+                          child: widget.content,
+                        ),
+                  if (widget.showScrollToTopFab && widget.wrapWithScrollView)
+                    Positioned(
+                      right: 16,
+                      bottom: 24,
+                      child: ScrollToTopFab(
+                        scrollController: _localScrollController!,
+                        useGlassEffect: widget.useGlassEffect,
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (fixedBottomWidget != null) fixedBottomWidget!,
+            if (widget.fixedBottomWidget != null) widget.fixedBottomWidget!,
           ],
         ),
       );
 
-      if (useGlassEffect) {
+      if (widget.useGlassEffect) {
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           child: BackdropFilter(
@@ -166,18 +222,18 @@ class ReusableBottomSheet extends StatelessWidget {
 
     // Utilisation de DraggableScrollableSheet pour rendre le bottom sheet adaptatif
     return DraggableScrollableSheet(
-      initialChildSize: initialChildSize,
-      minChildSize: minChildSize,
-      maxChildSize: maxChildSize,
+      initialChildSize: widget.initialChildSize,
+      minChildSize: widget.minChildSize,
+      maxChildSize: widget.maxChildSize,
       expand:
           false, // Important : permet au sheet de s'adapter au contenu si possible
       builder: (context, scrollController) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final bgColor = isDark ? Colors.grey[900]! : Colors.white;
+        final bgColor = AppColors.bottomSheetBg(context);
 
         Widget contentContainer = Container(
           decoration: BoxDecoration(
-            color: useGlassEffect ? bgColor.withOpacity(0.85) : bgColor,
+            color: widget.useGlassEffect ? bgColor.withOpacity(0.85) : bgColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
               BoxShadow(
@@ -201,42 +257,46 @@ class ReusableBottomSheet extends StatelessWidget {
               Expanded(
                 child: Stack(
                   children: [
-                    wrapWithScrollView
+                    widget.wrapWithScrollView
                         ? SingleChildScrollView(
                             controller: scrollController,
                             physics: const BouncingScrollPhysics(),
-                            padding: contentPadding,
+                            padding: widget.contentPadding,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                content, // Le contenu dynamique passé en paramètre
+                                widget.content, // Le contenu dynamique passé en paramètre
+                                if (!widget.useKeyboardPadding)
+                                  SizedBox(
+                                    height: MediaQuery.of(context).viewInsets.bottom,
+                                  ),
                                 const BottomSpacer(),
                               ],
                             ),
                           )
                         : Padding(
-                            padding: contentPadding,
-                            child: content,
+                            padding: widget.contentPadding,
+                            child: widget.content,
                           ),
-                    if (showScrollToTopFab && wrapWithScrollView)
+                    if (widget.showScrollToTopFab && widget.wrapWithScrollView)
                       Positioned(
                         right: 16,
                         bottom: 24,
                         child: ScrollToTopFab(
                           scrollController: scrollController,
-                          useGlassEffect: useGlassEffect,
+                          useGlassEffect: widget.useGlassEffect,
                         ),
                       ),
                   ],
                 ),
               ),
-              if (fixedBottomWidget != null) fixedBottomWidget!,
+              if (widget.fixedBottomWidget != null) widget.fixedBottomWidget!,
             ],
           ),
         );
 
-        if (useGlassEffect) {
+        if (widget.useGlassEffect) {
           return ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             child: BackdropFilter(
@@ -277,39 +337,39 @@ class ReusableBottomSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Icône ou Image dynamique
-          if (imagePath != null)
+          if (widget.imagePath != null)
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: lightGrayBg,
-                borderRadius: BorderRadius.circular(imageBorderRadius ?? 12.0),
+                borderRadius: BorderRadius.circular(widget.imageBorderRadius ?? 12.0),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(
-                  (imageBorderRadius ?? 12.0) > 4
-                      ? (imageBorderRadius ?? 12.0) - 4
+                  (widget.imageBorderRadius ?? 12.0) > 4
+                      ? (widget.imageBorderRadius ?? 12.0) - 4
                       : 4,
                 ),
                 child: Image.asset(
-                  imagePath!,
+                  widget.imagePath!,
                   width: 40,
                   height: 40,
                   fit: BoxFit.contain,
                 ),
               ),
             )
-          else if (icon != null)
+          else if (widget.icon != null)
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color:
-                    iconBackgroundColor ??
+                    widget.iconBackgroundColor ??
                     Theme.of(context).primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                icon,
-                color: iconColor ?? Theme.of(context).primaryColor,
+                widget.icon,
+                color: widget.iconColor ?? Theme.of(context).primaryColor,
                 size: 24,
               ),
             ),
@@ -320,18 +380,18 @@ class ReusableBottomSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  widget.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                     fontSize: 18,
+                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (subtitle != null && subtitle!.isNotEmpty) ...[
+                if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    subtitle!,
+                    widget.subtitle!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 14, color: Colors.grey[600]),
@@ -353,8 +413,8 @@ class ReusableBottomSheet extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               constraints: const BoxConstraints(),
               onPressed: () {
-                if (onClose != null) {
-                  onClose!();
+                if (widget.onClose != null) {
+                  widget.onClose!();
                 }
                 Navigator.of(context).pop();
               },

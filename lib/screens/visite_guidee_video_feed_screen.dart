@@ -351,8 +351,8 @@ class _VisiteGuideeVideoFeedScreenState
         ? currentVideo.youtubeUrl
         : currentVideo.youtubeVideoId;
     final String videoUrl = 'https://www.youtube.com/watch?v=$videoId';
-    final String videoTitle = currentVideo.title ?? 'Vidéo';
-    final String videoDesc = currentVideo.description ?? '';
+    final String videoTitle = HtmlHelper.stripHtmlTags(currentVideo.title ?? 'Vidéo');
+    final String videoDesc = HtmlHelper.stripHtmlTags(currentVideo.description ?? '');
 
     showModalBottomSheet(
       context: context,

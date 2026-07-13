@@ -9,6 +9,7 @@ class SearchBarWidget extends StatefulWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback? onClear;
   final String hintText;
+  final bool autofocus;
 
   const SearchBarWidget({
     super.key,
@@ -17,6 +18,7 @@ class SearchBarWidget extends StatefulWidget {
     required this.onChanged,
     this.onClear,
     this.hintText = 'Rechercher...',
+    this.autofocus = false,
   });
 
   @override
@@ -53,7 +55,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
               ),
               child: TextField(
                 controller: widget.searchController,
-                autofocus: true,
+                autofocus: widget.autofocus,
                 onChanged: widget.onChanged,
                 decoration: InputDecoration(
                   hintText: widget.hintText,

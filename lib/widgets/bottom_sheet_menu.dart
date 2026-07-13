@@ -16,6 +16,7 @@ import 'dart:convert';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../services/auth_service.dart';
 import '../config/app_config.dart';
+import '../config/app_colors.dart';
 import '../services/theme_service.dart';
 import '../screens/login_screen.dart';
 
@@ -163,7 +164,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF141414) : _kCard,
+            color: AppColors.bottomSheetBg(context),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             boxShadow: [
               BoxShadow(

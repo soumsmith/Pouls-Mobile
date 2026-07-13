@@ -13,6 +13,7 @@ import '../widgets/components/bottom_spacer.dart';
 import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/components/custom_error_state.dart';
+import '../widgets/scroll_to_top_fab.dart';
 
 class NotesScreenJson extends StatefulWidget {
   final String? matricule;
@@ -57,7 +58,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   Timer? _autoPlayTimer;
   int _currentPage = 0;
 
-
   // Liste des années scolaires fetched depuis l'API
   List<dynamic> _schoolYears = [];
   List<String> _availableYears = [];
@@ -68,9 +68,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   String _cachedPrenoms = '';
   String? _cachedPhotoUrl;
 
+  late ScrollController _scrollController;
+
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -157,6 +160,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _fadeController.dispose();
     _pageController.dispose();
     _autoPlayTimer?.cancel();
@@ -212,14 +216,16 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
           // Mettre à jour le cache si les données sont présentes
           if (apiData['nom'] != null && apiData['nom'].toString().isNotEmpty) {
-             _cachedNom = apiData['nom'];
+            _cachedNom = apiData['nom'];
           }
-          if (apiData['prenoms'] != null && apiData['prenoms'].toString().isNotEmpty) {
-             _cachedPrenoms = apiData['prenoms'];
+          if (apiData['prenoms'] != null &&
+              apiData['prenoms'].toString().isNotEmpty) {
+            _cachedPrenoms = apiData['prenoms'];
           }
-          final newPhoto = apiData['photo']?.toString() ?? apiData['photoEleve']?.toString();
+          final newPhoto =
+              apiData['photo']?.toString() ?? apiData['photoEleve']?.toString();
           if (newPhoto != null && newPhoto.isNotEmpty) {
-             _cachedPhotoUrl = newPhoto;
+            _cachedPhotoUrl = newPhoto;
           }
         });
         _fadeController.forward(from: 0);
@@ -338,7 +344,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   List<String> get _availableSubjects {
-    if (_bulletinData == null || _bulletinData!['details'] == null) return ['Toutes'];
+    if (_bulletinData == null || _bulletinData!['details'] == null)
+      return ['Toutes'];
     final matieres = _bulletinData!['details'] as List<dynamic>;
     return ['Toutes', ...matieres.map((m) => m['matiereLibelle'] as String)];
   }
@@ -418,7 +425,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             items: _availableSubjects,
                             onChanged: (val) {
                               setSheetState(() {
-                                tempSelectedSubject = val == 'Toutes' ? null : val;
+                                tempSelectedSubject = val == 'Toutes'
+                                    ? null
+                                    : val;
                               });
                             },
                             isDarkMode: isDark,
@@ -432,7 +441,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             items: _availableTrimesters,
                             onChanged: (val) {
                               setSheetState(() {
-                                tempSelectedTrimester = val == 'Tous' ? null : val;
+                                tempSelectedTrimester = val == 'Tous'
+                                    ? null
+                                    : val;
                               });
                             },
                             isDarkMode: isDark,
@@ -449,7 +460,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     color: AppColors.getSurfaceColor(isDark),
                     border: Border(
                       top: BorderSide(
-                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                        color: isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.black.withOpacity(0.05),
                       ),
                     ),
                   ),
@@ -458,17 +471,18 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context); // Ferme le bottom sheet
-                        
+
                         // On vérifie si un filtre a changé
                         bool needApiCall = false;
                         bool needStateUpdate = false;
-                        
+
                         // L'année ou le trimestre nécessitent de recharger l'API
-                        if (_anneeId != tempAnneeId || _selectedTrimester != tempSelectedTrimester) {
+                        if (_anneeId != tempAnneeId ||
+                            _selectedTrimester != tempSelectedTrimester) {
                           needApiCall = true;
                         }
                         // N'importe quel changement nécessite de mettre à jour l'état
-                        if (_anneeId != tempAnneeId || 
+                        if (_anneeId != tempAnneeId ||
                             _selectedYear != tempSelectedYear ||
                             _selectedSubject != tempSelectedSubject ||
                             _selectedTrimester != tempSelectedTrimester) {
@@ -483,7 +497,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             _selectedTrimester = tempSelectedTrimester;
                             if (needApiCall) _isLoading = true;
                           });
-                          
+
                           // On déclenche l'API seulement maintenant !
                           if (needApiCall) {
                             _loadApiData();
@@ -528,7 +542,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       ),
       child: Scaffold(
         backgroundColor: AppColors.screenBg(context),
+        floatingActionButton: ScrollToTopFab(
+          scrollController: _scrollController,
+          // bottomSpacerHeight: 70,
+        ),
         body: CustomScrollView(
+          controller: _scrollController,
           slivers: [
             CustomSliverAppBar(
               title: 'Mes Notes',
@@ -880,12 +899,26 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   Widget _buildStudentInfoPage() {
     // Utiliser les données du bulletin, sinon utiliser le cache, sinon utiliser les valeurs passées au widget
-    final nom = (_bulletinData != null && _bulletinData!['nom'] != null) ? _bulletinData!['nom'] : _cachedNom;
-    final prenoms = (_bulletinData != null && _bulletinData!['prenoms'] != null) ? _bulletinData!['prenoms'] : _cachedPrenoms;
-    final matricule = (_bulletinData != null && _bulletinData!['matricule'] != null) ? _bulletinData!['matricule'] : widget.matricule;
-    final anneeLibelle = (_bulletinData != null && _bulletinData!['anneeLibelle'] != null) ? _bulletinData!['anneeLibelle'] : (_selectedYear ?? widget.anneeLibelle);
-    final photoUrl = (_bulletinData != null) ? (_bulletinData!['photo']?.toString() ?? _bulletinData!['photoEleve']?.toString()) ?? _cachedPhotoUrl : _cachedPhotoUrl;
-    
+    final nom = (_bulletinData != null && _bulletinData!['nom'] != null)
+        ? _bulletinData!['nom']
+        : _cachedNom;
+    final prenoms = (_bulletinData != null && _bulletinData!['prenoms'] != null)
+        ? _bulletinData!['prenoms']
+        : _cachedPrenoms;
+    final matricule =
+        (_bulletinData != null && _bulletinData!['matricule'] != null)
+        ? _bulletinData!['matricule']
+        : widget.matricule;
+    final anneeLibelle =
+        (_bulletinData != null && _bulletinData!['anneeLibelle'] != null)
+        ? _bulletinData!['anneeLibelle']
+        : (_selectedYear ?? widget.anneeLibelle);
+    final photoUrl = (_bulletinData != null)
+        ? (_bulletinData!['photo']?.toString() ??
+                  _bulletinData!['photoEleve']?.toString()) ??
+              _cachedPhotoUrl
+        : _cachedPhotoUrl;
+
     final moyGeneral = _bulletinData?['moyGeneral'] ?? 0.0;
     final libellePeriode = _bulletinData?['libellePeriode'] ?? '';
     final periodesMoyenne =
@@ -976,143 +1009,147 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.screenOrange, AppColors.screenOrangeDark],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.screenOrange.withOpacity(0.2),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.screenOrange.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+        gradient: LinearGradient(
+          colors: [AppColors.screenOrange, AppColors.screenOrangeDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.screenOrange.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.screenOrange.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (photoUrl != null && photoUrl.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    photoUrl,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (photoUrl != null && photoUrl.isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          photoUrl,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
+                    Text(
+                      '$prenoms $nom',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    // const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 8,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.badge, color: Colors.white, size: 14),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Matricule: $matricule',
                               style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withOpacity(0.9),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      )
-                    else
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$prenoms $nom',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
                               color: Colors.white,
+                              size: 14,
                             ),
-                          ),
-                          // const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 16,
-                            runSpacing: 8,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.badge, color: Colors.white, size: 14),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Matricule: $matricule',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white.withOpacity(0.9),
-                                    ),
-                                  ),
-                                ],
+                            // const SizedBox(width: 6),
+                            Text(
+                              anneeLibelle,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withOpacity(0.9),
                               ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.calendar_today, color: Colors.white, size: 14),
-                                  // const SizedBox(width: 6),
-                                  Text(
-                                    anneeLibelle,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white.withOpacity(0.9),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                // Séparateur
-                Container(height: 1, color: Colors.white.withOpacity(0.3)),
-                const SizedBox(height: 16),
-                // Section des moyennes
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(children: averageCards),
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Séparateur
+          Container(height: 1, color: Colors.white.withOpacity(0.3)),
+          const SizedBox(height: 16),
+          // Section des moyennes
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: averageCards),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1551,7 +1588,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       ),
     );
   }
-
 
   // ─── NOTES SECTION ────────────────────────────────────────────────────────
   Widget _buildNotesSection(List<dynamic> matieres) {
@@ -2001,7 +2037,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     if (_studentMatricule == null || _anneeId == null || _classeId == null) {
       return CustomErrorState(
         title: 'Informations indisponibles',
-        message: 'Les informations scolaires de cet élève ne sont pas complètes pour consulter ses notes.',
+        message:
+            'Les informations scolaires de cet élève ne sont pas complètes pour consulter ses notes.',
         icon: Icons.error_outline_rounded,
         iconColor: AppColors.screenOrange,
         onRetry: () async {

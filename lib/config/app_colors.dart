@@ -65,37 +65,37 @@ class AppColors {
 
   // ================= PALETTE PERSONNALISÉE =================
   // Couleurs basées sur l'image fournie
-  
+
   // Vert principal
   static const Color customGreen = Color(0xFF7CC54E);
   static const Color customGreenLight = Color(0xFF8FD966);
   static const Color customGreenDark = Color(0xFF6AB040);
   static const Color customGreenSurface = Color(0xFFF0F9E6);
-  
+
   // Gris neutre
   static const Color customGrey = Color(0xFF888888);
   static const Color customGreyLight = Color(0xFF999999);
   static const Color customGreyDark = Color(0xFF777777);
   static const Color customGreySurface = Color(0xFFF5F5F5);
-  
+
   // Orange vif
   static const Color customOrange = Color(0xFFF7B230);
   static const Color customOrangeLight = Color(0xFFF9C55C);
   static const Color customOrangeDark = Color(0xFFE5A028);
   static const Color customOrangeSurface = Color(0xFFFFF8E6);
-  
+
   // Bleu clair
   static const Color customLightBlue = Color(0xFF30B2F7);
   static const Color customLightBlueLight = Color(0xFF5CC2F8);
   static const Color customLightBlueDark = Color(0xFF289CE0);
   static const Color customLightBlueSurface = Color(0xFFE6F7FF);
-  
+
   // Orange foncé
   static const Color customDarkOrange = Color(0xFFEF6C30);
   static const Color customDarkOrangeLight = Color(0xFFF28455);
   static const Color customDarkOrangeDark = Color(0xFFD75A28);
   static const Color customDarkOrangeSurface = Color(0xFFFFF0E6);
-  
+
   // Bleu foncé
   static const Color customDarkBlue = Color(0xFF306CB2);
   static const Color customDarkBlueLight = Color(0xFF5583C2);
@@ -112,10 +112,10 @@ class AppColors {
   // ================= BACKGROUND & SURFACE =================
 
   static const Color backgroundLight = Color(0xFFF8FAFC);
-  static const Color backgroundDark = Color(0xFF0F0F0F);
+  static const Color backgroundDark = Color.fromARGB(255, 0, 0, 0);
 
   static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color surfaceDark = Color(0xFF121212);
+  static const Color surfaceDark = Color.fromARGB(255, 20, 20, 20);
 
   static const Color card = Color(0xFFFFFFFF);
   static const Color cardLightGrey = Color(0xFF5F6368);
@@ -146,8 +146,7 @@ class AppColors {
   static const Color shadowMedium = Color(0x33000000);
   static const Color shadowDark = Color(0x4D000000);
 
-
- /// Obtenir la couleur de fond pure pour l'AppBar selon le thème
+  /// Obtenir la couleur de fond pure pour l'AppBar selon le thème
   static Color getPureAppBarBackground(bool isDark) {
     return isDark ? pureBlack : pureWhite;
   }
@@ -157,24 +156,24 @@ class AppColors {
   }
 
   static Color homeBg(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF0F0F14) : Colors.white;
+    return isDarkMode(context) ? const Color(0xFF121216) : Colors.white;
   }
 
   static Color homeTopCard(BuildContext context) {
     return isDarkMode(context)
-        ? const Color(0xFF1E1E2A)
+        ? const Color(0xFF1E1E28)
         : const Color(0xFFF2F2F6);
   }
 
   static Color homeTopBorder(BuildContext context) {
     return isDarkMode(context)
-        ? const Color(0xFF2A2A35)
+        ? const Color(0xFF2A2A38)
         : const Color(0xFFE1E1E8);
   }
 
   static Color homeSheetBg(BuildContext context) {
     return isDarkMode(context)
-        ? const Color(0xFF14141C)
+        ? const Color(0xFF16161E)
         : const Color(0xFFF5F5F7);
   }
 
@@ -206,16 +205,20 @@ class AppColors {
 
   static Color bottomNavBorder(BuildContext context) {
     return isDarkMode(context)
-        ? const Color(0xFF1C1C1E)
+        ? const Color(0xFF222226)
         : const Color(0xFFEEEEEE);
   }
 
   static Color bottomNavShadow1(BuildContext context) {
-    return isDarkMode(context) ? const Color(0x1A000000) : const Color(0x14000000);
+    return isDarkMode(context)
+        ? const Color(0x1A000000)
+        : const Color(0x14000000);
   }
 
   static Color bottomNavShadow2(BuildContext context) {
-    return isDarkMode(context) ? const Color(0x0F000000) : const Color(0x08000000);
+    return isDarkMode(context)
+        ? const Color(0x0F000000)
+        : const Color(0x08000000);
   }
 
   static Color bottomNavUnselected(BuildContext context) {
@@ -230,15 +233,15 @@ class AppColors {
 
   // Backgrounds & Surfaces (theme-aware)
   static Color screenBg(BuildContext context) {
-    return isDarkMode(context) ? const Color.fromARGB(255, 0, 0, 0) : Colors.white;
+    return isDarkMode(context) ? backgroundDark : Colors.white;
   }
 
   static Color screenSurfaceThemed(BuildContext context) {
-    return isDarkMode(context) ? const Color.fromRGBO(0, 0, 0, 1) : Colors.white;
+    return isDarkMode(context) ? backgroundDark : Colors.white;
   }
 
   static Color screenCardThemed(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF141414) : Colors.white;
+    return isDarkMode(context) ? const Color(0xFF1E1E1E) : Colors.white;
   }
 
   // Textes (theme-aware)
@@ -256,51 +259,75 @@ class AppColors {
 
   // Bordures & Dividers (theme-aware)
   static Color screenBorder(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF2A2A35) : const Color(0xFFE0E0E0);
+    return isDarkMode(context)
+        ? const Color(0xFF2A2A35)
+        : const Color(0xFFE0E0E0);
   }
 
   static Color screenDividerThemed(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF333333) : const Color(0xFFE0E0E0);
+    return isDarkMode(context)
+        ? const Color(0xFF333333)
+        : const Color(0xFFE0E0E0);
   }
 
   // Ombres (theme-aware)
   static Color screenShadowThemed(BuildContext context) {
-    return isDarkMode(context) ? const Color(0x1A000000) : const Color(0x0A000000);
+    return isDarkMode(context)
+        ? const Color(0x1A000000)
+        : const Color(0x0A000000);
   }
 
   // Ombre spécifique de l'écran des paramètres externalisée pour réutilisation
   static Color settingsCardShadowColorThemed(BuildContext context) {
-    return isDarkMode(context) ? const Color(0x1A000000) : const Color(0x0A000000);
+    return isDarkMode(context)
+        ? const Color(0x1A000000)
+        : const Color(0x0A000000);
   }
 
   static List<BoxShadow> screenCardShadowThemed(BuildContext context) {
-    final shadowColor = isDarkMode(context) ? const Color(0x1A000000) : const Color(0x0A000000);
+    final shadowColor = isDarkMode(context)
+        ? const Color(0x1A000000)
+        : const Color(0x0A000000);
     return [
       BoxShadow(color: shadowColor, blurRadius: 12, offset: const Offset(0, 4)),
-      BoxShadow(color: shadowColor.withOpacity(0.6), blurRadius: 4, offset: const Offset(0, 1)),
+      BoxShadow(
+        color: shadowColor.withOpacity(0.6),
+        blurRadius: 4,
+        offset: const Offset(0, 1),
+      ),
     ];
   }
 
   // Gris adaptatifs (noms différents pour éviter les conflits)
   static Color grey100Adaptive(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF2A2A35) : const Color(0xFFF5F5F5);
+    return isDarkMode(context)
+        ? const Color(0xFF2A2A35)
+        : const Color(0xFFF5F5F5);
   }
 
   static Color grey300Adaptive(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF424242) : const Color(0xFFE0E0E0);
+    return isDarkMode(context)
+        ? const Color(0xFF424242)
+        : const Color(0xFFE0E0E0);
   }
 
   static Color grey600Adaptive(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF757575) : const Color(0xFF757575);
+    return isDarkMode(context)
+        ? const Color(0xFF757575)
+        : const Color(0xFF757575);
   }
 
   static Color grey666Adaptive(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF9E9E9E) : const Color(0xFF666666);
+    return isDarkMode(context)
+        ? const Color(0xFF9E9E9E)
+        : const Color(0xFF666666);
   }
 
   // Boutons et actions
   static Color screenActionBg(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF2A2A35) : const Color(0xFFF5F5F5);
+    return isDarkMode(context)
+        ? const Color(0xFF2A2A35)
+        : const Color(0xFFF5F5F5);
   }
 
   static Color screenActionIcon(BuildContext context) {
@@ -316,11 +343,15 @@ class AppColors {
 
   // Bottom sheets et modales
   static Color bottomSheetBg(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF141414) : Colors.white;
+    return isDarkMode(context)
+        ? const Color.fromARGB(255, 15, 15, 15)
+        : Colors.white;
   }
 
   static Color bottomSheetHandle(BuildContext context) {
-    return isDarkMode(context) ? const Color(0xFF424242) : const Color(0xFFE0E0E0);
+    return isDarkMode(context)
+        ? const Color(0xFF424242)
+        : const Color(0xFFE0E0E0);
   }
 
   // ================= GRADIENTS =================
@@ -402,28 +433,28 @@ class AppColors {
   );
 
   // ================= COULEURS SPÉCIFIQUES AUX ÉCRANS =================
-  
+
   // Orange principal (utilisé dans settings/establishment)
   static const Color screenOrange = Color(0xFFFF6B2C);
   static const Color screenOrangeLight = Color(0xFFFFF0E8);
   static const Color screenOrangeDark = Color(0xFFE55A2C);
   static const Color screenOrangeSurface = Color(0xFFFFF8F5);
-  
+
   // Couleurs pour les écrans de boutique (verts et bleus)
   static const Color shopGreen = Color(0xFF4CAF50);
   static const Color shopGreenLight = Color(0xFF81C784);
   static const Color shopGreenDark = Color(0xFF388E3C);
   static const Color shopGreenSurface = Color(0xFFE8F5E8);
-  
+
   static const Color shopBlue = Color(0xFF03A9F4);
   static const Color shopBlueLight = Color(0xFF29B6F6);
   static const Color shopBlueDark = Color(0xFF0288D1);
   static const Color shopBlueSurface = Color(0xFFE1F5FE);
-  
+
   // Surface spécifique aux écrans
   static const Color screenSurface = Color(0xFFFFFFFF);
   static const Color screenCard = Color(0xFFFFFFFF);
-  
+
   // Couleurs pour icônes de settings
   static const Color screenBlue = Color(0xFF2196F3);
   static const Color screenPurple = Color(0xFF9C27B0);
@@ -442,16 +473,16 @@ class AppColors {
   static const Color settingsAmber = Color(0xFFF59E0B);
   static const Color settingsCyan = Color(0xFF00BCD4);
   static const Color integrationBlue = Color(0xFF1174C5);
-  
+
   // Gris supplémentaire
   static const Color grey666 = Color(0xFF666666);
-  
+
   // Ombres et gradients pour les écrans
   static const List<BoxShadow> screenCardShadow = [
     BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
     BoxShadow(color: Color(0x06000000), blurRadius: 4, offset: Offset(0, 1)),
   ];
-  
+
   static const LinearGradient screenOrangeGradient = LinearGradient(
     colors: [Color(0xFFFF7A3C), screenOrange],
     begin: Alignment.topLeft,
@@ -490,34 +521,27 @@ class AppColors {
     return isDark ? darkColor : lightColor;
   }
 
-  static Color getBackgroundColor(bool isDark) =>
-      adaptiveColor(
-        lightColor: backgroundLight,
-        darkColor: backgroundDark,
-        isDark: isDark,
-      );
+  static Color getBackgroundColor(bool isDark) => adaptiveColor(
+    lightColor: backgroundLight,
+    darkColor: backgroundDark,
+    isDark: isDark,
+  );
 
-  static Color getSurfaceColor(bool isDark) =>
-      adaptiveColor(
-        lightColor: surfaceLight,
-        darkColor: surfaceDark,
-        isDark: isDark,
-      );
+  static Color getSurfaceColor(bool isDark) => adaptiveColor(
+    lightColor: surfaceLight,
+    darkColor: surfaceDark,
+    isDark: isDark,
+  );
 
-  static Color getBorderColor(bool isDark) =>
-      adaptiveColor(
-        lightColor: borderLight,
-        darkColor: borderDark,
-        isDark: isDark,
-      );
+  static Color getBorderColor(bool isDark) => adaptiveColor(
+    lightColor: borderLight,
+    darkColor: borderDark,
+    isDark: isDark,
+  );
 
-  static Color getPureBackground(bool isDark) =>
-      isDark ? pureBlack : pureWhite;
+  static Color getPureBackground(bool isDark) => isDark ? pureBlack : pureWhite;
 
-  static Color getTextColor(
-    bool isDark, {
-    TextType type = TextType.primary,
-  }) {
+  static Color getTextColor(bool isDark, {TextType type = TextType.primary}) {
     switch (type) {
       case TextType.primary:
         return adaptiveColor(
@@ -554,39 +578,39 @@ class AppColors {
 
   // Product Detail Badge Background
   static Color productDetailBadgeBg(BuildContext context) {
-    return isDarkMode(context) 
+    return isDarkMode(context)
         ? const Color(0xFF2A2A35).withOpacity(0.92)
         : Colors.white.withOpacity(0.92);
   }
 
   // Product Detail Stepper Colors
   static Color productDetailStepperDisabled(BuildContext context) {
-    return isDarkMode(context) 
+    return isDarkMode(context)
         ? const Color(0xFF555555)
         : const Color(0xFFEEEEEE);
   }
 
   static Color productDetailStepperNormal(BuildContext context) {
-    return isDarkMode(context) 
+    return isDarkMode(context)
         ? const Color(0xFF2A2A35)
         : const Color(0xFFF4F4F0);
   }
 
   static Color productDetailStepperIconDisabled(BuildContext context) {
-    return isDarkMode(context) 
+    return isDarkMode(context)
         ? const Color(0xFF888888)
         : const Color(0xFFCCCCCC);
   }
 
   // Product Detail Button Colors
   static Color productDetailButtonDisabled(BuildContext context) {
-    return isDarkMode(context) 
+    return isDarkMode(context)
         ? const Color(0xFF555555)
         : const Color(0xFFDDDDDD);
   }
 
   static Color productDetailButtonDisabledText(BuildContext context) {
-    return isDarkMode(context) 
+    return isDarkMode(context)
         ? const Color(0xFF888888)
         : const Color(0xFFAAAAAA);
   }
@@ -594,11 +618,7 @@ class AppColors {
 
 // ================= ENUM =================
 
-enum TextType {
-  primary,
-  secondary,
-  tertiary,
-}
+enum TextType { primary, secondary, tertiary }
 
 // ================= EXTENSIONS =================
 

@@ -28,3 +28,32 @@ pod install
 cd ..
 
 -----------------------------------------------------------------------
+
+les accès sont :
+
+mail: mous-soum@groupegain.com
+mot de passe  _@26SoumGain
+lien : https://heracles.o2switch.net:2096/webmaillogout.cgi
+
+
+=====
+
+
+Lien : https://play.google.com/console
+
+COMPTE GMAIL POUR PLAYS STORE
+
+Login : devgroupegain@gmail.com
+Mot de passe : _@26SoumGain
+
+
+# =====
+
+COMPTE GMAIL POUR PLAYS STORE
+
+Login : devgroupegain@gmail.com
+Mot de passe : _@26SoumGain
+
+COMPTE iCloud
+mous-soum@groupegain.com
+DevApple@C0mpte!26

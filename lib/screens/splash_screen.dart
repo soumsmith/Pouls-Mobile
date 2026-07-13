@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'intro_screen.dart';
 import '../services/auth_service.dart';
+import '../services/version_update_service.dart';
+import '../widgets/version_update_dialog.dart';
+import 'force_update_screen.dart';
 import '../app.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
@@ -94,9 +97,9 @@ class _SplashScreenState extends State<SplashScreen>
         }
       });
 
-      // Attendre 2 secondes après l'affichage du sous-titre avant de rediriger
+      // Attendre 2 secondes après l'affichage du sous-titre avant de vérifier les maj
       Future.delayed(const Duration(seconds: 2), () {
-        _navigateToLogin();
+        _checkUpdateAndNavigate();
       });
     }
   }
@@ -106,6 +109,44 @@ class _SplashScreenState extends State<SplashScreen>
     _cursorTimer?.cancel();
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkUpdateAndNavigate() async {
+    if (!mounted) return;
+
+    // On vérifie les mises à jour
+    final updateResult = await VersionUpdateService.checkForUpdate();
+
+    if (!mounted) return;
+
+    if (updateResult != null) {
+      if (updateResult.forceUpdate) {
+        // Redirection vers l'écran de blocage
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => ForceUpdateScreen(result: updateResult),
+          ),
+        );
+        return;
+      } else {
+        // Affichage de la popup optionnelle
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => VersionUpdateDialog(
+            result: updateResult,
+            onDismiss: () {
+              // Une fois la popup fermée ou ignorée, on continue
+              _navigateToLogin();
+            },
+          ),
+        );
+        return;
+      }
+    }
+
+    // Pas de mise à jour, on continue normalement
+    await _navigateToLogin();
   }
 
   Future<void> _navigateToLogin() async {

@@ -126,6 +126,8 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
   String? _finReservation;
   dynamic _montantReservation;
 
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +156,7 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
   Future<void> _loadData() async {
     setState(() {
       isFetchingData = true;
+      _errorMessage = null;
     });
     try {
       final data = await widget.loadReservationData!();
@@ -190,26 +193,23 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
     FocusScope.of(context).unfocus();
 
     if (montantController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez entrer un montant'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      setState(() {
+        _errorMessage = 'Veuillez entrer un montant';
+      });
       return;
     }
 
     if (matriculeController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez entrer le matricule de l\'élève'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      setState(() {
+        _errorMessage = 'Veuillez entrer le matricule de l\'élève';
+      });
       return;
     }
 
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
       final result = await widget.onPayment(
@@ -227,26 +227,20 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
         setState(() => isLoading = false);
       } else if (result.errorMessage != null) {
         // ─── Erreur ───────────────────────────────────────────────────────
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.errorMessage!),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        setState(() {
+          isLoading = false;
+          _errorMessage = result.errorMessage;
+        });
       } else {
         // ─── Paiement cash / succès immédiat ──────────────────────────────
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors du paiement: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        setState(() {
+          isLoading = false;
+          _errorMessage = 'Erreur lors du paiement: $e';
+        });
       }
     }
   }
@@ -380,6 +374,37 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
               keyboardType: TextInputType.text,
             ),
             const SizedBox(height: 24),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.error.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),

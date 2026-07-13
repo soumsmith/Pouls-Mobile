@@ -1,42 +1,33 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
+import '../config/app_config.dart';
 import '../models/version_check_result.dart';
 
 class VersionUpdateService {
   // 1. Définir le booléen pour activer ou désactiver la vérification
   static const bool enableUpdateCheck = true;
 
-  // 2. Le JSON mocké (à remplacer par un appel API plus tard)
-  static const String _mockApiResponse = '''
-  {
-    "android": {
-      "latest_version": "2.1.0",
-      "minimum_version": "1.0.10",
-      "force_update": false,
-      "store_url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr",
-      "changelog": "Corrections et améliorations"
-    },
-    "ios": {
-      "latest_version": "2.1.0",
-      "minimum_version": "1.0.10",
-      "force_update": false,
-      "store_url": "https://apps.apple.com/app/parent-responsable/id6763526336",
-      "changelog": "Corrections et améliorations"
-    }
-  }
-  ''';
-
   static Future<VersionCheckResult?> checkForUpdate() async {
     if (!enableUpdateCheck) return null;
 
     try {
-      // Pour une vraie API :
-      // final response = await http.get(Uri.parse('https://api.votre-site.com/version'));
-      // final Map<String, dynamic> data = json.decode(response.body);
+      // Appel API vers le script PHP
+      final response = await http.get(
+        Uri.parse(
+          '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/app-versions',
+        ),
+      );
 
-      // Pour l'instant, on utilise le mock
-      final Map<String, dynamic> data = json.decode(_mockApiResponse);
+      if (response.statusCode != 200) {
+        print(
+          'Erreur réseau lors de la vérification de la version : ${response.statusCode}',
+        );
+        return null;
+      }
+
+      final Map<String, dynamic> data = json.decode(response.body);
 
       // On détermine la plateforme
       final platform = Platform.isIOS ? 'ios' : 'android';

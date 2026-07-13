@@ -81,6 +81,10 @@ import 'tips_advice_screen.dart';
 import 'tips_advice_detail_screen.dart';
 import '../widgets/ad_widget.dart';
 import '../widgets/home_ad_banner.dart';
+import '../services/version_update_service.dart';
+import '../models/version_check_result.dart';
+import '../widgets/version_update_dialog.dart';
+import 'force_update_screen.dart';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const _kDarkBg = Color(0xFF0F0F14);
@@ -317,6 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _unreadNotificationsCount = 0;
   bool _notificationsLoading = false;
+  bool _hasUpdateNotification = false;
   String _activeFilter = 'Tout';
   int _selectedChildIndex = 0;
   final ValueNotifier<int> _selectedChildIndexNotifier = ValueNotifier<int>(0);
@@ -394,6 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _loadChildren();
     _loadUnreadNotificationsCount();
+    _checkAppUpdate();
     _loadChildrenNotifications(); // Charger les notifications pour chaque enfant
     _loadCoulisseVideos(); // Charger les vidéos Coulisses de l'Excellence
     _loadEvents(); // Charger les événements
@@ -407,6 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadChildren();
     await Future.wait([
       _loadUnreadNotificationsCount(),
+      _checkAppUpdate(),
       _loadCoulisseVideos(),
       _loadEvents(),
       _loadVisiteGuideeVideos(), // Ajouter cette ligne
@@ -465,7 +472,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/flash-infos'),
+        Uri.parse(
+          '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles/flash-infos',
+        ),
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -645,6 +654,21 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       if (mounted) setState(() => _notificationsLoading = false);
+    }
+  }
+
+  Future<void> _checkAppUpdate() async {
+    try {
+      final updateResult = await VersionUpdateService.checkForUpdate();
+      if (updateResult != null && updateResult.updateAvailable) {
+        if (mounted) {
+          setState(() {
+            _hasUpdateNotification = true;
+          });
+        }
+      }
+    } catch (e) {
+      // Ignorer l'erreur silencieusement
     }
   }
 
@@ -1937,11 +1961,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ConditionalShowcase(
                 showcaseKey: _four,
                 description: 'Consultez les dernières alertes ici.',
-                child: _darkIconButton(
+                child: _PulsingNotificationButton(
                   icon: Icons.notifications_outlined,
                   onTap: _showNotificationsMenu,
-                  showBadge: _unreadNotificationsCount > 0,
-                  badgeCount: _unreadNotificationsCount,
+                  showBadge: _unreadNotificationsCount > 0 || _hasUpdateNotification,
+                  badgeCount: _unreadNotificationsCount + (_hasUpdateNotification ? 1 : 0),
+                  isPulsing: _hasUpdateNotification,
                 ),
               ),
               const SizedBox(width: 8),
@@ -2563,25 +2588,111 @@ class _HomeScreenState extends State<HomeScreen> {
       initialChildSize: 0.45,
       minChildSize: 0.3,
       maxChildSize: 0.8,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 30),
-          Icon(
-            Icons.notifications_off_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Contenu bientot disponible',
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(14),
-              color: _kTextSecondary,
-            ),
-          ),
-          const SizedBox(height: 30),
-        ],
+      content: FutureBuilder<VersionCheckResult?>(
+        future: VersionUpdateService.checkForUpdate(),
+        builder: (context, snapshot) {
+          final bool hasUpdate =
+              snapshot.hasData && snapshot.data!.updateAvailable;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasUpdate) ...[
+                InkWell(
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final url = Uri.parse(snapshot.data!.storeUrl);
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          Theme.of(context).platform == TargetPlatform.iOS
+                              ? 'assets/images/icons/icone-appstore.png'
+                              : 'assets/images/icons/icone-playstore.png',
+                          height: 50,
+                          width: 100,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Mise à jour disponible',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'La version ${snapshot.data!.latestVersion} est prête.',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Ouvrir',
+                            style: TextStyle(
+                              color: Colors.grey[800],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Divider(),
+              ],
+              const SizedBox(height: 30),
+              Icon(
+                Icons.notifications_off_outlined,
+                size: 64,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                hasUpdate
+                    ? 'Aucune autre notification'
+                    : 'Contenu bientot disponible',
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(14),
+                  color: _kTextSecondary,
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
+          );
+        },
       ),
     );
   }
@@ -3446,5 +3557,156 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       return 'Bonsoir';
     }
+  }
+}
+
+class _PulsingNotificationButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool showBadge;
+  final int badgeCount;
+  final bool isPulsing;
+
+  const _PulsingNotificationButton({
+    Key? key,
+    required this.icon,
+    required this.onTap,
+    this.showBadge = false,
+    this.badgeCount = 0,
+    this.isPulsing = false,
+  }) : super(key: key);
+
+  @override
+  _PulsingNotificationButtonState createState() => _PulsingNotificationButtonState();
+}
+
+class _PulsingNotificationButtonState extends State<_PulsingNotificationButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    if (widget.isPulsing) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_PulsingNotificationButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPulsing && !oldWidget.isPulsing) {
+      _controller.repeat();
+    } else if (!widget.isPulsing && oldWidget.isPulsing) {
+      _controller.stop();
+      _controller.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget button = GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppColors.homeTopCard(context),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          widget.icon,
+          size: 17,
+          color: AppColors.homeTextPrimary(context),
+        ),
+      ),
+    );
+
+    if (widget.isPulsing) {
+      button = AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final wave1 = _controller.value;
+          final wave2 = (_controller.value + 0.5) % 1.0;
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Transform.scale(
+                scale: 1.0 + (wave1 * 0.8),
+                child: Opacity(
+                  opacity: 1.0 - wave1,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ),
+              Transform.scale(
+                scale: 1.0 + (wave2 * 0.8),
+                child: Opacity(
+                  opacity: 1.0 - wave2,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ),
+              child!,
+            ],
+          );
+        },
+        child: button,
+      );
+    }
+
+    return Stack(
+      children: [
+        button,
+        if (widget.showBadge && widget.badgeCount > 0)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.homeBg(context),
+                  width: 1.5,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  widget.badgeCount > 9 ? '9+' : '\${widget.badgeCount}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }

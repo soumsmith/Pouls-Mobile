@@ -394,6 +394,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
       CoulisseVideoFeedScreen(
         videos: _filteredVideos,
         initialIndex: videoIndex >= 0 ? videoIndex : 0,
+        cameFromGrid: true,
       ),
     );
   }

@@ -28,14 +28,20 @@ import '../models/ad_model.dart';
 import '../utils/ad_injector.dart';
 import '../widgets/ad_video_page.dart';
 
+import 'all_visite_guidee_videos_screen.dart';
+import 'tips_advice_screen.dart';
+import '../models/video.dart';
+
 class VisiteGuideeVideoFeedScreen extends StatefulWidget {
   final List<VisiteGuideeVideo> videos;
   final int initialIndex;
+  final bool cameFromGrid;
 
   const VisiteGuideeVideoFeedScreen({
     super.key,
     required this.videos,
     this.initialIndex = 0,
+    this.cameFromGrid = false,
   });
 
   @override
@@ -692,10 +698,62 @@ class _VisiteGuideeVideoFeedScreenState
                         icon: Icons.grid_view,
                         isDark: true,
                         onTap: () {
-                          if (MainScreenWrapper.maybeOf(context) != null) {
-                            MainScreenWrapper.of(context).goBackToPreviousTab();
+                          if (widget.cameFromGrid) {
+                            final wrapper = MainScreenWrapper.maybeOf(context);
+                            if (wrapper != null) {
+                              wrapper.goBackToPreviousTab();
+                            } else {
+                              Navigator.of(context).pop();
+                            }
                           } else {
-                            Navigator.of(context).pop();
+                            if (_mixedVideos.isNotEmpty && _currentIndex < _mixedVideos.length) {
+                              final item = _mixedVideos[_currentIndex];
+                              if (item is VisiteGuideeVideo) {
+                                if (item.typeVideo == 'astuce') {
+                                  if (MainScreenWrapper.maybeOf(context) != null) {
+                                    MainScreenWrapper.of(context).updateCurrentIndex(3);
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const TipsAdviceScreen(),
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  final ecoleCode = item.code;
+                                  final mappedVideos = widget.videos.map((v) => Video(
+                                    id: v.id,
+                                    typevideo: v.typeVideo,
+                                    youtubeUrl: v.youtubeUrl,
+                                    title: v.title ?? '',
+                                    description: v.description ?? '',
+                                    createdAt: '',
+                                    code: v.code,
+                                    etablissement: v.etablissement,
+                                  )).toList();
+
+                                  if (MainScreenWrapper.maybeOf(context) != null) {
+                                    MainScreenWrapper.of(context).navigateToExtraScreen(
+                                      AllVisiteGuideeVideosScreen(
+                                        videos: mappedVideos,
+                                        ecoleCode: '',
+                                      ),
+                                    );
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => AllVisiteGuideeVideosScreen(
+                                          videos: mappedVideos,
+                                          ecoleCode: '',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              }
+                            }
                           }
                         },
                       ),

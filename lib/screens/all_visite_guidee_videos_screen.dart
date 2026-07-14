@@ -342,6 +342,7 @@ class _AllVisiteGuideeVideosScreenState
       VisiteGuideeVideoFeedScreen(
         videos: visiteVideos,
         initialIndex: initialIndex >= 0 ? initialIndex : 0,
+        cameFromGrid: true,
       ),
     );
   }

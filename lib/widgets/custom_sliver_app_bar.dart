@@ -92,19 +92,24 @@ class CustomSliverAppBar extends StatelessWidget {
 
   /// Bouton de retour par défaut
   Widget _buildDefaultLeading(BuildContext context) {
+    final themeIsDark = Theme.of(context).brightness == Brightness.dark;
+    final useDarkStyle = isDark || themeIsDark;
+
     return GestureDetector(
       onTap: onBackTap ?? () => _handleBackNavigation(context),
       child: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.screenCardThemed(context),
+          color: useDarkStyle 
+              ? const Color(0xFF262626) 
+              : AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-          boxShadow: AppDimensions.getSettingsCardShadow(context),
+          boxShadow: useDarkStyle ? null : AppDimensions.getSettingsCardShadow(context),
         ),
         child: Icon(
           Icons.arrow_back_ios_new,
           size: 16,
-          color: AppColors.screenTextPrimaryThemed(context),
+          color: useDarkStyle ? Colors.white : AppColors.screenTextPrimaryThemed(context),
         ),
       ),
     );
@@ -151,6 +156,9 @@ class AppBarIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeIsDark = Theme.of(context).brightness == Brightness.dark;
+    final useDarkStyle = isDark || themeIsDark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -158,14 +166,16 @@ class AppBarIconButton extends StatelessWidget {
         height: 40,
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         decoration: BoxDecoration(
-          color: AppColors.screenCardThemed(context),
+          color: useDarkStyle 
+              ? const Color(0xFF262626) 
+              : AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-          boxShadow: AppDimensions.getSettingsCardShadow(context),
+          boxShadow: useDarkStyle ? null : AppDimensions.getSettingsCardShadow(context),
         ),
         child: Icon(
           icon,
           size: 18,
-          color: AppColors.screenTextPrimaryThemed(context),
+          color: useDarkStyle ? Colors.white : AppColors.screenTextPrimaryThemed(context),
         ),
       ),
     );

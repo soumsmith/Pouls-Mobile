@@ -24,14 +24,18 @@ import '../models/ad_model.dart';
 import '../utils/ad_injector.dart';
 import '../widgets/ad_video_page.dart';
 
+import 'all_videos_screen.dart';
+
 class CoulisseVideoFeedScreen extends StatefulWidget {
   final List<CoulisseExcellence> videos;
   final int initialIndex;
+  final bool cameFromGrid;
 
   const CoulisseVideoFeedScreen({
     super.key,
     required this.videos,
     this.initialIndex = 0,
+    this.cameFromGrid = false,
   });
 
   @override
@@ -629,10 +633,31 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                         icon: Icons.grid_view,
                         isDark: true,
                         onTap: () {
-                          if (MainScreenWrapper.maybeOf(context) != null) {
-                            MainScreenWrapper.of(context).goBackToPreviousTab();
+                          if (widget.cameFromGrid) {
+                            final wrapper = MainScreenWrapper.maybeOf(context);
+                            if (wrapper != null) {
+                              wrapper.goBackToPreviousTab();
+                            } else {
+                              Navigator.of(context).pop();
+                            }
                           } else {
-                            Navigator.of(context).pop();
+                            if (_mixedVideos.isNotEmpty && _currentIndex < _mixedVideos.length) {
+                              final item = _mixedVideos[_currentIndex];
+                              if (item is CoulisseExcellence) {
+                                if (MainScreenWrapper.maybeOf(context) != null) {
+                                  MainScreenWrapper.of(context).navigateToExtraScreen(
+                                    const AllVideosScreen(ecoleCode: ''),
+                                  );
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const AllVideosScreen(ecoleCode: ''),
+                                    ),
+                                  );
+                                }
+                              }
+                            }
                           }
                         },
                       ),

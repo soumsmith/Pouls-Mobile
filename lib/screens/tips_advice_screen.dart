@@ -442,6 +442,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
                           VisiteGuideeVideoFeedScreen(
                             videos: allVideos,
                             initialIndex: index,
+                            cameFromGrid: true,
                           ),
                         );
                       },
@@ -482,7 +483,10 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
 
             if (allVideos.isNotEmpty) {
               MainScreenWrapper.of(context).navigateToExtraScreen(
-                VisiteGuideeVideoFeedScreen(videos: allVideos),
+                VisiteGuideeVideoFeedScreen(
+                  videos: allVideos,
+                  cameFromGrid: true,
+                ),
               );
             }
           },

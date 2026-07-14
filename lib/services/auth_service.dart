@@ -5,6 +5,7 @@ import 'sms_service.dart';
 import 'database_service.dart';
 import 'http_service.dart';
 import 'cart_service.dart';
+import 'module_access_service.dart';
 
 /// Résultat de la connexion directe
 enum DirectLoginResult {
@@ -250,6 +251,9 @@ class AuthService {
   Future<void> logout() async {
     // Nettoyer le panier de l'utilisateur avant la déconnexion
     await MockCartService().clearCurrentUserCart();
+    
+    // Vider le cache des modules d'accès (anti-contournement)
+    await ModuleAccessService().clearCache();
     
     _token = null;
     _currentUser = null;

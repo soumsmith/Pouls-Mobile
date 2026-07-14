@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/user.dart';
 import '../models/child.dart';
+import '../models/app_module.dart';
 
 /// Service de gestion de la base de données locale SQLite
 class DatabaseService {
@@ -26,7 +27,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -113,6 +114,41 @@ class DatabaseService {
       )
     ''');
 
+    // Cache des modules d'accès (anti-contournement hors ligne)
+    await db.execute('''
+      CREATE TABLE module_access_cache (
+        id INTEGER NOT NULL,
+        identifiant TEXT NOT NULL,
+        nom TEXT NOT NULL,
+        section TEXT,
+        description TEXT,
+        type TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (id, user_id)
+      )
+    ''');
+
+    // Cache des identifiants de modules accessibles (débloqués par abonnement)
+    await db.execute('''
+      CREATE TABLE accessible_modules_cache (
+        identifiant TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (identifiant, user_id)
+      )
+    ''');
+
+    // Cache pour la vérification des mises à jour (hors ligne)
+    await db.execute('''
+      CREATE TABLE version_update_cache (
+        id INTEGER PRIMARY KEY,
+        platform TEXT NOT NULL,
+        json TEXT NOT NULL,
+        updatedAt INTEGER NOT NULL
+      )
+    ''');
+
     // Index pour améliorer les performances
     await db.execute(
       'CREATE INDEX idx_children_parentId ON children(parentId)',
@@ -128,6 +164,12 @@ class DatabaseService {
     );
     await db.execute(
       'CREATE INDEX idx_notifications_isRead ON notifications(isRead)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_module_access_cache_user ON module_access_cache(user_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_accessible_modules_cache_user ON accessible_modules_cache(user_id)',
     );
   }
 
@@ -188,6 +230,46 @@ class DatabaseService {
     if (oldVersion < 5) {
       // Ajouter le champ paramEcole à la table children
       await db.execute('ALTER TABLE children ADD COLUMN paramEcole TEXT');
+    }
+    if (oldVersion < 6) {
+      // Tables de cache pour l'accès aux modules (anti-contournement hors ligne)
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS module_access_cache (
+          id INTEGER NOT NULL,
+          identifiant TEXT NOT NULL,
+          nom TEXT NOT NULL,
+          section TEXT,
+          description TEXT,
+          type TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          updated_at INTEGER NOT NULL,
+          PRIMARY KEY (id, user_id)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS accessible_modules_cache (
+          identifiant TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          updated_at INTEGER NOT NULL,
+          PRIMARY KEY (identifiant, user_id)
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_module_access_cache_user ON module_access_cache(user_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_accessible_modules_cache_user ON accessible_modules_cache(user_id)',
+      );
+    }
+    if (oldVersion < 7) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS version_update_cache (
+          id INTEGER PRIMARY KEY,
+          platform TEXT NOT NULL,
+          json TEXT NOT NULL,
+          updatedAt INTEGER NOT NULL
+        )
+      ''');
     }
   }
 
@@ -560,6 +642,144 @@ class DatabaseService {
       where: 'parentId = ?',
       whereArgs: [parentId],
     );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔐 Cache d'accès aux modules (anti-contournement hors ligne)
+  // ═══════════════════════════════════════════════════════════
+
+  /// Sauvegarde atomique du cache d'accès aux modules pour un utilisateur.
+  /// Supprime les anciennes entrées puis insère les nouvelles dans une transaction.
+  Future<void> saveModuleAccessCache(
+    String userId,
+    List<AppModule> modules,
+    List<String> accessibleIds,
+  ) async {
+    final db = await database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    await db.transaction((txn) async {
+      // Supprimer les anciennes données de cet utilisateur
+      await txn.delete('module_access_cache', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('accessible_modules_cache', where: 'user_id = ?', whereArgs: [userId]);
+
+      // Insérer tous les modules
+      for (final module in modules) {
+        await txn.insert('module_access_cache', {
+          'id': module.id,
+          'identifiant': module.identifiant,
+          'nom': module.nom,
+          'section': module.section,
+          'description': module.description,
+          'type': module.type,
+          'user_id': userId,
+          'updated_at': now,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // Insérer les identifiants accessibles
+      for (final id in accessibleIds) {
+        await txn.insert('accessible_modules_cache', {
+          'identifiant': id,
+          'user_id': userId,
+          'updated_at': now,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+
+    print('💾 Cache modules sauvegardé: ${modules.length} modules, ${accessibleIds.length} accessibles (user: $userId)');
+  }
+
+  /// Récupère les modules depuis le cache local pour un utilisateur
+  Future<List<AppModule>> getModuleAccessCache(String userId) async {
+    final db = await database;
+    final maps = await db.query(
+      'module_access_cache',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+
+    return maps.map((map) => AppModule(
+      id: map['id'] as int,
+      nom: map['nom'] as String,
+      identifiant: map['identifiant'] as String,
+      section: map['section'] as String? ?? '',
+      description: map['description'] as String?,
+      type: map['type'] as String,
+    )).toList();
+  }
+
+  /// Récupère les identifiants de modules accessibles depuis le cache local
+  Future<List<String>> getAccessibleModulesCache(String userId) async {
+    final db = await database;
+    final maps = await db.query(
+      'accessible_modules_cache',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+
+    return maps.map((map) => map['identifiant'] as String).toList();
+  }
+
+  /// Vérifie si un cache d'accès aux modules existe pour un utilisateur
+  Future<bool> hasModuleAccessCache(String userId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM module_access_cache WHERE user_id = ?',
+      [userId],
+    );
+    return (Sqflite.firstIntValue(result) ?? 0) > 0;
+  }
+
+  /// Supprime le cache d'accès aux modules pour un utilisateur (utilisé au logout)
+  Future<void> clearModuleAccessCache(String userId) async {
+    final db = await database;
+    await db.delete('module_access_cache', where: 'user_id = ?', whereArgs: [userId]);
+    await db.delete('accessible_modules_cache', where: 'user_id = ?', whereArgs: [userId]);
+    print('🧹 Cache modules supprimé pour l\'utilisateur $userId');
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 📲 Cache de vérification de version (hors ligne)
+  // ═══════════════════════════════════════════════════════════
+
+  /// Sauvegarde (ou met à jour) les données de vérification de version dans le cache local
+  Future<void> saveVersionUpdateCache(String platform, Map<String, dynamic> data) async {
+    final db = await database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    await db.insert('version_update_cache', {
+      'id': platform == 'ios' ? 1 : 2,
+      'platform': platform,
+      'json': jsonEncode(data),
+      'updatedAt': now,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+    print('💾 Cache de mise à jour de version sauvegardé pour la plateforme: $platform');
+  }
+
+  /// Récupère les données de vérification de version depuis le cache local
+  Future<Map<String, dynamic>?> getVersionUpdateCache(String platform) async {
+    final db = await database;
+    final maps = await db.query(
+      'version_update_cache',
+      where: 'platform = ?',
+      whereArgs: [platform],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) return null;
+    final jsonStr = maps.first['json'] as String?;
+    if (jsonStr == null || jsonStr.isEmpty) return null;
+
+    try {
+      final decoded = jsonDecode(jsonStr);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (e) {
+      print('⚠️ Erreur lors du parsing du cache de version: $e');
+    }
+    return null;
   }
 
   /// Ferme la base de données

@@ -5,9 +5,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.os.Build
 import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.view.View
-import android.graphics.Color
 
 import androidx.core.view.WindowCompat
 
@@ -15,7 +13,8 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Setup modern edge-to-edge display (resolves Android 15 / SDK 35 warnings)
+        // Activer l'affichage bord à bord (résout les alertes Android 15 / SDK 35)
+        // FlutterActivity n'hérite pas de ComponentActivity, donc on utilise WindowCompat
         WindowCompat.setDecorFitsSystemWindows(window, false)
     }
     

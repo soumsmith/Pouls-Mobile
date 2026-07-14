@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'intro_screen.dart';
-import '../services/auth_service.dart';
+import 'login_screen.dart';
 import '../services/version_update_service.dart';
 import '../widgets/version_update_dialog.dart';
 import 'force_update_screen.dart';
-import '../app.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../services/notification_service.dart';
@@ -167,15 +167,19 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _navigateToLogin() async {
     if (mounted) {
-      // Vérifier si une session existe
-      final hasSession = await AuthService.instance.loadSavedSession();
-      if (hasSession && AuthService.instance.isLoggedIn) {
-        // Connexion automatique
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const App()));
+      // Vérifier si l'intro a déjà été vue
+      final prefs = await SharedPreferences.getInstance();
+      final introSeen = prefs.getBool('intro_seen') ?? false;
+
+      if (!mounted) return;
+
+      if (introSeen) {
+        // Intro déjà vue → aller directement au login
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
       } else {
-        // Aller à l'écran d'introduction
+        // Première fois → afficher l'intro
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const IntroScreen()),
         );

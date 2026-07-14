@@ -27,9 +27,9 @@ void main() async {
     await DatabaseService.instance.database;
     print('✅ Base de données initialisée');
 
-    // Charger la session sauvegardée
-    await AuthService.instance.loadSavedSession();
-    print('✅ Service d\'authentification initialisé');
+    // Déconnecter l'utilisateur à chaque démarrage (pas de session persistante)
+    await AuthService.instance.logout();
+    print('✅ Service d\'authentification initialisé (session effacée au démarrage)');
 
     // Initialiser les notifications locales
     await NotificationService().init();

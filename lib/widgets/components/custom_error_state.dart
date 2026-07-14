@@ -47,9 +47,15 @@ class _CustomErrorStateState extends State<CustomErrorState> {
       _internalLoading = true;
     });
     try {
+      final startTime = DateTime.now();
       final result = widget.onRetry();
       if (result is Future) {
         await result;
+      }
+      final elapsedTime = DateTime.now().difference(startTime);
+      final remainingTime = 800 - elapsedTime.inMilliseconds;
+      if (remainingTime > 0) {
+        await Future.delayed(Duration(milliseconds: remainingTime));
       }
     } finally {
       if (mounted) {
@@ -121,7 +127,9 @@ class _CustomErrorStateState extends State<CustomErrorState> {
             if (widget.onRetry != null) ...[
               const SizedBox(height: 24),
               CustomButton(
-                width: widget.buttonWidth ?? 200,
+                width: widget.buttonWidth != null
+                    ? (widget.buttonWidth! > 150 ? 150 : widget.buttonWidth!)
+                    : 150,
                 text: widget.retryText,
                 onPressed: _activeLoading ? null : _handleRetry,
                 icon: Icons.refresh_rounded,
@@ -130,8 +138,9 @@ class _CustomErrorStateState extends State<CustomErrorState> {
                 isLight: widget.buttonIsLight,
                 hasBorder: widget.buttonHasBorder,
                 isLoading: _activeLoading,
-                height: 44,
-                fontSize: 14,
+                height: 38,
+                fontSize: 13,
+                borderRadius: 10,
               ),
             ],
           ],

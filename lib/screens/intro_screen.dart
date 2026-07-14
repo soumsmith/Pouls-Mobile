@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import 'login_screen.dart';
@@ -378,12 +379,18 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
             width: AppDimensions.isTablet(context) ? 360 : 280,
             height: AppDimensions.isTablet(context) ? AppDimensions.buttonHeightLarge : AppDimensions.buttonHeight,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => const LoginScreen(),
-                  ),
-                );
+              onPressed: () async {
+                // Marquer l'intro comme vue
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('intro_seen', true);
+
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => const LoginScreen(),
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

@@ -9,6 +9,9 @@ class VersionUpdateService {
   // 1. Définir le booléen pour activer ou désactiver la vérification
   static const bool enableUpdateCheck = true;
 
+  // Permet de ne pas harceler l'utilisateur avec la notification à chaque retour sur la Home
+  static bool hasShownUpdateNotification = false;
+
   static Future<VersionCheckResult?> checkForUpdate() async {
     if (!enableUpdateCheck) return null;
 

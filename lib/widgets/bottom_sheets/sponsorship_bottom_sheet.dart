@@ -161,81 +161,83 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
 
   // ─── COMPOSANT HERO HEADER ──────────────────────────────────────────────────
   Widget _buildHeroHeader(bool isDark) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF3E2723), const Color(0xFF1A0F0D)]
-              : [const Color(0xFFFFF0EB), const Color(0xFFFFE0D6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border(
-          bottom: BorderSide(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF3E2723), const Color(0xFF1A0F0D)]
+                : [const Color(0xFFFFF0EB), const Color(0xFFFFE0D6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
             color: isDark ? const Color(0xFF422213) : const Color(0xFFFFD0C1),
             width: 1,
           ),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.screenOrange.withOpacity(0.15),
-              shape: BoxShape.circle,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.screenOrange.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.stars_rounded,
+                color: AppColors.screenOrange,
+                size: 28,
+              ),
             ),
-            child: Icon(
-              Icons.stars_rounded,
-              color: AppColors.screenOrange,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.screenOrange,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'SUPER PARRAIN 2026',
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(9),
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: 0.8,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'SUPER PARRAIN 2026',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(9),
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 0.8,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Recommandez & Gagnez !',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(16),
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : const Color(0xFF2D2D2D),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Recommandez & Gagnez !',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(16),
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : const Color(0xFF2D2D2D),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Cumulez des commissions et gagnez jusqu\'à 500 000 FCFA.',
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(11),
-                    color: isDark ? Colors.white70 : const Color(0xFF6B7280),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Cumulez des commissions et gagnez jusqu\'à 500 000 FCFA.',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(11),
+                      color: isDark ? Colors.white70 : const Color(0xFF6B7280),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -333,7 +335,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
           const SizedBox(height: 16),
           CustomButton(
             text: 'Obtenir mon code de parrainage',
-            color: AppColors.screenOrange,
+            color: const Color(0xFF10B981),
             icon: Icons.card_giftcard_rounded,
             onPressed: _fetchSponsorshipCode,
           ),

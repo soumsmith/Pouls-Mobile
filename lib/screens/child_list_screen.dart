@@ -4144,21 +4144,13 @@ class _ChildListScreenState extends State<ChildListScreen>
               moduleIdentifiant: _getModuleIdentifiant('events'),
               onTap: () {
                 final schoolCode = _ecoleCode ?? widget.child.ecoleCode;
-                if (schoolCode != null && schoolCode.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          AllEventsScreen(schoolCode: schoolCode),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Code établissement introuvable'),
-                    ),
-                  );
-                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        AllEventsScreen(schoolCode: schoolCode),
+                  ),
+                );
               },
             ),
           ],

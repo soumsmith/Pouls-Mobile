@@ -28,6 +28,7 @@ import '../services/database_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/gestion_presence_eleve_service.dart';
 import '../services/pouls_scolaire_api_service.dart';
+import '../services/notification_service.dart';
 import '../services/text_size_service.dart';
 import '../services/theme_service.dart';
 import '../services/integration_request_service.dart';
@@ -665,6 +666,21 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _hasUpdateNotification = true;
           });
+        }
+
+        // Déclencher une notification push locale
+        if (!VersionUpdateService.hasShownUpdateNotification) {
+          VersionUpdateService.hasShownUpdateNotification = true;
+          try {
+            await NotificationService().showNotification(
+              id: 999,
+              title: 'Mise à jour disponible 🚀',
+              body: 'Une nouvelle version (${updateResult.latestVersion}) de l\'application est disponible. Cliquez pour l\'installer.',
+              payload: updateResult.storeUrl,
+            );
+          } catch (e) {
+            debugPrint('Erreur lors du déclenchement de la notification locale : $e');
+          }
         }
       }
     } catch (e) {

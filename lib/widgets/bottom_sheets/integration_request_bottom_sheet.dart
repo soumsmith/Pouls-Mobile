@@ -182,19 +182,23 @@ class _IntegrationRequestBottomSheetState
                                errorString.contains('Connection refused') ||
                                errorString.contains('Network is unreachable') ||
                                errorString.contains('Software caused connection abort');
-        if (!isNetworkError) {
-          String errorMessage = errorString;
-          if (errorMessage.startsWith('Exception: ')) {
-            errorMessage = errorMessage.substring('Exception: '.length);
+        String errorMessage;
+        if (isNetworkError) {
+          errorMessage = 'de connexion. Veuillez vérifier votre réseau.';
+        } else {
+          String rawMessage = errorString;
+          if (rawMessage.startsWith('Exception: ')) {
+            rawMessage = rawMessage.substring('Exception: '.length);
           }
-          
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Erreur',
-            message: 'lors de la consultation',
-            backgroundColor: Colors.red,
-          );
+          errorMessage = ': $rawMessage';
         }
+        
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Erreur',
+          message: errorMessage,
+          backgroundColor: Colors.red,
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoadingRequest = false);
@@ -489,17 +493,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.isLoadingEcoles && widget.ecoles.isEmpty)
-          CustomErrorState(
-            title: 'Aucune école disponible',
-            message: 'Impossible de charger la liste des écoles pour le moment.',
-            onRetry: widget.onRetryEcoles,
-            retryText: 'Réessayer',
-            buttonIsLight: true,
-            buttonWidth: 200,
-            isLoading: true,
-          )
-        else if (widget.isLoadingEcoles)
+        if (widget.isLoadingEcoles)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(

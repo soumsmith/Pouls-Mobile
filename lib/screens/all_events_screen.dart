@@ -286,12 +286,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-    );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: AppColors.screenSurfaceThemed(context),
@@ -307,17 +302,14 @@ class _AllEventsScreenState extends State<AllEventsScreen>
               slivers: [
               CustomSliverAppBar(
                 title: 'Événements scolaires',
-                isDark: Theme.of(context).brightness == Brightness.dark,
+                isDark: isDark,
                 actions: [
                   if (widget.schoolCode == null || widget.schoolCode!.isEmpty)
-                    IconButton(
-                      icon: Icon(
-                        Icons.tune_rounded,
-                        color: _showAdvancedFilters
-                            ? AppColors.screenOrange
-                            : AppColors.screenTextPrimaryThemed(context),
-                      ),
-                      onPressed: () {
+                    AppBarIconButton(
+                      icon: Icons.tune_rounded,
+                      isDark: isDark,
+                      iconColor: _showAdvancedFilters ? AppColors.screenOrange : null,
+                      onTap: () {
                         setState(() {
                           _showAdvancedFilters = !_showAdvancedFilters;
                           if (_showAdvancedFilters) {
@@ -334,12 +326,10 @@ class _AllEventsScreenState extends State<AllEventsScreen>
                         }
                       },
                     ),
-                  IconButton(
-                    icon: Icon(
-                      _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                      color: AppColors.screenTextPrimaryThemed(context),
-                    ),
-                    onPressed: () {
+                  AppBarIconButton(
+                    icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                    isDark: isDark,
+                    onTap: () {
                       setState(() {
                         _isSearching = !_isSearching;
                         if (!_isSearching) {

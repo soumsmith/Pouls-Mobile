@@ -162,6 +162,8 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
       ),
     );
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: AppColors.screenSurfaceThemed(context),
       floatingActionButton: ScrollToTopFab(
@@ -182,14 +184,12 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
                   onBackTap: () =>
                       MainScreenWrapper.of(context).navigateToHome(),
                   actions: [
-                    IconButton(
-                      icon: Icon(
-                        _isSearching
-                            ? Icons.close_rounded
-                            : Icons.search_rounded,
-                        color: AppColors.screenTextPrimaryThemed(context),
-                      ),
-                      onPressed: () {
+                    AppBarIconButton(
+                      icon: _isSearching
+                          ? Icons.close_rounded
+                          : Icons.search_rounded,
+                      isDark: isDark,
+                      onTap: () {
                         setState(() {
                           _isSearching = !_isSearching;
                           if (!_isSearching) {

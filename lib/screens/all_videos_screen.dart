@@ -167,12 +167,10 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
                 pinned: true,
                 elevation: 0,
                 actions: [
-                  IconButton(
-                    icon: Icon(
-                      _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
-                      color: const Color(0xFF10B981),
-                    ),
-                    onPressed: () {
+                  AppBarIconButton(
+                    icon: _isSearching ? Icons.search_off_rounded : Icons.search_rounded,
+                    isDark: isDark,
+                    onTap: () {
                       setState(() {
                         _isSearching = !_isSearching;
                         if (!_isSearching) {

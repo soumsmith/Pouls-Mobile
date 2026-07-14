@@ -283,12 +283,11 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                 isDark: isDark,
                 actions: [
                   if (widget.schoolCode == null)
-                    IconButton(
-                      icon: Icon(
-                        Icons.tune_rounded,
-                        color: _showAdvancedFilters ? AppColors.screenOrange : AppColors.screenTextPrimaryThemed(context),
-                      ),
-                      onPressed: () {
+                    AppBarIconButton(
+                      icon: Icons.tune_rounded,
+                      isDark: isDark,
+                      iconColor: _showAdvancedFilters ? AppColors.screenOrange : null,
+                      onTap: () {
                         setState(() {
                           _showAdvancedFilters = !_showAdvancedFilters;
                           if (_showAdvancedFilters) {
@@ -305,12 +304,10 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
                         }
                       },
                     ),
-                  IconButton(
-                    icon: Icon(
-                      _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                      color: AppColors.screenTextPrimaryThemed(context),
-                    ),
-                    onPressed: () {
+                  AppBarIconButton(
+                    icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                    isDark: isDark,
+                    onTap: () {
                       setState(() {
                         _isSearching = !_isSearching;
                         if (!_isSearching) {

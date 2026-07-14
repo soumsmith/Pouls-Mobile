@@ -84,21 +84,18 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              infoResult['message'] ??
-                  'Impossible de récupérer les informations de parrainage',
-            ),
-            backgroundColor: Colors.red[400],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.getSmallCardBorderRadius(context),
-              ),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
+        
+        final rawMessage = infoResult['message']?.toString() ?? '';
+        String errorMessage = 'Impossible de récupérer les informations de parrainage';
+        if (rawMessage.isNotEmpty) {
+          errorMessage = rawMessage.replaceFirst('Exception: ', '').trim();
+        }
+
+        CartSnackBar.showOverlay(
+          context,
+          productName: 'Parrainage',
+          message: errorMessage,
+          backgroundColor: Colors.red[500],
         );
       }
     } catch (e) {
@@ -106,18 +103,29 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur réseau: ${e.toString()}'),
-          backgroundColor: Colors.red[400],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              AppDimensions.getSmallCardBorderRadius(context),
-            ),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
+
+      final rawMessage = e.toString();
+      final isNetworkError = rawMessage.contains('SocketException') || 
+                             rawMessage.contains('ClientException') ||
+                             rawMessage.contains('Failed host lookup') ||
+                             rawMessage.contains('Network is unreachable') ||
+                             rawMessage.contains('Connection refused');
+                             
+      String errorMessage = 'Une erreur est survenue lors de la récupération du code';
+      if (isNetworkError) {
+        errorMessage = 'Impossible de se connecter au serveur. Veuillez vérifier votre connexion Internet.';
+      } else {
+        final cleanMsg = rawMessage.replaceFirst('Exception: ', '').trim();
+        if (cleanMsg.isNotEmpty) {
+          errorMessage = cleanMsg;
+        }
+      }
+
+      CartSnackBar.showOverlay(
+        context,
+        productName: 'Erreur',
+        message: errorMessage,
+        backgroundColor: Colors.red[500],
       );
     }
   }

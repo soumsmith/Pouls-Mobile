@@ -62,6 +62,13 @@ class CustomSliverAppBar extends StatelessWidget {
     final resolvedBgColor = backgroundColor ?? AppColors.screenSurfaceThemed(context);
     final resolvedSurfaceColor = surfaceTintColor ?? Colors.transparent;
 
+    final List<Widget>? resolvedActions = actions != null && actions!.isNotEmpty
+        ? [
+            ...actions!,
+            const SizedBox(width: 8), // Évite que les boutons collent trop au bord droit de l'écran
+          ]
+        : actions;
+
     if (!isSliver) {
       return AppBar(
         elevation: elevation ?? 0,
@@ -69,7 +76,7 @@ class CustomSliverAppBar extends StatelessWidget {
         backgroundColor: resolvedBgColor,
         leading: resolvedLeading,
         title: titleWidget,
-        actions: actions,
+        actions: resolvedActions,
         flexibleSpace: flexibleSpace,
         centerTitle: false,
       );
@@ -85,7 +92,7 @@ class CustomSliverAppBar extends StatelessWidget {
       backgroundColor: resolvedBgColor,
       leading: resolvedLeading,
       title: titleWidget,
-      actions: actions,
+      actions: resolvedActions,
       flexibleSpace: flexibleSpace,
     );
   }
@@ -147,11 +154,13 @@ class AppBarIconButton extends StatelessWidget {
   final IconData icon;
   final bool isDark; // Gardé pour compatibilité mais ne sera plus utilisé
   final VoidCallback onTap;
+  final Color? iconColor;
 
   const AppBarIconButton({
     required this.icon,
     this.isDark = false, // Gardé pour compatibilité mais ne sera plus utilisé
     required this.onTap,
+    this.iconColor,
   });
 
   @override
@@ -175,7 +184,7 @@ class AppBarIconButton extends StatelessWidget {
         child: Icon(
           icon,
           size: 18,
-          color: useDarkStyle ? Colors.white : AppColors.screenTextPrimaryThemed(context),
+          color: iconColor ?? (useDarkStyle ? Colors.white : AppColors.screenTextPrimaryThemed(context)),
         ),
       ),
     );

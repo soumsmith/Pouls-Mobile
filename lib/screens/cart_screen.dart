@@ -18,6 +18,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/components/custom_error_state.dart';
+import 'shop_screen.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -228,46 +229,54 @@ class _CartScreenState extends State<CartScreen>
     );
   }
 
-  // ─── EMPTY STATE ───────────────────────────────────────────────────────────
   Widget _buildEmptyCart() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: AppColors.screenSurfaceThemed(context),
-      appBar: AppBar(
-        backgroundColor: AppColors.screenSurfaceThemed(context),
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.screenTextPrimaryThemed(context)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Panier',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.screenTextPrimaryThemed(context),
-          ),
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Icon(Icons.delete_outline_rounded, color: AppColors.screenTextSecondaryThemed(context)),
-              onPressed: null, // Disabled when cart is empty
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: CustomSliverAppBar(
+          title: 'Mon Panier',
+          isDark: isDark,
+          isSliver: false,
+          automaticallyImplyLeading: true,
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  color: AppColors.screenTextSecondaryThemed(context),
+                ),
+                onPressed: null, // Disabled when cart is empty
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      body: CustomErrorState(
-        title: 'Votre panier est vide',
-        message: 'Ajoutez des produits pour commencer vos achats',
-        icon: Icons.shopping_bag_outlined,
-        iconColor: AppColors.shopBlue,
-        buttonColor: AppColors.screenTextPrimaryThemed(context),
-        buttonIsLight: true, // Pour avoir le style du bouton Continuer
-        buttonHasBorder: true,
-        buttonBorderColor: AppColors.screenDividerThemed(context),
-        retryText: 'Continuer les achats',
-        onRetry: () => Navigator.pop(context),
+      body: Center(
+        child: CustomErrorState(
+          title: 'Votre panier est vide',
+          message: 'Ajoutez des produits pour commencer vos achats',
+          icon: Icons.shopping_bag_outlined,
+          iconColor: AppColors.shopBlue,
+          buttonColor: AppColors.screenTextPrimaryThemed(context),
+          buttonIsLight: true, // Pour avoir le style du bouton Continuer
+          buttonHasBorder: true,
+          buttonBorderColor: AppColors.screenDividerThemed(context),
+          retryText: 'Continuer les achats',
+          onRetry: () {
+            final mainWrapper = MainScreenWrapper.maybeOf(context);
+            if (mainWrapper != null) {
+              Navigator.pop(context);
+              mainWrapper.updateCurrentIndex(1); // Onglet Boutique
+            } else {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const LibraryScreen()),
+              );
+            }
+          },
+        ),
       ),
     );
   }

@@ -728,8 +728,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
               _buildNavigationButtons(),
               SizedBox(
                 height: MediaQuery.of(context).viewInsets.bottom > 0
-                    ? 12.0
-                    : 40.0,
+                    ? 20.0
+                    : MediaQuery.of(context).padding.bottom + 24.0,
               ),
             ],
           ),

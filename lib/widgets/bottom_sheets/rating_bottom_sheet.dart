@@ -151,6 +151,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       useDraggable: false,
+      wrapWithScrollView: false,
       contentPadding: const EdgeInsets.all(0),
       fixedBottomWidget: widget.allowRating ? _buildComposeAvisBar() : null,
       content: _isLoadingAvis

@@ -74,6 +74,8 @@ class IntegrationRequestBottomSheet extends StatefulWidget {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       wrapWithScrollView: false,
+      useDraggable: false,
+      useKeyboardPadding: false,
       contentPadding: const EdgeInsets.all(0),
       content: IntegrationRequestBottomSheet(
         matricule: matricule,
@@ -331,9 +333,26 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
           ),
         ),
 
-        // ── Barre de navigation inférieure ────────────────────────────────
-        _buildBottomNavigation(),
-        const BottomSpacer(),
+        // ── Navigation buttons ────────────────────────────────────────────
+        Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildNavigationButtons(),
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).viewInsets.bottom > 0
+                    ? 20.0
+                    : MediaQuery.of(context).padding.bottom + 24.0,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -827,13 +846,6 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildBottomNavigation() {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 8),
-      child: _buildNavigationButtons(),
     );
   }
 

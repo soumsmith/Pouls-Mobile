@@ -15,6 +15,7 @@ import '../widgets/search_bar_widget.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/components/custom_error_state.dart';
+import 'shop_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -435,11 +436,11 @@ class _OrdersScreenState extends State<OrdersScreen>
       onRetry: () {
         final wrapper = MainScreenWrapper.maybeOf(context);
         if (wrapper != null) {
-          wrapper.goBackToPreviousTab();
-          // Optionally force switch to Shop tab if needed, but returning to previous is safer.
-          // wrapper.updateCurrentIndex(1); // 1 is Shop
+          wrapper.updateCurrentIndex(1); // Onglet Boutique
         } else {
-          Navigator.pop(context);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const LibraryScreen()),
+          );
         }
       },
     );

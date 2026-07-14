@@ -407,9 +407,10 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
                       index: index,
                       cardKey: 'video_${astuce.id}',
                       title: astuce.title,
-                      subtitle: astuce.content
-                          .replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), ' ')
-                          .trim(),
+                      // subtitle: astuce.content
+                      //     .replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), ' ')
+                      //     .trim(),
+                      subtitle: null,
                       imagePath: astuce.youtubeVideoId.isNotEmpty
                           ? 'https://img.youtube.com/vi/${astuce.youtubeVideoId}/mqdefault.jpg'
                           : ((astuce.image != null && astuce.image!.isNotEmpty)
@@ -732,17 +733,17 @@ class _AstuceCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  // Sous-titre
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.screenTextSecondaryThemed(context),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  // const SizedBox(height: 4),
+                  // Sous-titre (masqué)
+                  // Text(
+                  //   subtitle,
+                  //   style: TextStyle(
+                  //     fontSize: 12,
+                  //     color: AppColors.screenTextSecondaryThemed(context),
+                  //   ),
+                  //   maxLines: 1,
+                  //   overflow: TextOverflow.ellipsis,
+                  // ),
                   const SizedBox(height: 10),
                   // Date
                   Row(

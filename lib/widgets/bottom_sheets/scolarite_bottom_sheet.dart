@@ -73,84 +73,24 @@ class _ScolariteBottomSheetState extends State<ScolariteBottomSheet> {
     if (widget.scolariteEntries.isEmpty) {
       // Vérifier si le matricule est disponible
       if (widget.childMatricule.isEmpty) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: _themeService.isDarkMode
-                ? Colors.grey[900]
-                : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Colors.red[400],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Matricule non disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red[600],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _themeService.isDarkMode
-                      ? Colors.grey[400]
-                      : Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+        return CustomErrorState(
+          title: 'Matricule non disponible',
+          message: 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+          icon: Icons.error_outline_rounded,
+          iconColor: Colors.red[500],
         );
       }
 
-      return Container(
-        width: double.infinity,
-        height: MediaQuery.of(context).size.height * 0.6,
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.school, size: 48, color: Colors.amber[400]),
-              const SizedBox(height: 12),
-              Text(
-                'Aucune échéance disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _themeService.isDarkMode
-                      ? Colors.white70
-                      : Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (widget.onRefresh != null)
-                ElevatedButton.icon(
-                  onPressed: widget.onRefresh,
-                  icon: const Icon(Icons.refresh_outlined),
-                  label: const Text('Actualiser'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+      return CustomErrorState(
+        title: 'Aucune échéance disponible',
+        message: 'Aucune échéance de scolarité n\'est disponible pour cet élève.',
+        onRetry: widget.onRefresh,
+        retryText: 'Actualiser',
+        icon: Icons.school_rounded,
+        iconColor: Colors.amber[600],
+        buttonColor: Colors.amber[600],
+        buttonIsLight: true,
+        buttonWidth: 200,
       );
     }
 

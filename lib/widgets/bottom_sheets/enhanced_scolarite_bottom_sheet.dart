@@ -10,6 +10,7 @@ import '../section_header_widget.dart';
 import '../search_bar_widget.dart';
 import '../components/bottom_spacer.dart';
 import 'reusable_bottom_sheet.dart';
+import '../components/custom_error_state.dart';
 
 /// Bottom sheet réutilisable et amélioré pour afficher la scolarité d'un élève
 /// Fusionne le design de _showFeesBottomSheet avec les fonctionnalités de ScolariteBottomSheet
@@ -108,126 +109,40 @@ class _EnhancedScolariteBottomSheetState
     }
 
     if (widget.errorMessage != null) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _themeService.isDarkMode
-              ? const Color(0xFF1E1E1E)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.error_outline_rounded, size: 48, color: Colors.red[400]),
-            const SizedBox(height: 12),
-            Text(
-              'Erreur de chargement',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.red[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.errorMessage!,
-              style: TextStyle(
-                fontSize: 14,
-                color: _themeService.isDarkMode
-                    ? Colors.grey[400]
-                    : Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+      return CustomErrorState(
+        title: 'Erreur de chargement',
+        message: widget.errorMessage!,
+        onRetry: widget.onRefresh,
+        retryText: 'Réessayer',
+        icon: Icons.error_outline_rounded,
+        iconColor: Colors.red[500],
+        buttonColor: _primaryColor,
+        buttonIsLight: true,
+        buttonWidth: 200,
       );
     }
 
     if (widget.scolariteEntries.isEmpty) {
       // Vérifier si le matricule est disponible
       if (widget.childMatricule == null || widget.childMatricule!.isEmpty) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: _themeService.isDarkMode
-                ? const Color(0xFF1E1E1E)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Colors.red[400],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Matricule non disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red[600],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _themeService.isDarkMode
-                      ? Colors.grey[400]
-                      : Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+        return CustomErrorState(
+          title: 'Matricule non disponible',
+          message: 'Le matricule de l\'enfant n\'est pas configuré. Veuillez contacter l\'administration.',
+          icon: Icons.error_outline_rounded,
+          iconColor: Colors.red[500],
         );
       }
 
-      return Container(
-        width: double.infinity,
-        height: widget.height != null
-            ? widget.height! * 0.6
-            : MediaQuery.of(context).size.height * 0.6,
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(_iconData, size: 48, color: _primaryColor),
-              const SizedBox(height: 12),
-              Text(
-                'Aucune échéance disponible',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _themeService.isDarkMode
-                      ? Colors.white70
-                      : Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (widget.onRefresh != null)
-                ElevatedButton.icon(
-                  onPressed: widget.onRefresh,
-                  icon: const Icon(Icons.refresh_outlined),
-                  label: const Text('Actualiser'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+      return CustomErrorState(
+        title: 'Aucune échéance disponible',
+        message: 'Aucune échéance de scolarité n\'est disponible pour cet élève.',
+        onRetry: widget.onRefresh,
+        retryText: 'Actualiser',
+        icon: _iconData,
+        iconColor: _primaryColor,
+        buttonColor: _primaryColor,
+        buttonIsLight: true,
+        buttonWidth: 200,
       );
     }
 

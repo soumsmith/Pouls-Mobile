@@ -74,6 +74,8 @@ class CustomButton extends StatelessWidget {
 
     final textWidget = Text(
       text,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
       style: TextStyle(
         color: contentColor,
         fontSize: textSizeService.getScaledFontSize(fontSize ?? 14),
@@ -115,7 +117,7 @@ class CustomButton extends StatelessWidget {
                         iconWidget,
                         const SizedBox(width: 8),
                       ],
-                      textWidget,
+                      Flexible(child: textWidget),
                       if (iconWidget != null && iconOnRight) ...[
                         const SizedBox(width: 8),
                         iconWidget,

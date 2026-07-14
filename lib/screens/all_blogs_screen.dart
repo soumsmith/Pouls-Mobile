@@ -614,71 +614,22 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
         SliverFillRemaining(
           child: FadeTransition(
             opacity: _fadeAnim,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.screenOrangeLight,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Icon(Icons.article_outlined,
-                        size: 40, color: AppColors.screenOrange),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Aucune actualité',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.screenTextPrimaryThemed(context),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Aucun résultat pour ce filtre',
-                    style: TextStyle(
-                        fontSize: 13, color: AppColors.screenTextSecondaryThemed(context)),
-                  ),
-                  const SizedBox(height: 24),
-                  GestureDetector(
-                    onTap: () => setState(() {
-                      _selectedFilter = 'Tous';
-                      _searchController.clear();
-                      _countryController.clear();
-                      _categoryController.clear();
-                      _dateController.clear();
-                      _loadBlogs();
-                    }),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.screenOrangeGradient,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.screenOrange.withOpacity(0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        'Réinitialiser les filtres',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            child: CustomErrorState(
+              title: 'Aucune actualité',
+              message: 'Aucun résultat pour ce filtre',
+              icon: Icons.article_outlined,
+              iconColor: AppColors.screenOrange,
+              retryText: 'Réinitialiser les filtres',
+              onRetry: () {
+                setState(() {
+                  _selectedFilter = 'Tous';
+                  _searchController.clear();
+                  _countryController.clear();
+                  _categoryController.clear();
+                  _dateController.clear();
+                  _loadBlogs();
+                });
+              },
             ),
           ),
         )

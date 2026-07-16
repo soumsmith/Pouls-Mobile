@@ -10,11 +10,8 @@ class AdVideoPage extends StatefulWidget {
   final AdModel ad;
   final bool isActive;
 
-  const AdVideoPage({
-    Key? key,
-    required this.ad,
-    required this.isActive,
-  }) : super(key: key);
+  const AdVideoPage({Key? key, required this.ad, required this.isActive})
+    : super(key: key);
 
   @override
   State<AdVideoPage> createState() => _AdVideoPageState();
@@ -86,7 +83,7 @@ class _AdVideoPageState extends State<AdVideoPage> {
                   _youtubeController!.play();
                 }
               } else {
-                _launchUrl(widget.ad.linkUrl);
+                // _launchUrl(widget.ad.linkUrl);
               }
             },
             child: _youtubeController != null
@@ -97,15 +94,18 @@ class _AdVideoPageState extends State<AdVideoPage> {
                 : CachedNetworkImage(
                     imageUrl: widget.ad.imageUrl,
                     fit: BoxFit.contain,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    placeholder: (context, url) =>
+                        const Center(child: CircularProgressIndicator()),
                     errorWidget: (context, url, error) => const Center(
-                      child: Icon(Icons.error_outline, color: Colors.grey, size: 50),
+                      child: Icon(
+                        Icons.error_outline,
+                        color: Colors.grey,
+                        size: 50,
+                      ),
                     ),
                   ),
           ),
-          
+
           // Overlay Gradient
           Positioned.fill(
             child: IgnorePointer(
@@ -124,29 +124,29 @@ class _AdVideoPageState extends State<AdVideoPage> {
               ),
             ),
           ),
-          
+
           // Sponsorisé Badge
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            left: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: const Text(
-                'Sponsorisé',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          
+          // Positioned(
+          //   top: MediaQuery.of(context).padding.top + 16,
+          //   left: 16,
+          //   child: Container(
+          //     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          //     decoration: BoxDecoration(
+          //       color: Colors.black.withOpacity(0.6),
+          //       borderRadius: BorderRadius.circular(6),
+          //       border: Border.all(color: Colors.white24),
+          //     ),
+          //     child: const Text(
+          //       'Sponsorisé',
+          //       style: TextStyle(
+          //         color: Colors.white,
+          //         fontSize: 12,
+          //         fontWeight: FontWeight.w600,
+          //       ),
+          //     ),
+          //   ),
+          // ),
+
           // Bottom Info
           Positioned(
             bottom: MediaQuery.of(context).padding.bottom + 80,
@@ -158,7 +158,10 @@ class _AdVideoPageState extends State<AdVideoPage> {
                 if (widget.ad.title.isNotEmpty)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(12),
@@ -172,29 +175,29 @@ class _AdVideoPageState extends State<AdVideoPage> {
                       ),
                     ),
                   ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => _launchUrl(widget.ad.linkUrl),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[800],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'En savoir plus',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
+                // const SizedBox(height: 12),
+                // SizedBox(
+                //   width: double.infinity,
+                //   child: ElevatedButton(
+                //     onPressed: () => _launchUrl(widget.ad.linkUrl),
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor: Colors.grey[800],
+                //       foregroundColor: Colors.white,
+                //       padding: const EdgeInsets.symmetric(vertical: 14),
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(12),
+                //       ),
+                //       elevation: 0,
+                //     ),
+                //     child: const Text(
+                //       'En savoir plus',
+                //       style: TextStyle(
+                //         fontSize: 16,
+                //         fontWeight: FontWeight.w600,
+                //       ),
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -279,7 +282,10 @@ class _AdVideoCarouselPageState extends State<AdVideoCarouselPage> {
   Widget build(BuildContext context) {
     if (widget.adGroup.ads.isEmpty) return const SizedBox.shrink();
     if (widget.adGroup.ads.length == 1) {
-      return AdVideoPage(ad: widget.adGroup.ads.first, isActive: widget.isActive);
+      return AdVideoPage(
+        ad: widget.adGroup.ads.first,
+        isActive: widget.isActive,
+      );
     }
 
     final adCount = widget.adGroup.ads.length;

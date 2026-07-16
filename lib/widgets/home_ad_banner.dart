@@ -122,7 +122,9 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+                                color: Colors.black.withOpacity(
+                                  isDark ? 0.4 : 0.15,
+                                ),
                                 blurRadius: 24,
                                 offset: const Offset(0, 8),
                               ),
@@ -134,14 +136,19 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
                               // En-tête / Titre
                               if (ad.title.isNotEmpty) ...[
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
                                   child: Text(
                                     ad.title,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
-                                      color: isDark ? Colors.white38 : Colors.black38,
+                                      color: isDark
+                                          ? Colors.white38
+                                          : Colors.black38,
                                     ),
                                   ),
                                 ),
@@ -156,24 +163,35 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
                                     Navigator.push(
                                       this.context, // Context d'origine externe
                                       MaterialPageRoute(
-                                        builder: (context) => AdImageDetailScreen(ad: ad),
+                                        builder: (context) =>
+                                            AdImageDetailScreen(ad: ad),
                                       ),
                                     );
                                   },
                                   borderRadius: BorderRadius.vertical(
-                                    top: ad.title.isEmpty ? const Radius.circular(14) : Radius.zero,
+                                    top: ad.title.isEmpty
+                                        ? const Radius.circular(14)
+                                        : Radius.zero,
                                     bottom: const Radius.circular(14),
                                   ),
                                   child: Container(
                                     height: 48,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text('Ouvrir l\'image', style: textStyle),
+                                        Text(
+                                          'Ouvrir l\'image',
+                                          style: textStyle,
+                                        ),
                                         Icon(
                                           Icons.fullscreen_rounded,
-                                          color: isDark ? Colors.white70 : Colors.black54,
+                                          color: isDark
+                                              ? Colors.white70
+                                              : Colors.black54,
                                           size: 22,
                                         ),
                                       ],
@@ -194,7 +212,9 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                                color: Colors.black.withOpacity(
+                                  isDark ? 0.3 : 0.1,
+                                ),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -294,25 +314,25 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
               },
             ),
             // Badge "Sponsorisé"
-            Positioned(
-              top: 8,
-              left: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'Sponsorisé',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
+            // Positioned(
+            //   top: 8,
+            //   left: 8,
+            //   child: Container(
+            //     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            //     decoration: BoxDecoration(
+            //       color: Colors.black.withOpacity(0.6),
+            //       borderRadius: BorderRadius.circular(4),
+            //     ),
+            //     child: const Text(
+            //       'Sponsorisé',
+            //       style: TextStyle(
+            //         color: Colors.white,
+            //         fontSize: 10,
+            //         fontWeight: FontWeight.w500,
+            //       ),
+            //     ),
+            //   ),
+            // ),
             // Indicateurs de page
             if (_ads.length > 1)
               Positioned(
@@ -357,24 +377,29 @@ class AdImageDetailScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           ad.title,
-          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.share_rounded),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => ShareBottomSheet(
-                  title: 'Partager l\'image',
-                  itemTitle: ad.title,
-                  shareText: '🎬 Regarde cette image : ${ad.imageUrl}\n\nVisite le site : ${ad.linkUrl}\n\n#PoulsMobile',
-                ),
-              );
-            },
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.share_rounded),
+          //   onPressed: () {
+          //     showModalBottomSheet(
+          //       context: context,
+          //       isScrollControlled: true,
+          //       backgroundColor: Colors.transparent,
+          //       builder: (context) => ShareBottomSheet(
+          //         title: 'Partager l\'image',
+          //         itemTitle: ad.title,
+          //         shareText:
+          //             '🎬 Regarde cette image : ${ad.imageUrl}\n\nVisite le site : ${ad.linkUrl}\n\n#PoulsMobile',
+          //       ),
+          //     );
+          //   },
+          // ),
         ],
       ),
       body: Center(

@@ -9,6 +9,7 @@ import '../services/notification_service.dart';
 import '../widgets/payment_verification_dialog.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../config/app_dimensions.dart';
+import '../config/app_config.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/components/custom_error_state.dart';
@@ -56,9 +57,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     });
 
     int attempts = 0;
-    const int maxAttempts = 10; // 50 secondes de polling
+    const int maxAttempts = AppConfig.PAYMENT_VERIFICATION_MAX_ATTEMPTS;
 
-    timer = Timer.periodic(const Duration(seconds: 5), (t) async {
+    timer = Timer.periodic(const Duration(seconds: AppConfig.PAYMENT_VERIFICATION_INTERVAL_SECONDS), (t) async {
       if (isChecking || !mounted) return;
 
       attempts++;

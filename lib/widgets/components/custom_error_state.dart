@@ -25,7 +25,7 @@ class CustomErrorState extends StatefulWidget {
     this.icon = Icons.cloud_off_rounded,
     this.iconColor,
     this.buttonColor,
-    this.buttonIsLight = false,
+    this.buttonIsLight = true,
     this.buttonHasBorder = true,
     this.buttonBorderColor,
     this.buttonWidth,
@@ -36,8 +36,53 @@ class CustomErrorState extends StatefulWidget {
   State<CustomErrorState> createState() => _CustomErrorStateState();
 }
 
-class _CustomErrorStateState extends State<CustomErrorState> {
+class _CustomErrorStateState extends State<CustomErrorState> with SingleTickerProviderStateMixin {
   bool _internalLoading = false;
+  late AnimationController _animationController;
+  late Animation<double> _opacityAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.1, 0.7, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 1.0, curve: Curves.elasticOut),
+      ),
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   bool get _activeLoading => widget.isLoading ?? _internalLoading;
 
@@ -80,69 +125,84 @@ class _CustomErrorStateState extends State<CustomErrorState> {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: activeIconColor.withOpacity(isDark ? 0.15 : 0.08),
-              ),
-              child: Center(
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: FadeTransition(
+                opacity: _opacityAnimation,
                 child: Container(
-                  width: 48,
-                  height: 48,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: activeIconColor.withOpacity(isDark ? 0.25 : 0.15),
+                    color: activeIconColor.withOpacity(isDark ? 0.15 : 0.08),
                   ),
-                  child: Icon(
-                    widget.icon,
-                    size: 24,
-                    color: activeIconColor,
+                  child: Center(
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: activeIconColor.withOpacity(isDark ? 0.25 : 0.15),
+                      ),
+                      child: Icon(
+                        widget.icon,
+                        size: 24,
+                        color: activeIconColor,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              widget.title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.screenTextPrimaryThemed(context),
-                letterSpacing: -0.3,
+            SlideTransition(
+              position: _slideAnimation,
+              child: FadeTransition(
+                opacity: _opacityAnimation,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.screenTextPrimaryThemed(context),
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.message,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.screenTextSecondaryThemed(context),
+                        height: 1.4,
+                      ),
+                    ),
+                    if (widget.onRetry != null) ...[
+                      const SizedBox(height: 24),
+                      CustomButton(
+                        width: widget.buttonWidth ?? 250,
+                        text: widget.retryText,
+                        onPressed: _activeLoading ? null : _handleRetry,
+                        icon: Icons.refresh_rounded,
+                        color: widget.buttonColor ?? AppColors.screenOrange,
+                        borderColor: widget.buttonBorderColor,
+                        isLight: widget.buttonIsLight,
+                        hasBorder: widget.buttonHasBorder,
+                        isLoading: _activeLoading,
+                        height: 38,
+                        fontSize: 13,
+                        borderRadius: 10,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              widget.message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.screenTextSecondaryThemed(context),
-                height: 1.4,
-              ),
-            ),
-            if (widget.onRetry != null) ...[
-              const SizedBox(height: 24),
-              CustomButton(
-                width: widget.buttonWidth != null
-                    ? (widget.buttonWidth! > 150 ? 150 : widget.buttonWidth!)
-                    : 150,
-                text: widget.retryText,
-                onPressed: _activeLoading ? null : _handleRetry,
-                icon: Icons.refresh_rounded,
-                color: widget.buttonColor ?? AppColors.screenOrange,
-                borderColor: widget.buttonBorderColor,
-                isLight: widget.buttonIsLight,
-                hasBorder: widget.buttonHasBorder,
-                isLoading: _activeLoading,
-                height: 38,
-                fontSize: 13,
-                borderRadius: 10,
-              ),
-            ],
           ],
         ),
       ),

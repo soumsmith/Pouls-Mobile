@@ -560,6 +560,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                 slivers: [
                   CustomSliverAppBar(
                     title: 'Établissements',
+                    // backgroundColor: Colors.red,
+                    // actionButtonBackgroundColor: Colors.white,
                     isDark: false,
                     onBackTap: () =>
                         MainScreenWrapper.of(context).navigateToHome(),
@@ -628,10 +630,12 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         height: actionButtonSize,
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
+          // color: AppColors.screenTextPrimaryThemed(context).withOpacity(0.15),
           borderRadius: BorderRadius.circular(
             AppDimensions.getButtonBorderRadius(context),
           ),
           boxShadow: AppDimensions.getSettingsCardShadow(context),
+          // boxShadow: null,
         ),
         child: Icon(
           icon,
@@ -2096,7 +2100,8 @@ class _FeaturedSchoolsSliderState extends State<_FeaturedSchoolsSlider> {
                   school: widget.featuredSchools[realIndex],
                   index: realIndex,
                   schools: widget.featuredSchools,
-                  showText: false, // On masque le texte (nom, description, etc.) sur les vidéos
+                  showText:
+                      false, // On masque le texte (nom, description, etc.) sur les vidéos
                 );
               },
             ),

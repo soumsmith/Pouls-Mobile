@@ -4960,11 +4960,10 @@ class _ChildListScreenState extends State<ChildListScreen>
     });
 
     int attempts = 0;
-    const int maxAttempts =
-        5; // POUR TEST: 5 * 2s = 10s (remettre à 120 plus tard)
+    const int maxAttempts = AppConfig.PAYMENT_VERIFICATION_MAX_ATTEMPTS;
 
-    // Lancement du polling toutes les 2 secondes
-    timer = Timer.periodic(const Duration(seconds: 2), (t) async {
+    // Lancement du polling
+    timer = Timer.periodic(const Duration(seconds: AppConfig.PAYMENT_VERIFICATION_INTERVAL_SECONDS), (t) async {
       if (isChecking || !mounted) return;
 
       attempts++;

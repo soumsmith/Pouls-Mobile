@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:parents_responsable/config/app_colors.dart';
+import '../config/app_config.dart';
 import '../models/child.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/custom_sliver_app_bar.dart';
@@ -2449,10 +2450,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     });
 
     int attempts = 0;
-    const int maxAttempts = 2; // POUR TEST: 2 * 5s = 10s (remettre à 48 plus tard)
+    const int maxAttempts = AppConfig.PAYMENT_VERIFICATION_MAX_ATTEMPTS;
 
-    // Lancement du polling toutes les 5 secondes
-    timer = Timer.periodic(const Duration(seconds: 5), (t) async {
+    // Lancement du polling
+    timer = Timer.periodic(const Duration(seconds: AppConfig.PAYMENT_VERIFICATION_INTERVAL_SECONDS), (t) async {
       if (isChecking || !mounted) return;
 
       attempts++;

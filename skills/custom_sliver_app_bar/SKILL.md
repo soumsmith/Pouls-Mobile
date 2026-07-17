@@ -27,92 +27,90 @@ Si vous devez recréer ce composant ou comprendre comment il est fait sous le ca
 
 ```dart
 import 'package:flutter/material.dart';
+import 'package:parents_responsable/config/app_dimensions.dart';
+import 'package:parents_responsable/config/app_colors.dart';
+import 'package:parents_responsable/widgets/main_screen_wrapper.dart';
+import 'package:parents_responsable/services/text_size_service.dart';
 
-// --- VOS FICHIERS DE CONFIGURATION ---
-// import 'package:parents_responsable/config/app_dimensions.dart';
-// import 'package:parents_responsable/config/app_colors.dart';
-// import 'package:parents_responsable/widgets/main_screen_wrapper.dart';
-// import 'package:parents_responsable/services/text_size_service.dart';
-
-/// 🎯 CustomSliverAppBar : Une barre supérieure magique pour vos listes (CustomScrollView)
+/// Widget SliverAppBar réutilisable avec personnalisation des actions
 class CustomSliverAppBar extends StatelessWidget {
-  // Le texte affiché en haut
   final String title;
-  // (Obsolète) Permettait de changer la couleur selon le mode sombre
   final bool isDark;
-  // Les boutons à droite (ex: Partager, Favoris)
   final List<Widget>? actions;
-  // Que faire quand on clique sur le bouton retour ? (Par défaut: on revient en arrière)
   final VoidCallback? onBackTap;
-  // Le bouton tout à gauche (si on veut remplacer le bouton retour par défaut)
   final Widget? leading;
-  // Doit-on afficher le bouton retour automatiquement ?
   final bool automaticallyImplyLeading;
-  // Couleur de fond de la barre
   final Color? backgroundColor;
-  // Couleur de l'effet de surface (Material 3)
   final Color? surfaceTintColor;
-  // Hauteur de la barre quand elle est totalement dépliée
   final double? expandedHeight;
-  // La barre réapparaît-elle dès qu'on commence à remonter le scroll ?
   final bool floating;
-  // La barre reste-t-elle collée en haut quand on descend tout en bas ?
   final bool pinned;
-  // L'ombre sous la barre
   final double? elevation;
-  // Le style du texte du titre
   final TextStyle? titleTextStyle;
-  // Un widget qui s'affiche derrière le titre quand la barre s'étire (ex: une grande image)
   final Widget? flexibleSpace;
-  // La barre peut-elle s'étirer comme un élastique si on tire fort vers le bas ?
   final bool stretch;
-  // Détermine si elle se comporte comme une SliverAppBar (true) ou une AppBar normale (false)
-  final bool isSliver;
+  final bool isSliver; // Permet de choisir entre SliverAppBar et AppBar normal
+  final Color textColor;
+  final Color? actionButtonBackgroundColor;
 
-  // 🛠️ Le Constructeur : C'est ici qu'on définit toutes les options
   const CustomSliverAppBar({
     super.key,
-    required this.title, // Le titre est obligatoire !
-    this.isDark = false,
+    required this.title,
+    this.isDark = false, // Gardé pour compatibilité mais ne sera plus utilisé
     this.actions,
     this.onBackTap,
     this.leading,
-    this.automaticallyImplyLeading = true, // Par défaut, on met un bouton retour
+    this.automaticallyImplyLeading = true,
     this.backgroundColor,
     this.surfaceTintColor,
-    this.expandedHeight = 0, // Taille normale par défaut
-    this.floating = false, // Par défaut, il faut remonter tout en haut pour la revoir
-    this.pinned = true, // Par défaut, elle reste toujours visible (accrochée en haut)
-    this.elevation = 0, // Pas d'ombre
+    this.expandedHeight = 0,
+    this.floating = false,
+    this.pinned = true,
+    this.elevation = 0,
     this.titleTextStyle,
     this.flexibleSpace,
     this.stretch = false,
-    this.isSliver = true, // Par défaut, c'est bien une SliverAppBar
+    this.isSliver = true, // Par défaut, se comporte comme un SliverAppBar
+    this.textColor = Colors.black,
+    this.actionButtonBackgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Service pour gérer la taille du texte dynamiquement selon les réglages du téléphone
     final textSizeService = TextSizeService();
 
-    // On prépare le titre (s'il n'est pas vide)
-    final titleWidget = title.isEmpty ? null : Text(
-      title,
-      style: titleTextStyle ??
-          TextStyle(
-            fontSize: textSizeService.getScaledFontSize(18),
-            fontWeight: FontWeight.w700,
-            color: AppColors.screenTextPrimaryThemed(context),
-            letterSpacing: -0.5,
-          ),
-    );
+    final titleWidget = title.isEmpty
+        ? null
+        : Text(
+            title,
+            style:
+                titleTextStyle ??
+                TextStyle(
+                  fontSize: textSizeService.getScaledFontSize(18),
+                  fontWeight: FontWeight.w700,
+                  color: backgroundColor != null
+                      ? textColor
+                      : AppColors.screenTextPrimaryThemed(context),
+                  letterSpacing: -0.5,
+                ),
+          );
 
-    // On prépare le bouton de gauche et les couleurs
-    final resolvedLeading = leading ?? (automaticallyImplyLeading ? _buildDefaultLeading(context) : null);
-    final resolvedBgColor = backgroundColor ?? AppColors.screenSurfaceThemed(context);
+    final resolvedLeading =
+        leading ??
+        (automaticallyImplyLeading ? _buildDefaultLeading(context) : null);
+    final resolvedBgColor =
+        backgroundColor ?? AppColors.screenSurfaceThemed(context);
     final resolvedSurfaceColor = surfaceTintColor ?? Colors.transparent;
 
-    // MAGIE ICI : Si isSliver est faux, on renvoie une simple AppBar !
+    final List<Widget>? resolvedActions = actions != null && actions!.isNotEmpty
+        ? [
+            ...actions!,
+            const SizedBox(
+              width: 8,
+            ), // Évite que les boutons collent trop au bord droit de l'écran
+          ]
+        : actions;
+
     if (!isSliver) {
       return AppBar(
         elevation: elevation ?? 0,
@@ -120,13 +118,12 @@ class CustomSliverAppBar extends StatelessWidget {
         backgroundColor: resolvedBgColor,
         leading: resolvedLeading,
         title: titleWidget,
-        actions: actions,
+        actions: resolvedActions,
         flexibleSpace: flexibleSpace,
         centerTitle: false,
       );
     }
 
-    // Sinon, on retourne le SliverAppBar natif de Flutter, dopé avec nos options !
     return SliverAppBar(
       expandedHeight: expandedHeight,
       floating: floating,
@@ -137,62 +134,99 @@ class CustomSliverAppBar extends StatelessWidget {
       backgroundColor: resolvedBgColor,
       leading: resolvedLeading,
       title: titleWidget,
-      actions: actions,
+      actions: resolvedActions,
       flexibleSpace: flexibleSpace,
     );
   }
 
-  // 🔙 Construit notre joli bouton retour encadré
+  /// Bouton de retour par défaut
   Widget _buildDefaultLeading(BuildContext context) {
+    final themeIsDark = Theme.of(context).brightness == Brightness.dark;
+    final useDarkStyle = isDark || themeIsDark;
+    final hasCustomBg = backgroundColor != null;
+
     return GestureDetector(
-      // Si on a cliqué, on exécute "onBackTap" (si fourni), sinon notre fonction par défaut
       onTap: onBackTap ?? () => _handleBackNavigation(context),
       child: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.screenCardThemed(context),
-          borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-          boxShadow: AppDimensions.getSettingsCardShadow(context),
+          color: actionButtonBackgroundColor != null
+              ? actionButtonBackgroundColor!.withOpacity(0.25)
+              : (hasCustomBg
+                    ? textColor.withOpacity(0.15)
+                    : (useDarkStyle
+                          ? const Color(0xFF262626)
+                          : AppColors.screenCardThemed(context))),
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getButtonBorderRadius(context),
+          ),
+          boxShadow:
+              (useDarkStyle ||
+                  hasCustomBg ||
+                  actionButtonBackgroundColor != null)
+              ? null
+              : AppDimensions.getSettingsCardShadow(context),
         ),
         child: Icon(
           Icons.arrow_back_ios_new,
           size: 16,
-          color: AppColors.screenTextPrimaryThemed(context),
+          color: hasCustomBg
+              ? textColor
+              : (useDarkStyle
+                    ? Colors.white
+                    : AppColors.screenTextPrimaryThemed(context)),
         ),
       ),
     );
   }
 
-  // 🧭 Navigation Intelligente
+  /// Actions par défaut (favoris et partage)
+  List<Widget> _buildDefaultActions() {
+    return [
+      AppBarIconButton(
+        icon: Icons.favorite_border,
+        isDark: isDark,
+        onTap: () {},
+      ),
+      AppBarIconButton(icon: Icons.share, isDark: isDark, onTap: () {}),
+      const SizedBox(width: 4),
+    ];
+  }
+
+  /// Gestion de la navigation de retour
   void _handleBackNavigation(BuildContext context) {
-    // Si on est dans un menu à onglets (MainScreenWrapper), on simule un retour pour l'onglet interne
     if (MainScreenWrapper.maybeOf(context) != null) {
       MainScreenWrapper.of(context).goBackToPreviousTab();
     } else {
-      // Sinon on fait un vrai retour en arrière classique (on ferme l'écran)
       Navigator.of(context).pop();
     }
   }
 }
 
-// ---------------------------------------------------------
-// 🟩 PETITS COMPOSANTS ANNEXES (Les boutons de la barre)
-// ---------------------------------------------------------
-
-/// 🔘 AppBarIconButton : Un bouton carré avec des coins arrondis pour mettre dans la barre
+/// Widget pour les boutons d'action dans l'AppBar
 class AppBarIconButton extends StatelessWidget {
   final IconData icon;
-  final bool isDark; 
-  final VoidCallback onTap; // L'action au clic
+  final bool isDark; // Gardé pour compatibilité mais ne sera plus utilisé
+  final VoidCallback onTap;
+  final Color? iconColor;
+  final bool hasCustomBg;
+  final Color? backgroundColor;
 
   const AppBarIconButton({
+    super.key,
     required this.icon,
-    this.isDark = false,
+    this.isDark = false, // Gardé pour compatibilité mais ne sera plus utilisé
     required this.onTap,
+    this.iconColor,
+    this.hasCustomBg = false,
+    this.backgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final themeIsDark = Theme.of(context).brightness == Brightness.dark;
+    final useDarkStyle = isDark || themeIsDark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -200,107 +234,148 @@ class AppBarIconButton extends StatelessWidget {
         height: 40,
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         decoration: BoxDecoration(
-          color: AppColors.screenCardThemed(context),
-          borderRadius: BorderRadius.circular(AppDimensions.getSmallCardBorderRadius(context)),
-          boxShadow: AppDimensions.getSettingsCardShadow(context),
+          color: backgroundColor != null
+              ? backgroundColor!.withOpacity(0.15)
+              : (hasCustomBg
+                    ? (iconColor ?? Colors.black).withOpacity(0.15)
+                    : (useDarkStyle
+                          ? const Color(0xFF262626)
+                          : AppColors.screenCardThemed(context))),
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getButtonBorderRadius(context),
+          ),
+          boxShadow: (useDarkStyle || hasCustomBg || backgroundColor != null)
+              ? null
+              : AppDimensions.getSettingsCardShadow(context),
         ),
         child: Icon(
           icon,
           size: 18,
-          color: AppColors.screenTextPrimaryThemed(context),
+          color:
+              iconColor ??
+              (useDarkStyle
+                  ? Colors.white
+                  : AppColors.screenTextPrimaryThemed(context)),
         ),
       ),
     );
   }
 }
 
-/// 💡 AppBarAction : Une petite classe outil pour construire le bouton "AppBarIconButton" avec une bulle d'aide (Tooltip)
+/// Classe d'aide pour créer des actions personnalisées
 class AppBarAction {
   final IconData icon;
   final VoidCallback onTap;
   final String? tooltip;
 
-  AppBarAction({
-    required this.icon,
-    required this.onTap,
-    this.tooltip,
-  });
+  AppBarAction({required this.icon, required this.onTap, this.tooltip});
 
-  // Transforme la configuration en véritable Widget cliquable
   Widget buildWidget(bool isDark) {
-    Widget button = AppBarIconButton(
-      icon: icon,
-      isDark: isDark,
-      onTap: onTap,
-    );
+    Widget button = AppBarIconButton(icon: icon, isDark: isDark, onTap: onTap);
 
-    // Si on a mis un texte d'aide (tooltip), on entoure le bouton avec ça.
-    // Ainsi, en restant appuyé sur le bouton, le texte s'affiche !
     if (tooltip != null) {
-      button = Tooltip(
-        message: tooltip!,
-        child: button,
-      );
+      button = Tooltip(message: tooltip!, child: button);
     }
 
     return button;
   }
 }
+
 ```
 
 ---
 
 ## Étape 2 : Comment utiliser ce composant ? (Exemple Facile)
 
-⚠️ **ATTENTION :** Une `SliverAppBar` est spéciale. Contrairement à une `AppBar` normale qui se met dans le paramètre `appBar:` d'un `Scaffold`, une SliverAppBar doit **toujours** être placée à l'intérieur d'un **`CustomScrollView`** (dans la liste `slivers:`). 
+⚠️ **ATTENTION :** Une `SliverAppBar` est spéciale. Contrairement à une `AppBar` normale qui se met dans le paramètre `appBar:` d'un `Scaffold`, une SliverAppBar doit **toujours** être placée à l'intérieur d'un **`CustomScrollView`** (dans la liste `slivers:`).
 
 Voici un exemple simple pour l'intégrer dans un nouvel écran :
 
-📝 **Exemple d'écran complet :**
-
 ```dart
 import 'package:flutter/material.dart';
-import '../widgets/custom_sliver_app_bar.dart'; // N'oubliez pas l'import !
+import 'package:parents_responsable/widgets/custom_sliver_app_bar.dart';
 
-class MonEcranExemple extends StatelessWidget {
+class MonEcran extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      
-      // On utilise un CustomScrollView pour que la barre puisse réagir quand on fait glisser la page
       body: CustomScrollView(
         slivers: [
-          
-          // 1. NOTRE BARRE MAGIQUE !
           CustomSliverAppBar(
-            title: "Mon Beau Titre", // Le seul paramètre obligatoire !
-            pinned: true,            // TRUE = La barre reste collée en haut même si on descend
-            floating: true,          // TRUE = Elle réapparait dès qu'on remonte le doigt
-            actions: [
-              // On peut ajouter nos jolis boutons personnalisés à droite
-              AppBarIconButton(
-                icon: Icons.search,
-                onTap: () {
-                  print("Recherche cliquée !");
-                },
-              ),
-            ],
+            title: 'Mon Super Écran',
+            backgroundColor: Colors.blue,
+            textColor: Colors.white,
+            actionButtonBackgroundColor: Colors.white,
           ),
-
-          // 2. LE CONTENU DE LA PAGE
-          // Tout le reste de votre écran doit être enveloppé dans des widgets qui commencent par "Sliver..."
-          SliverFillRemaining(
-            child: Center(
-              child: Text("Ici c'est le contenu de la page !"),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => ListTile(title: Text('Élément $index')),
+              childCount: 20,
             ),
           ),
-
         ],
       ),
     );
   }
 }
+```
+
+## Étape 3 : Boutons d'action personnalisés (Exemple Avancé)
+
+Si vous avez besoin d'ajouter des boutons d'actions personnalisés à droite (ex: un bouton de filtre, ou de recherche), vous pouvez passer une liste de widgets dans le paramètre `actions:`.
+
+Voici un exemple tiré de l'écran des établissements (`establishment_screen.dart`), où on crée un bouton personnalisé qui s'accorde parfaitement avec l'AppBar :
+
+```dart
+// 1. Créer une fonction pour générer le bouton
+Widget _buildHeaderAction(BuildContext context, {
+  required IconData icon,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: AppDimensions.getActionButtonSize(context),
+      height: AppDimensions.getActionButtonSize(context),
+      decoration: BoxDecoration(
+        // Fond semi-transparent pour l'effet "verre" sur fond coloré
+        color: AppColors.screenTextPrimaryThemed(context).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(
+          AppDimensions.getButtonBorderRadius(context),
+        ),
+        boxShadow: null, // Pas d'ombre si fond transparent
+      ),
+      child: Icon(
+        icon,
+        size: 20,
+        color: AppColors.screenTextPrimaryThemed(context),
+      ),
+    ),
+  );
+}
+
+// 2. L'utiliser dans le composant CustomSliverAppBar
+CustomSliverAppBar(
+  title: 'Établissements',
+  actions: [
+    _buildHeaderAction(
+      context,
+      icon: Icons.search_rounded,
+      onTap: () {
+        print("Recherche cliquée");
+      },
+    ),
+    const SizedBox(width: 8),
+    _buildHeaderAction(
+      context,
+      icon: Icons.tune,
+      onTap: () {
+        print("Filtres cliqués");
+      },
+    ),
+    const SizedBox(width: 4), // Marge finale à droite
+  ],
+)
 ```
 
 **Bravo 🎉 ! Vous maîtrisez maintenant l'utilisation du composant le plus stylé de votre projet !**

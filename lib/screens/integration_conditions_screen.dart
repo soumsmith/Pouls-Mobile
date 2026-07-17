@@ -63,7 +63,15 @@ class _IntegrationConditionsScreenState extends State<IntegrationConditionsScree
       }
     } catch (e) {
       setState(() {
-        _error = "Erreur de connexion : $e";
+        final errorStr = e.toString().toLowerCase();
+        if (errorStr.contains('socketexception') || 
+            errorStr.contains('clientexception') || 
+            errorStr.contains('failed host lookup') ||
+            errorStr.contains('connection refused')) {
+          _error = "Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet et réessayer.";
+        } else {
+          _error = "Une erreur est survenue. Veuillez réessayer ultérieurement.";
+        }
         _isLoading = false;
       });
     }

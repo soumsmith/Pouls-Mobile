@@ -4253,25 +4253,35 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           );
         }
         if (snapshot.hasError) {
-          return CustomErrorState(
-            message:
-                "Impossible de charger les niveaux. Veuillez vérifier votre connexion et réessayer.",
-            onRetry: () => setState(() {}),
-            iconColor: _kActions['niveaux']!.color,
-            buttonColor: _kActions['niveaux']!.color,
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Center(
+              child: CustomErrorState(
+                message:
+                    "Impossible de charger les niveaux. Veuillez vérifier votre connexion et réessayer.",
+                onRetry: () => setState(() {}),
+                iconColor: _kActions['niveaux']!.color,
+                buttonColor: _kActions['niveaux']!.color,
+              ),
+            ),
           );
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return CustomErrorState(
-            title: 'Aucun niveau disponible',
-            message:
-                "Cette école n'a pas de niveaux configurés pour le moment.",
-            icon: Icons.school_outlined,
-            onRetry: () => setState(() {}),
-            retryText: 'Actualiser',
-            iconColor: _kActions['niveaux']!.color,
-            buttonColor: _kActions['niveaux']!.color,
-            buttonIsLight: true,
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Center(
+              child: CustomErrorState(
+                title: 'Aucun niveau disponible',
+                message:
+                    "Cette école n'a pas de niveaux configurés pour le moment.",
+                icon: Icons.school_outlined,
+                onRetry: () => setState(() {}),
+                retryText: 'Actualiser',
+                iconColor: _kActions['niveaux']!.color,
+                buttonColor: _kActions['niveaux']!.color,
+                buttonIsLight: true,
+              ),
+            ),
           );
         }
         final niveaux = snapshot.data!;
@@ -5108,41 +5118,43 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 );
               }
               if (levelsSnapshot.hasError) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: CustomErrorState(
-                    message:
-                        "Impossible de charger les niveaux. Veuillez vérifier votre connexion et réessayer.",
-                    onRetry: () {
-                      setSheetState(() {
-                        // Reset to force reload
-                        _niveauxFuture =
-                            NiveauService.getNiveauxByEcole(
-                              widget.ecole.parametreCode ?? '',
-                            ).then((niveaux) {
-                              if (niveaux.isNotEmpty) {
-                                final niveauLabels = <String>{};
-                                for (final n in niveaux) {
-                                  final label = (n.niveau?.isNotEmpty == true)
-                                      ? n.niveau!
-                                      : n.nom;
-                                  if (label != null) niveauLabels.add(label);
+                return SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Center(
+                    child: CustomErrorState(
+                      message:
+                          "Impossible de charger les niveaux. Veuillez vérifier votre connexion et réessayer.",
+                      onRetry: () {
+                        setSheetState(() {
+                          // Reset to force reload
+                          _niveauxFuture =
+                              NiveauService.getNiveauxByEcole(
+                                widget.ecole.parametreCode ?? '',
+                              ).then((niveaux) {
+                                if (niveaux.isNotEmpty) {
+                                  final niveauLabels = <String>{};
+                                  for (final n in niveaux) {
+                                    final label = (n.niveau?.isNotEmpty == true)
+                                        ? n.niveau!
+                                        : n.nom;
+                                    if (label != null) niveauLabels.add(label);
+                                  }
+                                  final sortedLabels = niveauLabels.toList()
+                                    ..sort();
+                                  if (sortedLabels.isNotEmpty) {
+                                    setSheetState(() {
+                                      _selectedNiveauFiltre = null;
+                                      _scolariteFuture = null;
+                                    });
+                                  }
                                 }
-                                final sortedLabels = niveauLabels.toList()
-                                  ..sort();
-                                if (sortedLabels.isNotEmpty) {
-                                  setSheetState(() {
-                                    _selectedNiveauFiltre = null;
-                                    _scolariteFuture = null;
-                                  });
-                                }
-                              }
-                              return niveaux;
-                            });
-                      });
-                    },
-                    iconColor: AppColors.screenOrange,
-                    buttonColor: AppColors.screenOrange,
+                                return niveaux;
+                              });
+                        });
+                      },
+                      iconColor: AppColors.screenOrange,
+                      buttonColor: AppColors.screenOrange,
+                    ),
                   ),
                 );
               }
@@ -5163,10 +5175,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
               final sortedLabels = niveauLabels.toList()..sort();
 
-              return Container(
-                height: 45, // Augmenté pour laisser la place à l'ombre
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListView(
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 45, // Augmenté pour laisser la place à l'ombre
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 4,
@@ -5228,11 +5243,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     }),
                   ],
                 ),
-              );
-            },
-          ),
-        SearchBarWidget(
-          isSearching: _isSearchingScolarite,
+              ),
+              SearchBarWidget(
+                isSearching: _isSearchingScolarite,
           searchController: _searchController,
           hintText: 'Rechercher un frais...',
           onChanged: (v) {
@@ -5390,7 +5403,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               );
             },
           ),
-      ],
+        ],
+      );
+    },
+  ),
+],
     );
   }
 

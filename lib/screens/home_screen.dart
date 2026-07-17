@@ -41,6 +41,7 @@ import '../widgets/conditional_showcase.dart';
 import '../config/app_colors.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/components/section_row.dart';
+import '../widgets/components/custom_error_state.dart';
 import '../widgets/recommendation_bottom_sheet.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -675,11 +676,14 @@ class _HomeScreenState extends State<HomeScreen> {
             await NotificationService().showNotification(
               id: 999,
               title: 'Mise à jour disponible 🚀',
-              body: 'Une nouvelle version (${updateResult.latestVersion}) de l\'application est disponible. Cliquez pour l\'installer.',
+              body:
+                  'Une nouvelle version (${updateResult.latestVersion}) de l\'application est disponible. Cliquez pour l\'installer.',
               payload: updateResult.storeUrl,
             );
           } catch (e) {
-            debugPrint('Erreur lors du déclenchement de la notification locale : $e');
+            debugPrint(
+              'Erreur lors du déclenchement de la notification locale : $e',
+            );
           }
         }
       }
@@ -1664,8 +1668,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Construire la section Visite guidée
   Widget _buildVisiteGuideeSection() {
-    if (!_hasVisiteGuideeData) {
-      return const SizedBox.shrink();
+    if (_visiteGuideeVideosLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: CustomLoader(
+            message: 'Chargement des vidéos...',
+            size: 32.0,
+            showBackground: false,
+            loaderColor: AppColors.screenOrange,
+          ),
+        ),
+      );
+    }
+
+    if (_visiteGuideeVideosError != null ||
+        _filteredVisiteGuideeVideos.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+        child: CustomErrorState(
+          title: "Aucune vidéo disponible",
+          message: _visiteGuideeVideosError != null
+              ? "Impossible de charger les vidéos. Veuillez vérifier votre connexion internet et réessayer."
+              : "Il n'y a aucune vidéo de visite guidée disponible pour le moment.",
+          icon: Icons.videocam_off_outlined,
+          buttonWidth: 200,
+          onRetry: _loadVisiteGuideeVideos,
+          iconColor: AppColors.screenOrange,
+          buttonColor: AppColors.screenOrange,
+        ),
+      );
     }
 
     final isTablet =
@@ -1835,6 +1867,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Widget _buildErrorState() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: CustomErrorState(
+        message:
+            "Impossible de charger les données. Veuillez vérifier votre connexion et réessayer.",
+        onRetry: _refreshHome,
+        iconColor: AppColors.screenOrange,
+        buttonColor: AppColors.screenOrange,
+      ),
+    );
+  }
+
   // ─── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -1851,7 +1902,13 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               _buildDarkHeader(),
-              _buildBottomSheet(isMobileLandscape: true),
+              if (_error != null)
+                SizedBox(
+                  height: MediaQuery.sizeOf(context).height * 0.6,
+                  child: _buildErrorState(),
+                )
+              else
+                _buildBottomSheet(isMobileLandscape: true),
             ],
           ),
         ),
@@ -1860,7 +1917,10 @@ class _HomeScreenState extends State<HomeScreen> {
       bodyContent = Column(
         children: [
           _buildDarkHeader(),
-          Expanded(child: _buildBottomSheet(isMobileLandscape: false)),
+          if (_error != null)
+            Expanded(child: _buildErrorState())
+          else
+            Expanded(child: _buildBottomSheet(isMobileLandscape: false)),
         ],
       );
     }
@@ -1980,8 +2040,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _PulsingNotificationButton(
                   icon: Icons.notifications_outlined,
                   onTap: _showNotificationsMenu,
-                  showBadge: _unreadNotificationsCount > 0 || _hasUpdateNotification,
-                  badgeCount: _unreadNotificationsCount + (_hasUpdateNotification ? 1 : 0),
+                  showBadge:
+                      _unreadNotificationsCount > 0 || _hasUpdateNotification,
+                  badgeCount:
+                      _unreadNotificationsCount +
+                      (_hasUpdateNotification ? 1 : 0),
                   isPulsing: _hasUpdateNotification,
                 ),
               ),
@@ -3091,7 +3154,7 @@ class _HomeScreenState extends State<HomeScreen> {
         showcaseKey: _three,
         description: 'Accédez en un clic aux bulletins, absences et retards.',
         child: SizedBox(
-          height: AppDimensions.getSquareCardHeightSize(context) + 20,
+          height: AppDimensions.getSquareCardHeightSize(context) + 0,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(
@@ -3346,11 +3409,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 16),
             _buildBlogsSection(),
+            const SizedBox(height: 16),
           ],
         ),
 
       // Section Visite guidée
-      const SizedBox(height: 24),
       SectionRow(
         title: 'VISITE GUIDÉE',
         onSeeMore: () {
@@ -3593,10 +3656,12 @@ class _PulsingNotificationButton extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _PulsingNotificationButtonState createState() => _PulsingNotificationButtonState();
+  _PulsingNotificationButtonState createState() =>
+      _PulsingNotificationButtonState();
 }
 
-class _PulsingNotificationButtonState extends State<_PulsingNotificationButton> with SingleTickerProviderStateMixin {
+class _PulsingNotificationButtonState extends State<_PulsingNotificationButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override

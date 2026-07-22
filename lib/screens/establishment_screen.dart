@@ -151,6 +151,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   String? _nomEtablissement;
   String? _categorie;
   String? _codepays;
+  String? _statut;
+  String? _ordreEnseignement;
+  String? _programmesEnseignement;
 
   // Controllers pour les champs de recherche avancée
   final _paysController = TextEditingController();
@@ -159,6 +162,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   final _nomEtablissementController = TextEditingController();
   final _categorieController = TextEditingController();
   final _codepaysController = TextEditingController();
+  final _statutController = TextEditingController();
+  final _ordreEnseignementController = TextEditingController();
+  final _programmesEnseignementController = TextEditingController();
 
   // Controllers pour le formulaire de recommandation
   final _recommenderNameController = TextEditingController();
@@ -410,6 +416,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         nomEtablissement: _nomEtablissement,
         categorie: _categorie,
         codepays: _codepays,
+        statut: _statut,
+        ordreEnseignement: _ordreEnseignement,
+        programmesEnseignement: _programmesEnseignement,
       );
       if (mounted) {
         setState(() {
@@ -451,6 +460,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         nomEtablissement: _nomEtablissement,
         categorie: _categorie,
         codepays: _codepays,
+        statut: _statut,
+        ordreEnseignement: _ordreEnseignement,
+        programmesEnseignement: _programmesEnseignement,
       );
       if (!mounted) return;
       setState(() {
@@ -490,6 +502,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       _codepays = _codepaysController.text.trim().isEmpty
           ? null
           : _codepaysController.text.trim();
+      _statut = _statutController.text.trim().isEmpty ? null : _statutController.text.trim();
+      _ordreEnseignement = _ordreEnseignementController.text.trim().isEmpty ? null : _ordreEnseignementController.text.trim();
+      _programmesEnseignement = _programmesEnseignementController.text.trim().isEmpty ? null : _programmesEnseignementController.text.trim();
     });
   }
 
@@ -524,8 +539,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       _nomEtablissementController.clear();
       _categorieController.clear();
       _codepaysController.clear();
-      _pays = _ville = _quartier = _nomEtablissement = _categorie = _codepays =
-          null;
+      _statutController.clear();
+      _ordreEnseignementController.clear();
+      _programmesEnseignementController.clear();
+      _pays = _ville = _quartier = _nomEtablissement = _categorie = _codepays = _statut = _ordreEnseignement = _programmesEnseignement = null;
       _searchController.clear();
     });
     _loadEcoles();
@@ -578,7 +595,9 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                               _nomEtablissement = null;
                             }
                           });
-                          if (!_isSearching) {
+                          if (_isSearching) {
+                            // Rien à faire, la zone de recherche est flottante
+                          } else {
                             _loadEcoles();
                           }
                         },
@@ -591,24 +610,28 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                       const SizedBox(width: 4),
                     ],
                   ),
-                  SliverToBoxAdapter(
-                    child: SearchBarWidget(
-                      isSearching: _isSearching,
-                      searchController: _searchController,
-                      onChanged: _onSearchChanged,
-                      onClear: () {
-                        _searchTimer?.cancel();
-                        setState(() {
-                          _searchController.clear();
-                          _nomEtablissement = null;
-                        });
-                        _loadEcoles();
-                      },
-                      hintText: 'Rechercher un établissement...',
-                    ),
-                  ),
+
                   ..._buildSliverContent(),
                 ],
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 60,
+              left: 10,
+              right: 10,
+              child: SearchBarWidget(
+                isSearching: _isSearching,
+                searchController: _searchController,
+                onChanged: _onSearchChanged,
+                onClear: () {
+                  _searchTimer?.cancel();
+                  setState(() {
+                    _searchController.clear();
+                    _nomEtablissement = null;
+                  });
+                  _loadEcoles();
+                },
+                hintText: 'Rechercher un établissement...',
               ),
             ),
             const BottomFadeGradient(),
@@ -802,6 +825,41 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Statut (ex: Privé)',
+                                hint: 'Statut',
+                                icon: Icons.security_rounded,
+                                controller: _statutController,
+                                iconColor: AppColors.screenOrange,
+                                focusBorderColor: AppColors.screenOrange,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Ordre (ex: Laïc)',
+                                hint: 'Ordre',
+                                icon: Icons.menu_book_rounded,
+                                controller: _ordreEnseignementController,
+                                iconColor: AppColors.screenOrange,
+                                focusBorderColor: AppColors.screenOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextField(
+                          label: 'Programme (ex: Français)',
+                          hint: 'Programme',
+                          icon: Icons.language_rounded,
+                          controller: _programmesEnseignementController,
+                          iconColor: AppColors.screenOrange,
+                          focusBorderColor: AppColors.screenOrange,
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -1100,6 +1158,8 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                   color: _typeColor(items[i].typePrincipal),
                   location: items[i].adresse,
                   tag: items[i].typePrincipal,
+                  tag2: items[i].ordreEnseignement,
+                  tag2Color: Colors.blueAccent,
                   titleMaxLines: 2,
                   allowLineBreak: true,
                   externalTitleSpacing: 8,

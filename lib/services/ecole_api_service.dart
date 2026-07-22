@@ -20,6 +20,9 @@ class EcoleApiService {
     String? nomEtablissement,
     String? categorie,
     String? codepays,
+    String? statut,
+    String? ordreEnseignement,
+    String? programmesEnseignement,
   }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
@@ -43,6 +46,12 @@ class EcoleApiService {
       queryParams['categorie'] = categorie;
     if (codepays != null && codepays.isNotEmpty)
       queryParams['codepays'] = codepays;
+    if (statut != null && statut.isNotEmpty)
+      queryParams['statut'] = statut;
+    if (ordreEnseignement != null && ordreEnseignement.isNotEmpty)
+      queryParams['ordre_enseignement'] = ordreEnseignement;
+    if (programmesEnseignement != null && programmesEnseignement.isNotEmpty)
+      queryParams['programmes_enseignement'] = programmesEnseignement;
 
     final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
     print('🔗 URL: $uri');

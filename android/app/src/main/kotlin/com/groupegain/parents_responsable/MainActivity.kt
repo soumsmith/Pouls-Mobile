@@ -6,6 +6,7 @@ import io.flutter.plugin.common.MethodChannel
 import android.os.Build
 import android.view.WindowInsets
 import android.view.View
+import android.graphics.Color
 
 import androidx.core.view.WindowCompat
 
@@ -13,9 +14,20 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Activer l'affichage bord à bord (résout les alertes Android 15 / SDK 35)
-        // FlutterActivity n'hérite pas de ComponentActivity, donc on utilise WindowCompat
+        // Affichage bord-à-bord compatible Android 15+ (SDK 35)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        
+        // Rend les barres système transparentes
+        // Note: ces API sont marquées obsolètes à partir du SDK 35,
+        // mais restent nécessaires pour la rétrocompatibilité sur les versions antérieures.
+        @Suppress("DEPRECATION")
+        window.statusBarColor = Color.TRANSPARENT
+        @Suppress("DEPRECATION")
+        window.navigationBarColor = Color.TRANSPARENT
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            @Suppress("DEPRECATION")
+            window.navigationBarDividerColor = Color.TRANSPARENT
+        }
     }
     
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

@@ -1824,17 +1824,6 @@ class _ChildListScreenState extends State<ChildListScreen>
           // ✅ Déclencher le chargement des deux types de notifications UNE SEULE FOIS
           if ((!_notificationsLoaded && !_isLoadingNotifications) ||
               (!_echeanceLoaded && !_isLoadingEcheance)) {
-            // Afficher le loader après le cycle de build pour éviter l'erreur setState()
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                CustomLoaderOverlay.show(
-                  context,
-                  message: 'Chargement des notifications...',
-                  loaderColor: AppColors.screenOrange,
-                  showBackground: false,
-                );
-              }
-            });
 
             final matricule = _matricule ?? widget.child.matricule;
             if (matricule != null && matricule.isNotEmpty) {
@@ -1859,10 +1848,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                           _isLoadingNotifications = false;
                           _notificationsLoaded = true;
                         });
-                        // Cacher le loader si les deux chargements sont terminés
-                        if (_echeanceLoaded) {
-                          CustomLoaderOverlay.hide();
-                        }
+
                       }
                     })
                     .catchError((e) {
@@ -1876,10 +1862,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                           _isLoadingNotifications = false;
                           _notificationsLoaded = true;
                         });
-                        // Cacher le loader si les deux chargements sont terminés
-                        if (_echeanceLoaded) {
-                          CustomLoaderOverlay.hide();
-                        }
+
                       }
                     });
               }
@@ -1900,10 +1883,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                           _isLoadingEcheance = false;
                           _echeanceLoaded = true;
                         });
-                        // Cacher le loader si les deux chargements sont terminés
-                        if (_notificationsLoaded) {
-                          CustomLoaderOverlay.hide();
-                        }
+
                       }
                     })
                     .catchError((e) {
@@ -1917,15 +1897,11 @@ class _ChildListScreenState extends State<ChildListScreen>
                           _isLoadingEcheance = false;
                           _echeanceLoaded = true;
                         });
-                        // Cacher le loader si les deux chargements sont terminés
-                        if (_notificationsLoaded) {
-                          CustomLoaderOverlay.hide();
-                        }
+
                       }
                     });
               }
             } else {
-              CustomLoaderOverlay.hide();
               _isLoadingNotifications = false;
               _notificationsLoaded = true;
               _isLoadingEcheance = false;

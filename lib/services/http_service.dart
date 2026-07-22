@@ -41,6 +41,7 @@ class HttpService {
     try {
       await _ensureConnection();
       final uri = Uri.parse('$baseUrl$endpoint');
+      print('🌐 HttpService POST URL: $uri');
 
       final response = await http
           .post(
@@ -158,11 +159,19 @@ class HttpService {
     } else {
       try {
         final errorData = json.decode(response.body) as Map<String, dynamic>;
-        throw Exception(
-          errorData['error'] ?? 'Erreur HTTP ${response.statusCode}',
+        final errorMessage = errorData['message'] ?? errorData['error'] ?? 'Erreur HTTP ${response.statusCode}';
+        throw ApiException(
+          message: errorMessage.toString(),
+          type: ApiErrorType.clientError,
+          statusCode: response.statusCode,
         );
       } catch (e) {
-        throw Exception('Erreur HTTP ${response.statusCode}: ${response.body}');
+        if (e is ApiException) rethrow;
+        throw ApiException(
+          message: 'Erreur HTTP ${response.statusCode}',
+          type: ApiErrorType.serverError,
+          statusCode: response.statusCode,
+        );
       }
     }
   }

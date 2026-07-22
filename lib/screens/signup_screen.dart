@@ -207,630 +207,732 @@ class _SignupScreenState extends State<SignupScreen> {
         AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
 
     return Scaffold(
-      backgroundColor: Colors.white, // Fond blanc
-      body: CustomScrollView(
-        slivers: [
-          // Utilisation de CustomSliverAppBar
-          CustomSliverAppBar(
-            title: '',
-            automaticallyImplyLeading: true,
-            onBackTap: () {
-              // Gestion du retour personnalisée
-              Navigator.of(context).pop();
-            },
-            pinned: false,
-            floating: true,
-            expandedHeight: 0,
-            backgroundColor: Colors.white, // Fond blanc pour l'appbar
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [AppColors.backgroundDark, AppColors.surfaceDark]
+                : [AppColors.white, AppColors.primaryLight.withOpacity(0.05)],
           ),
+        ),
+        child: CustomScrollView(
+          slivers: [
+            // Utilisation de CustomSliverAppBar
+            CustomSliverAppBar(
+              title: '',
+              automaticallyImplyLeading: true,
+              onBackTap: () {
+                // Gestion du retour personnalisée
+                Navigator.of(context).pop();
+              },
+              pinned: true,
+              floating: false,
+              expandedHeight: 0,
+              //backgroundColor: Colors.transparent,
+            ),
 
-          // Contenu principal
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: SingleChildScrollView(
-                padding: AppDimensions.getResponsivePadding(context),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: AppDimensions.getLoginCardMaxWidth(context),
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(
-                          height: AppDimensions.getAdaptiveSpacing(context) * 0.5,
-                        ),
-                        // Logo
-                        Center(
-                          child: Container(
-                            padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+            // Contenu principal
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: AppDimensions.getResponsivePadding(context),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: AppDimensions.getLoginCardMaxWidth(context),
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(
+                            height:
+                                AppDimensions.getAdaptiveSpacing(context) * 0.5,
+                          ),
+                          // Logo
+                          Center(
+                            child: Container(
+                              padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.surfaceDark
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(
+                                  isTablet ? 28.0 : 20.0,
+                                ),
+                                boxShadow: AppDimensions.getSettingsCardShadow(
+                                  context,
+                                ),
+                              ),
+                              child: Image.asset(
+                                'assets/images/logo-app.png',
+                                width: AppDimensions.getAdaptiveIconSize(
+                                  context,
+                                ),
+                                height: AppDimensions.getAdaptiveIconSize(
+                                  context,
+                                ),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getAdaptiveSpacing(context) * 0.4,
+                          ),
+                          Text(
+                            'CRÉER UN COMPTE',
+                            style: TextStyle(
+                              fontSize: AppDimensions.getFormTitleFontSize(
+                                context,
+                              ),
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.getTextColor(isDark),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Remplissez ce formulaire pour créer votre compte',
+                            style: TextStyle(
+                              fontSize: AppDimensions.getFormSubtitleFontSize(
+                                context,
+                              ),
+                              color: AppColors.getTextColor(
+                                isDark,
+                                type: TextType.secondary,
+                              ),
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getFormFieldSpacing(context) *
+                                0.3,
+                          ),
+                          // Champ Nom
+                          Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(
-                                isTablet ? 28.0 : 20.0,
+                                isTablet ? 20.0 : 16.0,
                               ),
-                              boxShadow: AppDimensions.getSettingsCardShadow(context),
+                              boxShadow: AppDimensions.getSettingsCardShadow(
+                                context,
+                              ),
                             ),
-                            child: Image.asset(
-                              'assets/images/logo-app.png',
-                              width: AppDimensions.getAdaptiveIconSize(context),
-                              height: AppDimensions.getAdaptiveIconSize(context),
-                              fit: BoxFit.contain,
+                            child: TextFormField(
+                              controller: _nameController,
+                              keyboardType: TextInputType.text,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Veuillez entrer votre nom';
+                                }
+                                return null;
+                              },
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isTablet ? 18.0 : 16.0,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Nom *',
+                                hintText: 'Votre nom',
+                                labelStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                                hintStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.5),
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 20.0 : 16.0,
+                                  vertical: isTablet ? 20.0 : 18.0,
+                                ),
+                                filled: true,
+                                fillColor: Colors.transparent,
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(
-                          height: AppDimensions.getAdaptiveSpacing(context) * 0.4,
-                        ),
-                        Text(
-                          'CRÉER UN COMPTE',
-                          style: TextStyle(
-                            fontSize: AppDimensions.getFormTitleFontSize(context),
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87, // Texte noir pour contraste sur fond blanc
+                          SizedBox(
+                            height:
+                                AppDimensions.getFormFieldSpacing(context) *
+                                0.3,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Remplissez ce formulaire pour créer votre compte',
-                          style: TextStyle(
-                            fontSize: AppDimensions.getFormSubtitleFontSize(
-                              context,
+                          // Champ Prénoms
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
+                              boxShadow: AppDimensions.getSettingsCardShadow(
+                                context,
+                              ),
                             ),
-                            color: Colors.black54, // Texte gris pour le sous-titre
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(
-                          height:
-                          AppDimensions.getFormFieldSpacing(context) * 0.3,
-                        ),
-                        // Champ Nom
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              isTablet ? 20.0 : 16.0,
-                            ),
-                            boxShadow: AppDimensions.getSettingsCardShadow(context),
-                          ),
-                          child: TextFormField(
-                            controller: _nameController,
-                            keyboardType: TextInputType.text,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Veuillez entrer votre nom';
-                              }
-                              return null;
-                            },
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: isTablet ? 18.0 : 16.0,
-                            ),
-                            decoration: InputDecoration(
-                              labelText: 'Nom *',
-                              hintText: 'Votre nom',
-                              labelStyle: TextStyle(
-                                color: Colors.black54,
-                                fontSize: isTablet ? 16.0 : 14.0,
+                            child: TextFormField(
+                              controller: _prenomsController,
+                              keyboardType: TextInputType.text,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Veuillez entrer vos prénoms';
+                                }
+                                return null;
+                              },
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isTablet ? 18.0 : 16.0,
                               ),
-                              hintStyle: TextStyle(
-                                color: Colors.black38,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
+                              decoration: InputDecoration(
+                                labelText: 'Prénoms *',
+                                hintText: 'Vos prénoms',
+                                labelStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: isTablet ? 16.0 : 14.0,
                                 ),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
+                                hintStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.5),
+                                  fontSize: isTablet ? 16.0 : 14.0,
                                 ),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
                                 ),
-                                borderSide: BorderSide.none,
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 20.0 : 16.0,
+                                  vertical: isTablet ? 20.0 : 18.0,
+                                ),
+                                filled: true,
+                                fillColor: Colors.transparent,
                               ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 20.0 : 16.0,
-                                vertical: isTablet ? 20.0 : 18.0,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
                             ),
                           ),
-                        ),
-                        SizedBox(
-                          height:
-                          AppDimensions.getFormFieldSpacing(context) * 0.3,
-                        ),
-                        // Champ Prénoms
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              isTablet ? 20.0 : 16.0,
-                            ),
-                            boxShadow: AppDimensions.getSettingsCardShadow(context),
+                          SizedBox(
+                            height:
+                                AppDimensions.getFormFieldSpacing(context) *
+                                0.3,
                           ),
-                          child: TextFormField(
-                            controller: _prenomsController,
-                            keyboardType: TextInputType.text,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Veuillez entrer vos prénoms';
-                              }
-                              return null;
-                            },
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: isTablet ? 18.0 : 16.0,
+                          // Champ Téléphone
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
+                              boxShadow: AppDimensions.getSettingsCardShadow(
+                                context,
+                              ),
                             ),
-                            decoration: InputDecoration(
-                              labelText: 'Prénoms *',
-                              hintText: 'Vos prénoms',
-                              labelStyle: TextStyle(
-                                color: Colors.black54,
-                                fontSize: isTablet ? 16.0 : 14.0,
+                            child: IntlPhoneField(
+                              controller: _phoneController,
+                              initialCountryCode: 'CI',
+                              onChanged: (phone) {
+                                _completePhoneNumber = phone.completeNumber;
+                              },
+                              validator: (value) {
+                                if (value == null || value.number.isEmpty) {
+                                  return 'Veuillez entrer votre numéro de téléphone';
+                                }
+                                return null;
+                              },
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isTablet ? 18.0 : 16.0,
                               ),
-                              hintStyle: TextStyle(
-                                color: Colors.black38,
-                                fontSize: isTablet ? 16.0 : 14.0,
+                              dropdownTextStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isTablet ? 18.0 : 16.0,
                               ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 20.0 : 16.0,
-                                vertical: isTablet ? 20.0 : 18.0,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          height:
-                          AppDimensions.getFormFieldSpacing(context) * 0.3,
-                        ),
-                        // Champ Téléphone
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              isTablet ? 20.0 : 16.0,
-                            ),
-                            boxShadow: AppDimensions.getSettingsCardShadow(context),
-                          ),
-                          child: IntlPhoneField(
-                            controller: _phoneController,
-                            initialCountryCode: 'CI',
-                            onChanged: (phone) {
-                              _completePhoneNumber = phone.completeNumber;
-                            },
-                            validator: (value) {
-                              if (value == null || value.number.isEmpty) {
-                                return 'Veuillez entrer votre numéro de téléphone';
-                              }
-                              return null;
-                            },
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: isTablet ? 18.0 : 16.0,
-                            ),
-                            dropdownTextStyle: TextStyle(
-                              color: Colors.black87,
-                              fontSize: isTablet ? 18.0 : 16.0,
-                            ),
-                            flagsButtonPadding: EdgeInsets.symmetric(
-                              horizontal: isTablet ? 12.0 : 8.0,
-                              vertical: isTablet ? 16.0 : 12.0,
-                            ),
-                            showCountryFlag: true,
-                            dropdownIcon: Icon(
-                              Icons.arrow_drop_down,
-                              color: Colors.black54,
-                              size: isTablet ? 28.0 : 24.0,
-                            ),
-                            disableLengthCheck: false,
-                            decoration: InputDecoration(
-                              labelText: 'Numéro de téléphone *',
-                              hintText: 'XX XX XX XX',
-                              labelStyle: TextStyle(
-                                color: Colors.black54,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                              ),
-                              hintStyle: TextStyle(
-                                color: Colors.black38,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 20.0 : 16.0,
+                              flagsButtonPadding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 12.0 : 8.0,
                                 vertical: isTablet ? 16.0 : 12.0,
                               ),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          height:
-                          AppDimensions.getFormFieldSpacing(context) * 0.3,
-                        ),
-                        // Champ Mot de passe avec bouton d'affichage/masquage
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              isTablet ? 20.0 : 16.0,
-                            ),
-                            boxShadow: AppDimensions.getSettingsCardShadow(context),
-                          ),
-                          child: TextFormField(
-                            controller: _passwordController,
-                            keyboardType: TextInputType.visiblePassword,
-                            obscureText: !_isPasswordVisible,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer un mot de passe';
-                              }
-                              if (value.length < 6) {
-                                return 'Le mot de passe doit contenir au moins 6 caractères';
-                              }
-                              return null;
-                            },
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: isTablet ? 18.0 : 16.0,
-                            ),
-                            decoration: InputDecoration(
-                              labelText: 'Mot de passe *',
-                              hintText: 'Votre mot de passe',
-                              labelStyle: TextStyle(
+                              showCountryFlag: true,
+                              dropdownIcon: Icon(
+                                Icons.arrow_drop_down,
                                 color: Colors.black54,
-                                fontSize: isTablet ? 16.0 : 14.0,
+                                size: isTablet ? 28.0 : 24.0,
                               ),
-                              hintStyle: TextStyle(
-                                color: Colors.black38,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
+                              disableLengthCheck: false,
+                              decoration: InputDecoration(
+                                labelText: 'Numéro de téléphone *',
+                                hintText: 'XX XX XX XX',
+                                labelStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: isTablet ? 16.0 : 14.0,
                                 ),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
+                                hintStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.5),
+                                  fontSize: isTablet ? 16.0 : 14.0,
                                 ),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 20.0 : 16.0,
-                                vertical: isTablet ? 20.0 : 18.0,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _isPasswordVisible
-                                      ? Icons.visibility
-                                      : Icons.visibility_off,
-                                  color: Colors.black54,
-                                  size: isTablet ? 28.0 : 24.0,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _isPasswordVisible = !_isPasswordVisible;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          height:
-                          AppDimensions.getFormFieldSpacing(context) * 0.3,
-                        ),
-                        // Champ Code d'invitation
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              isTablet ? 20.0 : 16.0,
-                            ),
-                            boxShadow: AppDimensions.getSettingsCardShadow(context),
-                          ),
-                          child: TextFormField(
-                            controller: _invitationCodeController,
-                            keyboardType: TextInputType.text,
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: isTablet ? 18.0 : 16.0,
-                            ),
-                            decoration: InputDecoration(
-                              labelText: 'Code d\'invitation (optionnel)',
-                              hintText: 'Entrez votre code d\'invitation',
-                              labelStyle: TextStyle(
-                                color: Colors.black54,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                              ),
-                              hintStyle: TextStyle(
-                                color: Colors.black38,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 20.0 : 16.0,
-                                vertical: isTablet ? 20.0 : 18.0,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          height:
-                          AppDimensions.getFormFieldSpacing(context) * 0.3,
-                        ),
-                        // Champ Question de sécurité
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              isTablet ? 20.0 : 16.0,
-                            ),
-                            boxShadow: AppDimensions.getSettingsCardShadow(context),
-                          ),
-                          child: DropdownButtonFormField<String>(
-                            value: _selectedSecurityQuestion,
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              labelText: 'Question de sécurité *',
-                              labelStyle: TextStyle(
-                                color: Colors.black54,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 20.0 : 16.0,
-                                vertical: isTablet ? 20.0 : 18.0,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: isTablet ? 18.0 : 16.0,
-                            ),
-                            dropdownColor: Colors.white,
-                            items: _securityQuestions.map((String question) {
-                              return DropdownMenuItem<String>(
-                                value: question,
-                                child: Text(
-                                  question,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: isTablet ? 16.0 : 14.0,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
                                   ),
+                                  borderSide: BorderSide.none,
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                _selectedSecurityQuestion = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                        SizedBox(
-                          height:
-                          AppDimensions.getFormFieldSpacing(context) * 0.3,
-                        ),
-                        // Champ Réponse de sécurité
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              isTablet ? 20.0 : 16.0,
-                            ),
-                            boxShadow: AppDimensions.getSettingsCardShadow(context),
-                          ),
-                          child: TextFormField(
-                            controller: _securityAnswerController,
-                            keyboardType: TextInputType.text,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Veuillez répondre à la question de sécurité';
-                              }
-                              return null;
-                            },
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: isTablet ? 18.0 : 16.0,
-                            ),
-                            decoration: InputDecoration(
-                              labelText: 'Réponse de sécurité *',
-                              hintText: 'Votre réponse',
-                              labelStyle: TextStyle(
-                                color: Colors.black54,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                              ),
-                              hintStyle: TextStyle(
-                                color: Colors.black38,
-                                fontSize: isTablet ? 16.0 : 14.0,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
                                 ),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
                                 ),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isTablet ? 20.0 : 16.0,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 20.0 : 16.0,
+                                  vertical: isTablet ? 16.0 : 12.0,
                                 ),
-                                borderSide: BorderSide.none,
+                                filled: true,
+                                fillColor: Colors.transparent,
                               ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 20.0 : 16.0,
-                                vertical: isTablet ? 20.0 : 18.0,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
                             ),
                           ),
-                        ),
-                        SizedBox(
-                          height: AppDimensions.getAdaptiveSpacing(context) * 0.4,
-                        ),
-                        // Checkbox conditions
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _acceptConditions,
-                              onChanged: (value) {
+                          SizedBox(
+                            height:
+                                AppDimensions.getFormFieldSpacing(context) *
+                                0.3,
+                          ),
+                          // Champ Mot de passe avec bouton d'affichage/masquage
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
+                              boxShadow: AppDimensions.getSettingsCardShadow(
+                                context,
+                              ),
+                            ),
+                            child: TextFormField(
+                              controller: _passwordController,
+                              keyboardType: TextInputType.visiblePassword,
+                              obscureText: !_isPasswordVisible,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer un mot de passe';
+                                }
+                                if (value.length < 6) {
+                                  return 'Le mot de passe doit contenir au moins 6 caractères';
+                                }
+                                return null;
+                              },
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isTablet ? 18.0 : 16.0,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Mot de passe *',
+                                hintText: 'Votre mot de passe',
+                                labelStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                                hintStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.5),
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 20.0 : 16.0,
+                                  vertical: isTablet ? 20.0 : 18.0,
+                                ),
+                                filled: true,
+                                fillColor: Colors.transparent,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _isPasswordVisible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(0.7),
+                                    size: isTablet ? 28.0 : 24.0,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isPasswordVisible = !_isPasswordVisible;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getFormFieldSpacing(context) *
+                                0.3,
+                          ),
+                          // Champ Code d'invitation
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
+                              boxShadow: AppDimensions.getSettingsCardShadow(
+                                context,
+                              ),
+                            ),
+                            child: TextFormField(
+                              controller: _invitationCodeController,
+                              keyboardType: TextInputType.text,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isTablet ? 18.0 : 16.0,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Code d\'invitation (optionnel)',
+                                hintText: 'Entrez votre code d\'invitation',
+                                labelStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                                hintStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.5),
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 20.0 : 16.0,
+                                  vertical: isTablet ? 20.0 : 18.0,
+                                ),
+                                filled: true,
+                                fillColor: Colors.transparent,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getFormFieldSpacing(context) *
+                                0.3,
+                          ),
+                          // Champ Question de sécurité
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
+                              boxShadow: AppDimensions.getSettingsCardShadow(
+                                context,
+                              ),
+                            ),
+                            child: DropdownButtonFormField<String>(
+                              value: _selectedSecurityQuestion,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: 'Question de sécurité *',
+                                labelStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 20.0 : 16.0,
+                                  vertical: isTablet ? 20.0 : 18.0,
+                                ),
+                                filled: true,
+                                fillColor: Colors.transparent,
+                              ),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isTablet ? 18.0 : 16.0,
+                              ),
+                              dropdownColor: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
+                              items: _securityQuestions.map((String question) {
+                                return DropdownMenuItem<String>(
+                                  value: question,
+                                  child: Text(
+                                    question,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
+                                      fontSize: isTablet ? 16.0 : 14.0,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
                                 setState(() {
-                                  _acceptConditions = value ?? false;
+                                  _selectedSecurityQuestion = newValue!;
                                 });
                               },
-                              activeColor: Colors.green,
                             ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getFormFieldSpacing(context) *
+                                0.3,
+                          ),
+                          // Champ Réponse de sécurité
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 20.0 : 16.0,
+                              ),
+                              boxShadow: AppDimensions.getSettingsCardShadow(
+                                context,
+                              ),
+                            ),
+                            child: TextFormField(
+                              controller: _securityAnswerController,
+                              keyboardType: TextInputType.text,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Veuillez répondre à la question de sécurité';
+                                }
+                                return null;
+                              },
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isTablet ? 18.0 : 16.0,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Réponse de sécurité *',
+                                hintText: 'Votre réponse',
+                                labelStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                                hintStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.5),
+                                  fontSize: isTablet ? 16.0 : 14.0,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    isTablet ? 20.0 : 16.0,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 20.0 : 16.0,
+                                  vertical: isTablet ? 20.0 : 18.0,
+                                ),
+                                filled: true,
+                                fillColor: Colors.transparent,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getAdaptiveSpacing(context) * 0.4,
+                          ),
+                          // Checkbox conditions
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _acceptConditions,
+                                onChanged: (value) {
                                   setState(() {
-                                    _acceptConditions = !_acceptConditions;
+                                    _acceptConditions = value ?? false;
                                   });
                                 },
-                                child: Text(
-                                  "J'accepte les conditions d'utilisation",
-                                  style: TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: isTablet ? 16.0 : 14.0,
+                                activeColor: Colors.green,
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _acceptConditions = !_acceptConditions;
+                                    });
+                                  },
+                                  child: Text(
+                                    "J'accepte les conditions d'utilisation",
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
+                                      fontSize: isTablet ? 16.0 : 14.0,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: AppDimensions.getAdaptiveSpacing(context) * 0.4,
-                        ),
-                        // Bouton créer le compte
-                        CustomButton(
-                          text: 'CRÉER LE COMPTE',
-                          onPressed: _acceptConditions ? _handleSignup : null,
-                          isLoading: _isLoading,
-                          backgroundColor: _acceptConditions ? Colors.green : Colors.grey,
-                        ),
-                        SizedBox(
-                          height:
-                          AppDimensions.getAdaptiveSpacing(context) * 0.75,
-                        ),
-                        SizedBox(
-                          height: AppDimensions.getAdaptiveSpacing(context) * 1.5,
-                        ),
-                      ],
+                            ],
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getAdaptiveSpacing(context) * 0.4,
+                          ),
+                          // Bouton créer le compte
+                          CustomButton(
+                            text: 'CRÉER LE COMPTE',
+                            onPressed: _acceptConditions ? _handleSignup : null,
+                            isLoading: _isLoading,
+                            backgroundColor: _acceptConditions
+                                ? Colors.green
+                                : Colors.grey,
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getAdaptiveSpacing(context) *
+                                0.75,
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getAdaptiveSpacing(context) * 1.5,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -24,6 +24,8 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
   final Color? actionTextColor;
   final double? actionTextFontSize;
   final String? tag;
+  final String? tag2;
+  final Color? tag2Color;
   final double? width;
   final double? height;
   final double? imageHeight;
@@ -71,6 +73,8 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
     this.actionTextColor,
     this.actionTextFontSize,
     this.tag,
+    this.tag2,
+    this.tag2Color,
     this.width,
     this.height,
     this.imageHeight,
@@ -466,28 +470,53 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
             ),
           ),
           // Toujours afficher un espace pour le badge pour éviter le décalage
-          Positioned(
+                    Positioned(
             top: 8,
             right: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
-              decoration: BoxDecoration(
-                color: tag != null ? color : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: tag != null 
-                  ? Text(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (tag != null)
+                  Container(
+                    margin: const EdgeInsets.only(left: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
                       tag!,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
-                    )
-                  : const SizedBox.shrink(), // Espace vide mais même taille
+                    ),
+                  ),
+                if (tag2 != null)
+                  Container(
+                    margin: const EdgeInsets.only(left: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: tag2Color ?? Colors.grey,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      tag2!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           // Icône de play au centre pour les vidéos (affichage conditionnel)

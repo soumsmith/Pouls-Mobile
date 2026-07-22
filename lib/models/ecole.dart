@@ -8,6 +8,8 @@ class Ecole {
   final String telephone;
   final String parametreCode;
   final String statut;
+  final String? ordreEnseignement;
+  final List<String> programmesEnseignement;
   final List<String> filiereNom;
   final String? imagefond;
   final String? paramecole;
@@ -37,6 +39,8 @@ class Ecole {
     required this.telephone,
     required this.parametreCode,
     required this.statut,
+    this.ordreEnseignement,
+    this.programmesEnseignement = const [],
     required this.filiereNom,
     this.imagefond,
     this.paramecole,
@@ -66,7 +70,9 @@ class Ecole {
       logo: json['logo'] as String? ?? '',
       telephone: json['telephone'] as String? ?? '',
       parametreCode: json['parametre_code'] as String? ?? '',
-      statut: json['statut'] as String? ?? '',
+            statut: json['statut'] as String? ?? '',
+      ordreEnseignement: json['ordre_enseignement'] as String?,
+      programmesEnseignement: _parseProgrammes(json['programmes_enseignement']),
       filiereNom: filieres,
       imagefond: json['imagefond'] as String?,
       paramecole: json['paramecole'] as String?,
@@ -87,7 +93,9 @@ class Ecole {
       'logo': logo,
       'telephone': telephone,
       'parametre_code': parametreCode,
-      'statut': statut,
+            'statut': statut,
+      'ordre_enseignement': ordreEnseignement,
+      'programmes_enseignement': programmesEnseignement,
       'filiere_nom': filiereNom,
       'imagefond': imagefond,
       'paramecole': paramecole,
@@ -126,5 +134,20 @@ class Ecole {
     
     return statut;
   }
-}
 
+  static List<String> _parseProgrammes(dynamic data) {
+    if (data == null) return [];
+    if (data is List) return data.map((e) => e.toString()).toList();
+    if (data is String) {
+      try {
+        // try parsing json string '["Français"]'
+        // Since we don't have dart:convert here, we can do a simple split or we can import dart:convert at top
+        final cleaned = data.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
+        return cleaned.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  }
+}

@@ -10,6 +10,7 @@ import 'services/theme_service.dart';
 import 'services/database_service.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
+import 'services/onesignal_service.dart';
 import 'services/connectivity_service.dart';
 import 'utils/notification_helper.dart';
 
@@ -30,6 +31,10 @@ void main() async {
     // Déconnecter l'utilisateur à chaque démarrage (pas de session persistante)
     await AuthService.instance.logout();
     print('✅ Service d\'authentification initialisé (session effacée au démarrage)');
+
+    // Initialiser OneSignal Push Notifications
+    await OneSignalService().init();
+    print('✅ OneSignal Push Notifications initialisé');
 
     // Initialiser les notifications locales
     await NotificationService().init();

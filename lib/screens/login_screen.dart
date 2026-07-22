@@ -6,6 +6,7 @@ import '../widgets/custom_button.dart';
 import 'signup_screen.dart';
 import '../app.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'forgot_password_screen.dart';
 
 /// Écran de connexion
 class LoginScreen extends StatefulWidget {
@@ -18,6 +19,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
   bool _isLoading = false;
   String _completePhoneNumber = '';
 
@@ -37,11 +40,28 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez renseigner tous les champs requis.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_phoneController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez renseigner tous les champs requis.'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -57,8 +77,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       phoneNumber = _phoneController.text.trim();
     }
+    
+    final password = _passwordController.text.trim();
 
-    final result = await AuthService.instance.loginDirectly(phoneNumber);
+    final result = await AuthService.instance.loginDirectly(phoneNumber, password);
 
     setState(() {
       _isLoading = false;
@@ -271,9 +293,101 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
+                      // Champ mot de passe
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                              blurRadius: isTablet ? 12.0 : 10.0,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez entrer votre mot de passe';
+                            }
+                            return null;
+                          },
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: isTablet ? 18.0 : 16.0,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'Mot de passe',
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              fontSize: isTablet ? 16.0 : 14.0,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.lock_outline,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              size: isTablet ? 24.0 : 20.0,
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                size: isTablet ? 24.0 : 20.0,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: isTablet ? 20.0 : 16.0,
+                              vertical: isTablet ? 16.0 : 12.0,
+                            ),
+                            filled: true,
+                            fillColor: Colors.transparent,
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'Mot de passe oublié ?',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: isTablet ? 14.0 : 12.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: AppDimensions.getAdaptiveSpacing(context) * 0.5),
                       // Bouton connexion minimaliste
                       CustomButton(
                         text: 'Connexion',
+                        backgroundColor: Colors.green,
                         onPressed: _handleLogin,
                         isLoading: _isLoading,
                       ),

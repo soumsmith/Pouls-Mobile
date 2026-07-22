@@ -6,6 +6,7 @@ import 'database_service.dart';
 import 'http_service.dart';
 import 'cart_service.dart';
 import 'module_access_service.dart';
+import 'onesignal_service.dart';
 
 /// Résultat de la connexion directe
 enum DirectLoginResult {
@@ -58,28 +59,30 @@ class AuthService {
     _smsService = smsService;
   }
 
-  /// Connecte l'utilisateur directement avec l'API sans OTP
+  /// Connecte l'utilisateur directement avec l'API avec mot de passe
   /// 
-  /// Endpoint: POST /api/vie-ecoles/auth/parent/connexion
-  /// Body: { "numero": "+2250748011247" }
+  /// Endpoint: POST /vie-ecoles/parent/connexion
+  /// Body: { "phone": "+2250748011247", "password": "..." }
   /// Response: { "status": true, "data": { "token": "...", "user": {...} } }
-  Future<DirectLoginResult> loginDirectly(String phone) async {
+  Future<DirectLoginResult> loginDirectly(String phone, String password) async {
     try {
       print('🔐 Tentative de connexion directe avec: $phone');
       
-      print('🌐 Appel API: POST /vie-ecoles/auth/parent/connexion');
+      print('🌐 Appel API: POST /vie-ecoles/parent/connexion');
+      final body = {
+        'phone': phone,
+        'password': password,
+      };
+      print('📝 Payload envoyé: $body');
       final response = await HttpService.post(
-        '/vie-ecoles/auth/parent/connexion',
-        body: {
-          'numero': phone,
-        },
+        '/vie-ecoles/parent/connexion',
+        body: body,
       );
       print('📦 Réponse API: $response');
 
-      if (response['status'] == true && response['data'] != null) {
-        final data = response['data'] as Map<String, dynamic>;
-        final token = data['token'] as String?;
-        final userData = data['user'] as Map<String, dynamic>?;
+      if (response['token'] != null && response['user'] != null) {
+        final token = response['token'] as String?;
+        final userData = response['user'] as Map<String, dynamic>?;
         
         if (token != null && userData != null) {
           // Créer l'utilisateur à partir des données de l'API
@@ -95,6 +98,23 @@ class AuthService {
           // Recharger le panier pour l'utilisateur connecté
           await MockCartService().reloadCartForCurrentUser();
           
+          // Identifier l'utilisateur dans OneSignal pour le ciblage Push
+          try {
+            OneSignalService().login(_currentUser!.id);
+            if (_currentUser!.email != null && _currentUser!.email!.isNotEmpty) {
+              OneSignalService().setEmail(_currentUser!.email!);
+            }
+            if (_currentUser!.phone.isNotEmpty) {
+              OneSignalService().setSms('+225${_currentUser!.phone}');
+            }
+            OneSignalService().addTags({
+              'role': _currentUser!.role ?? 'parent',
+              'parent_uid': _currentUser!.parentUid ?? '',
+            });
+          } catch (e) {
+            print('⚠️ Erreur OneSignal lors du login: $e');
+          }
+
           print('✅ Connexion réussie pour: ${_currentUser!.fullName}');
           return DirectLoginResult.success;
         }
@@ -254,6 +274,13 @@ class AuthService {
     
     // Vider le cache des modules d'accès (anti-contournement)
     await ModuleAccessService().clearCache();
+    
+    // Déconnecter l'utilisateur de OneSignal
+    try {
+      OneSignalService().logout();
+    } catch (e) {
+      print('⚠️ Erreur OneSignal lors du logout: $e');
+    }
     
     _token = null;
     _currentUser = null;
@@ -551,5 +578,88 @@ class AuthService {
     
     return false;
   }
+
+  /// Vérifie le numéro et récupère la question secrète
+  /// 
+  /// Endpoint: POST /vie-ecoles/parent/verifier-contact
+  /// Body: { "phone": "..." }
+  /// Retourne la question secrète si elle existe, ou null en cas d'erreur
+  Future<String?> getSecurityQuestion(String phone) async {
+    try {
+      print('🌐 Appel API: POST /vie-ecoles/parent/verifier-contact pour récupérer la question');
+      final response = await HttpService.post(
+        '/vie-ecoles/parent/verifier-contact',
+        body: {
+          'phone': phone,
+        },
+      );
+      print('📦 Réponse API: $response');
+
+      if (response.containsKey('question') && response['question'] != null) {
+        return response['question'] as String;
+      }
+      
+      if (response['status'] == true && response['data'] != null) {
+        if (response['data'] is Map) {
+          return (response['data']['question'] ?? response['data']['security_question']) as String?;
+        } else if (response['data'] is String) {
+          return response['data'];
+        }
+      }
+      return null;
+    } catch (e) {
+      print('❌ Erreur lors de la récupération de la question secrète: $e');
+      return null;
+    }
+  }
+
+  /// Vérifie la réponse à la question secrète
+  /// 
+  /// Endpoint: POST /vie-ecoles/parent/verifier-contact
+  /// Body: { "phone": "...", "security_answer": "..." }
+  /// Retourne true si la réponse est correcte
+  Future<bool> verifySecurityAnswer(String phone, String answer) async {
+    try {
+      print('🌐 Appel API: POST /vie-ecoles/parent/verifier-contact pour vérifier la réponse');
+      final response = await HttpService.post(
+        '/vie-ecoles/parent/verifier-contact',
+        body: {
+          'phone': phone,
+          'security_answer': answer,
+        },
+      );
+      print('📦 Réponse API: $response');
+
+      return response['is_answer_correct'] == true || response['status'] == true;
+    } catch (e) {
+      print('❌ Erreur lors de la vérification de la réponse secrète: $e');
+      return false;
+    }
+  }
+
+  /// Change le mot de passe et connecte directement
+  /// 
+  /// Endpoint: POST /vie-ecoles/parent/reset-password
+  /// Body: { "phone": "...", "password": "...", "password_confirmation": "..." }
+  Future<bool> resetPassword(String phone, String password, String passwordConfirmation) async {
+    try {
+      print('🌐 Appel API: POST /vie-ecoles/parent/reset-password');
+      final response = await HttpService.post(
+        '/vie-ecoles/parent/reset-password',
+        body: {
+          'phone': phone,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        },
+      );
+      print('📦 Réponse API: $response');
+
+      return response['token'] != null || response['status'] == true;
+    } catch (e) {
+      print('❌ Erreur lors de la réinitialisation du mot de passe: $e');
+      return false;
+    }
+  }
 }
+
 

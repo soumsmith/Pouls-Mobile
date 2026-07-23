@@ -5,6 +5,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../config/app_config.dart';
 import '../models/version_check_result.dart';
 import 'database_service.dart';
+import 'onesignal_service.dart';
+import 'notification_service.dart';
 
 class VersionUpdateService {
   // 1. Définir le booléen pour activer ou désactiver la vérification
@@ -67,6 +69,13 @@ class VersionUpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
 
+      // 1. Taguer automatiquement la version de l'utilisateur dans OneSignal
+      try {
+        OneSignalService().addTag('app_version', currentVersion);
+      } catch (e) {
+        print('Erreur tag OneSignal app_version: $e');
+      }
+
       print('Lancement de l\'analyse de la version...');
 
       // On parse les données dans notre Model
@@ -74,7 +83,33 @@ class VersionUpdateService {
 
       // On ne retourne le résultat que s'il y a une mise à jour disponible ou forcée
       if (result.updateAvailable || result.forceUpdate) {
+        // Taguer dans OneSignal qu'une mise à jour est requise pour cet utilisateur
+        try {
+          OneSignalService().addTag('update_required', 'true');
+        } catch (_) {}
+
+        // Notification automatique Push/Locale lors de la détection de la mise à jour
+        if (!hasShownUpdateNotification) {
+          hasShownUpdateNotification = true;
+          try {
+            await NotificationService().showNotification(
+              id: 999,
+              title: 'Mise à jour disponible 🚀',
+              body: result.latestVersion.isNotEmpty
+                  ? 'Une nouvelle version (${result.latestVersion}) de l\'application est disponible. Cliquez pour mettre à jour.'
+                  : 'Une nouvelle version de l\'application est disponible. Cliquez pour mettre à jour.',
+              payload: result.storeUrl,
+            );
+          } catch (e) {
+            print('Erreur notification automatique de mise à jour: $e');
+          }
+        }
+
         return result;
+      } else {
+        try {
+          OneSignalService().addTag('update_required', 'false');
+        } catch (_) {}
       }
 
       return null;

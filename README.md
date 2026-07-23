@@ -76,14 +76,13 @@ Dans Postman, dans l'onglet Headers :
     "en": "Une nouvelle version de l'application est disponible. Cliquez pour mettre à jour.",
     "fr": "Une nouvelle version de l'application est disponible. Cliquez pour mettre à jour."
   },
-  "url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr",
+  "url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable",
   "data": {
     "type": "app_update",
-    "playstore_url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr",
-    "appstore_url": "https://apps.apple.com/app/parent-responsable/id6763526336"
+    "playstore_url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable",
+    "appstore_url": "https://apps.apple.com/app/id6400000000"
   }
 }
-
 
 
 

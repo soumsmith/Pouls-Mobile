@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -14,6 +15,7 @@ import '../utils/html_helper.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/share_bottom_sheet.dart';
 import '../widgets/image_menu_card_external_title.dart';
+import '../widgets/see_more_card.dart';
 import '../config/app_config.dart';
 import '../services/astuce_conseil_service.dart';
 import '../services/auth_service.dart';
@@ -54,6 +56,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
   AnimationController? _bookmarkController;
   Animation<double>? _bookmarkAnim;
 
+  List<AstuceConseil> _otherTips = [];
   List<Map<String, dynamic>> _comments = [];
   bool _isSubmittingComment = false;
   bool _isLoadingComments = true;
@@ -78,6 +81,23 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
 
     _fetchComments();
     _checkLikeStatus();
+    _fetchOtherTips();
+  }
+
+  Future<void> _fetchOtherTips() async {
+    try {
+      final response = await _apiService.getAstucesConseils(page: 1);
+      if (!mounted) return;
+      setState(() {
+        _otherTips = response.data
+            .where((item) =>
+                item.slug != widget.astuce.slug &&
+                item.typedecontenu.toLowerCase() == 'image')
+            .toList();
+      });
+    } catch (e) {
+      debugPrint('Erreur chargement des autres astuces: $e');
+    }
   }
 
   Future<void> _fetchComments() async {
@@ -341,6 +361,8 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
           _buildContent(),
           const SizedBox(height: 28),
           _buildComments(),
+          const SizedBox(height: 28),
+          _buildOtherTipsSection(),
           const SizedBox(height: 40),
           const BottomSpacer(height: 125),
         ],
@@ -640,6 +662,144 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
           ),
         ],
       ],
+    );
+  }
+
+  double _getCardWidth(BuildContext context, [double padding = 16.0]) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Exactement 2.5 éléments visibles à l'écran
+    return (screenWidth - (padding * 2) - 16) / 2.5;
+  }
+
+  Widget _buildOtherTipsSection() {
+    if (_otherTips.isEmpty) return const SizedBox.shrink();
+
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final cardWidth = _getCardWidth(context, 16.0);
+    final imageHeight = cardWidth * (isTablet ? 0.62 : 0.8);
+    final textHeight = isTablet ? 70.0 : 60.0;
+    final containerHeight = imageHeight + textHeight;
+
+    const int maxItems = 6;
+    final bool showSeeMore = _otherTips.length > maxItems;
+    final int displayItemCount = math.min(_otherTips.length, maxItems);
+    final int totalCount = displayItemCount + (showSeeMore ? 1 : 0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Autres astuces et conseils',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.screenTextPrimaryThemed(context),
+              letterSpacing: -0.3,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: containerHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: totalCount,
+            separatorBuilder: (_, __) => const SizedBox(width: 0),
+            itemBuilder: (context, i) {
+              if (i < displayItemCount) {
+                return _buildOtherTipCard(_otherTips[i], i);
+              } else {
+                return _buildSeeMoreCard();
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSeeMoreCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardWidth = _getCardWidth(context, 16.0);
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final imageHeight = cardWidth * (isTablet ? 0.62 : 0.8);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SeeMoreCard(
+          cardColor: isDark ? AppColors.grey800 : Colors.white,
+          borderColor: _C.orange,
+          iconColor: Colors.white,
+          textColor: _C.orange,
+          subtitleColor: isDark ? Colors.grey[400]! : Colors.grey[600]!,
+          title: 'Voir+',
+          subtitle: 'd\'astuces',
+          onTap: () {
+            if (MainScreenWrapper.maybeOf(context) != null) {
+              MainScreenWrapper.of(context).updateCurrentIndex(3);
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
+          icon: Icons.add,
+          width: cardWidth,
+          height: imageHeight,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOtherTipCard(AstuceConseil tip, int index) {
+    final uiData = tip.toUiMap();
+    final isTablet = AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final cardWidth = _getCardWidth(context, 16.0);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: ImageMenuCardExternalTitle(
+        index: index,
+        cardKey: 'tip_${tip.slug}',
+        title: tip.title,
+        subtitle: uiData['date'] as String?,
+        tag: tip.youtubeUrl != null && tip.youtubeUrl!.isNotEmpty ? 'VIDÉO' : 'CONSEIL',
+        color: _C.orange,
+        imagePath: uiData['image'] as String?,
+        iconData: Icons.lightbulb_outline,
+        titleMaxLines: 2,
+        externalTitleSpacing: 4,
+        titleFontSize: isTablet ? 16.0 : 14.0,
+        subtitleFontSize: 11.0,
+        height: null,
+        imageHeight: cardWidth * (isTablet ? 0.62 : 0.8),
+        width: cardWidth,
+        allowLineBreak: true,
+        centerTitle: false,
+        showPlayIcon: tip.youtubeUrl != null && tip.youtubeUrl!.isNotEmpty,
+        onTap: () {
+          if (MainScreenWrapper.maybeOf(context) != null) {
+            MainScreenWrapper.of(context).navigateToExtraScreen(
+              TipsAdviceDetailScreen(
+                key: UniqueKey(),
+                astuce: tip,
+              ),
+            );
+          } else {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => TipsAdviceDetailScreen(
+                  key: UniqueKey(),
+                  astuce: tip,
+                ),
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 

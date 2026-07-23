@@ -580,14 +580,50 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             if (index == articles.length) {
-              return _isLoadingMore
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: CircularProgressIndicator(color: Colors.orange),
+              if (_isLoadingMore) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Colors.orange),
+                  ),
+                );
+              }
+
+              if (_hasMore) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 20),
+                  child: Center(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _loadAstuces(loadMore: true),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        side: const BorderSide(color: Colors.orange, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
-                    )
-                  : const SizedBox.shrink();
+                      icon: const Icon(
+                        Icons.add_circle_outline_rounded,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                      label: const Text(
+                        'Charger plus d\'articles',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              return const SizedBox.shrink();
             }
 
             final item = articles[index];

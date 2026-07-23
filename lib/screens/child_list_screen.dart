@@ -1909,7 +1909,9 @@ class _ChildListScreenState extends State<ChildListScreen>
             }
           }
 
-          if (_isLoadingNotifications || _isLoadingEcheance) {
+          if ((_isLoadingNotifications || _isLoadingEcheance) &&
+              _notifications.isEmpty &&
+              _echeanceNotification == null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -2612,9 +2614,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     final isDarkMode = _themeService.isDarkMode;
 
     return GestureDetector(
-      onTap: () async {
-        await _refreshNotificationData();
+      onTap: () {
         _showNotificationsBottomSheet();
+        _refreshNotificationData();
       },
       child: Stack(
         clipBehavior: Clip.none,

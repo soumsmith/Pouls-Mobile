@@ -624,6 +624,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
                     title: '',
                     isDark:
                         true, // Always dark style on top of video playback for supreme premium contrast
+                    textColor: Colors.white,
                     backgroundColor: Colors.transparent,
                     surfaceTintColor: Colors.transparent,
                     elevation: 0,

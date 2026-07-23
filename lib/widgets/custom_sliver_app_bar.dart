@@ -115,7 +115,7 @@ class CustomSliverAppBar extends StatelessWidget {
   Widget _buildDefaultLeading(BuildContext context) {
     final themeIsDark = Theme.of(context).brightness == Brightness.dark;
     final useDarkStyle = isDark || themeIsDark;
-    final hasCustomBg = backgroundColor != null;
+    final hasCustomBg = backgroundColor != null && backgroundColor != Colors.transparent;
 
     return GestureDetector(
       onTap: onBackTap ?? () => _handleBackNavigation(context),
@@ -142,7 +142,7 @@ class CustomSliverAppBar extends StatelessWidget {
         child: Icon(
           Icons.arrow_back_ios_new,
           size: 16,
-          color: hasCustomBg
+          color: (hasCustomBg && textColor != Colors.black)
               ? textColor
               : (useDarkStyle
                     ? Colors.white

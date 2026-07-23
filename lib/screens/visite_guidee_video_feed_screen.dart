@@ -689,6 +689,7 @@ class _VisiteGuideeVideoFeedScreenState
                     title: '',
                     isDark:
                         true, // Toujours style sombre au-dessus du lecteur pour un contraste premium suprême
+                    textColor: Colors.white,
                     backgroundColor: Colors.transparent,
                     surfaceTintColor: Colors.transparent,
                     elevation: 0,

@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/custom_text_field.dart';
 import '../widgets/components/custom_text_input.dart';
 
 enum ForgotPasswordStep { phone, securityQuestion, resetPassword }
@@ -555,117 +556,46 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                       ),
                     ],
-                    TextField(
+                    CustomTextField(
+                      label: 'Votre adresse e-mail',
+                      hint: 'ex: exemple@domaine.com',
+                      icon: Icons.email_outlined,
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
+                      required: true,
+                      hasError: modalErrorMessage != null && modalErrorMessage!.contains('e-mail'),
                       onChanged: (_) {
                         if (modalErrorMessage != null) {
                           setModalState(() => modalErrorMessage = null);
                         }
                       },
-                      decoration: InputDecoration(
-                        labelText: 'Votre adresse e-mail',
-                        labelStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Colors.green,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    CustomTextField(
+                      label: 'Sujet',
+                      hint: 'Sujet de votre demande',
+                      icon: Icons.subject_rounded,
                       controller: subjectController,
                       onChanged: (_) {
                         if (modalErrorMessage != null) {
                           setModalState(() => modalErrorMessage = null);
                         }
                       },
-                      decoration: InputDecoration(
-                        labelText: 'Sujet',
-                        labelStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Colors.green,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    CustomTextField(
+                      label: 'Message',
+                      hint: 'Rédigez votre message ici...',
+                      icon: Icons.chat_bubble_outline_rounded,
                       controller: bodyController,
                       maxLines: 5,
+                      required: true,
+                      hasError: modalErrorMessage != null && modalErrorMessage!.contains('message'),
                       onChanged: (_) {
                         if (modalErrorMessage != null) {
                           setModalState(() => modalErrorMessage = null);
                         }
                       },
-                      decoration: InputDecoration(
-                        labelText: 'Message',
-                        labelStyle: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Colors.green,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
                     ),
                     const SizedBox(height: 20),
                     CustomButton(
@@ -724,7 +654,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         }
                       },
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 48),
                   ],
                 ),
               ),

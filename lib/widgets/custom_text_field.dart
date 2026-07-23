@@ -21,6 +21,7 @@ class CustomTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onChanged;
 
   const CustomTextField({
     Key? key,
@@ -41,6 +42,7 @@ class CustomTextField extends StatelessWidget {
     this.suffixIcon,
     this.textInputAction,
     this.onSubmitted,
+    this.onChanged,
   }) : super(key: key);
 
   @override
@@ -75,6 +77,7 @@ class CustomTextField extends StatelessWidget {
           keyboardType: keyboardType ?? TextInputType.text,
           textInputAction: textInputAction ?? TextInputAction.done,
           onSubmitted: onSubmitted ?? (_) => FocusScope.of(context).unfocus(),
+          onChanged: onChanged,
           maxLines: maxLines,
           inputFormatters: inputFormatters,
           readOnly: readOnly,

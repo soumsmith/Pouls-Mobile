@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/components/custom_text_input.dart';
 
 enum ForgotPasswordStep { phone, securityQuestion, resetPassword }
 
@@ -159,14 +160,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.green),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                shadowColor: Colors.transparent,
+                backgroundColor: isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : const Color(0xFFF2F4F7),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 22.0 : 18.0,
+                  vertical: isTablet ? 14.0 : 12.0,
                 ),
               ),
-              icon: const Icon(Icons.phone, color: Colors.green),
+              icon: Icon(
+                Icons.phone,
+                color: isDark ? Colors.white : Colors.black,
+                size: isTablet ? 22.0 : 18.0,
+              ),
               onPressed: () async {
                 final Uri url = Uri.parse('tel:+2250555082174');
                 if (await canLaunchUrl(url)) {
@@ -176,26 +189,38 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               label: Text(
                 "Appeler",
                 style: TextStyle(
-                  color: Colors.green,
+                  color: isDark ? Colors.white : Colors.black,
                   fontSize: isTablet ? 16.0 : 14.0,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             const SizedBox(width: 16),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.green),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                shadowColor: Colors.transparent,
+                backgroundColor: isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : const Color(0xFFF2F4F7),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 22.0 : 18.0,
+                  vertical: isTablet ? 14.0 : 12.0,
                 ),
               ),
-              icon: const Icon(Icons.email, color: Colors.green),
+              icon: Icon(
+                Icons.email,
+                color: isDark ? Colors.white : Colors.black,
+                size: isTablet ? 22.0 : 18.0,
+              ),
               onPressed: () => _showEmailBottomSheet(context, isDark, isTablet),
               label: Text(
                 "Envoyer un mail",
                 style: TextStyle(
-                  color: Colors.green,
+                  color: isDark ? Colors.white : Colors.black,
                   fontSize: isTablet ? 16.0 : 14.0,
                   fontWeight: FontWeight.w600,
                 ),
@@ -220,69 +245,126 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           textAlign: TextAlign.center,
         ),
         SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
-                blurRadius: isTablet ? 12.0 : 10.0,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: IntlPhoneField(
-            controller: _phoneController,
-            initialCountryCode: 'CI',
-            onChanged: (phone) {
-              _completePhoneNumber = phone.completeNumber;
-            },
-            validator: (value) {
-              if (value == null || value.number.isEmpty) {
-                return 'Veuillez entrer votre numéro';
-              }
-              return null;
-            },
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: isTablet ? 18.0 : 16.0,
+        // Champ Téléphone
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Numéro de téléphone',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? Colors.white70
+                        : AppColors.screenTextSecondary,
+                  ),
+                ),
+                const Text(
+                  ' *',
+                  style: TextStyle(
+                    color: AppColors.screenOrange,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-            dropdownTextStyle: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: isTablet ? 18.0 : 16.0,
+            const SizedBox(height: 6),
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IntlPhoneField(
+                controller: _phoneController,
+                initialCountryCode: 'CI',
+                cursorColor: AppColors.primary,
+                onChanged: (phone) {
+                  _completePhoneNumber = phone.completeNumber;
+                },
+                validator: (value) {
+                  if (value == null || value.number.isEmpty) {
+                    return 'Veuillez entrer votre numéro';
+                  }
+                  return null;
+                },
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 14,
+                ),
+                dropdownTextStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 14,
+                ),
+                flagsButtonPadding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 12.0,
+                ),
+                showCountryFlag: true,
+                dropdownIcon: Icon(
+                  Icons.arrow_drop_down,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  size: 20,
+                ),
+                disableLengthCheck: false,
+                decoration: InputDecoration(
+                  hintText: 'XX XX XX XX',
+                  hintStyle: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.5),
+                    fontSize: 13,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDark
+                          ? const Color(0xFF444444)
+                          : const Color(0xFFCFD4DC),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDark
+                          ? const Color(0xFF444444)
+                          : const Color(0xFFCFD4DC),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: AppDimensions.inputFocusedBorderWidth,
+                    ),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.red,
+                      width: AppDimensions.inputFocusedBorderWidth,
+                    ),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Colors.red,
+                      width: 1.0,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                ),
+              ),
             ),
-            dropdownIcon: Icon(
-              Icons.arrow_drop_down,
-              color: Theme.of(context).colorScheme.onSurface,
-              size: isTablet ? 28.0 : 24.0,
-            ),
-            decoration: InputDecoration(
-              labelText: 'Numéro de téléphone',
-              labelStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                fontSize: isTablet ? 16.0 : 14.0,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: isTablet ? 20.0 : 16.0,
-                vertical: isTablet ? 16.0 : 12.0,
-              ),
-              filled: true,
-              fillColor: Colors.transparent,
-            ),
-          ),
+          ],
         ),
         SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
         CustomButton(
@@ -303,7 +385,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Container(
           padding: EdgeInsets.all(isTablet ? 20.0 : 16.0),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: isDark
+                ? Colors.white.withOpacity(0.08)
+                : const Color(0xFFF2F4F7),
             borderRadius: BorderRadius.circular(isTablet ? 16.0 : 12.0),
           ),
           child: Column(
@@ -331,20 +415,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
-        TextFormField(
+        CustomTextInput(
+          label: 'Votre réponse',
+          hint: 'Entrez votre réponse',
+          icon: Icons.security_outlined,
           controller: _answerController,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Veuillez entrer votre réponse';
-            }
-            return null;
-          },
-          decoration: InputDecoration(
-            labelText: 'Votre réponse',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
-            ),
-          ),
+          required: true,
+          focusBorderColor: AppColors.primary,
         ),
         SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
         CustomButton(
@@ -362,28 +439,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextFormField(
+        CustomTextInput(
+          label: 'Nouveau mot de passe',
+          hint: 'Votre nouveau mot de passe',
+          icon: Icons.lock_outline,
           controller: _passwordController,
+          required: true,
           obscureText: _obscurePassword,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Veuillez entrer un mot de passe';
-            }
-            if (value.length < 6) {
-              return 'Le mot de passe doit contenir au moins 6 caractères';
-            }
-            return null;
-          },
-          decoration: InputDecoration(
-            labelText: 'Nouveau mot de passe',
-            prefixIcon: const Icon(Icons.lock_outline),
-            suffixIcon: IconButton(
-              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
-            ),
+          focusBorderColor: AppColors.primary,
+          suffixIcon: IconButton(
+            icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
           ),
         ),
         const SizedBox(height: 8),
@@ -398,28 +464,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
-        TextFormField(
+        CustomTextInput(
+          label: 'Confirmer le mot de passe',
+          hint: 'Confirmez le mot de passe',
+          icon: Icons.lock_outline,
           controller: _confirmPasswordController,
+          required: true,
           obscureText: _obscureConfirmPassword,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Veuillez confirmer le mot de passe';
-            }
-            if (value != _passwordController.text) {
-              return 'Les mots de passe ne correspondent pas';
-            }
-            return null;
-          },
-          decoration: InputDecoration(
-            labelText: 'Confirmer le mot de passe',
-            prefixIcon: const Icon(Icons.lock_outline),
-            suffixIcon: IconButton(
-              icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 20.0 : 16.0),
-            ),
+          focusBorderColor: AppColors.primary,
+          suffixIcon: IconButton(
+            icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
+            onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
           ),
         ),
         SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
@@ -477,7 +532,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Colors.green,
+                      width: 1.5,
+                    ),
                   ),
                 ),
                 style: TextStyle(
@@ -493,7 +564,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Colors.green,
+                      width: 1.5,
+                    ),
                   ),
                 ),
                 style: TextStyle(
@@ -510,7 +597,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Colors.green,
+                      width: 1.5,
+                    ),
                   ),
                 ),
                 style: TextStyle(
@@ -558,21 +661,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
+          color: isDark ? null : Colors.white,
+          gradient: isDark
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
                     AppColors.backgroundDark,
                     AppColors.surfaceDark,
-                  ]
-                : [
-                    AppColors.white,
-                    AppColors.primaryLight.withOpacity(0.05),
                   ],
-          ),
+                )
+              : null,
         ),
         child: CustomScrollView(
           slivers: [
@@ -606,8 +708,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             child: Container(
                               padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(isTablet ? 28.0 : 20.0),
+                                color: isDark
+                                    ? AppColors.surfaceDark
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(
+                                  isTablet ? 28.0 : 20.0,
+                                ),
+                                boxShadow: AppDimensions.getSettingsCardShadow(
+                                  context,
+                                ),
                               ),
                               child: Image.asset(
                                 'assets/images/logo-app.png',

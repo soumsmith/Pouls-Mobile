@@ -7,6 +7,9 @@ import '../config/app_config.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/back_button_widget.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import '../widgets/searchable_dropdown.dart';
+import '../widgets/components/custom_text_input.dart';
+import '../widgets/components/custom_select_input.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
 /// Écran de création de compte avec formulaire téléphone
@@ -208,16 +211,17 @@ class _SignupScreenState extends State<SignupScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [AppColors.backgroundDark, AppColors.surfaceDark]
-                : [AppColors.white, AppColors.primaryLight.withOpacity(0.05)],
-          ),
+          color: isDark ? null : Colors.white,
+          gradient: isDark
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppColors.backgroundDark, AppColors.surfaceDark],
+                )
+              : null,
         ),
         child: CustomScrollView(
           slivers: [
@@ -318,72 +322,13 @@ class _SignupScreenState extends State<SignupScreen> {
                                 0.3,
                           ),
                           // Champ Nom
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                isTablet ? 20.0 : 16.0,
-                              ),
-                              boxShadow: AppDimensions.getSettingsCardShadow(
-                                context,
-                              ),
-                            ),
-                            child: TextFormField(
-                              controller: _nameController,
-                              keyboardType: TextInputType.text,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Veuillez entrer votre nom';
-                                }
-                                return null;
-                              },
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isTablet ? 18.0 : 16.0,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'Nom *',
-                                hintText: 'Votre nom',
-                                labelStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                hintStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.5),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 20.0 : 16.0,
-                                  vertical: isTablet ? 20.0 : 18.0,
-                                ),
-                                filled: true,
-                                fillColor: Colors.transparent,
-                              ),
-                            ),
+                          CustomTextInput(
+                            label: 'Nom',
+                            hint: 'Votre nom',
+                            icon: Icons.person_outline,
+                            controller: _nameController,
+                            required: true,
+                            focusBorderColor: AppColors.primary,
                           ),
                           SizedBox(
                             height:
@@ -391,72 +336,13 @@ class _SignupScreenState extends State<SignupScreen> {
                                 0.3,
                           ),
                           // Champ Prénoms
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                isTablet ? 20.0 : 16.0,
-                              ),
-                              boxShadow: AppDimensions.getSettingsCardShadow(
-                                context,
-                              ),
-                            ),
-                            child: TextFormField(
-                              controller: _prenomsController,
-                              keyboardType: TextInputType.text,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Veuillez entrer vos prénoms';
-                                }
-                                return null;
-                              },
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isTablet ? 18.0 : 16.0,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'Prénoms *',
-                                hintText: 'Vos prénoms',
-                                labelStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                hintStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.5),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 20.0 : 16.0,
-                                  vertical: isTablet ? 20.0 : 18.0,
-                                ),
-                                filled: true,
-                                fillColor: Colors.transparent,
-                              ),
-                            ),
+                          CustomTextInput(
+                            label: 'Prénoms',
+                            hint: 'Vos prénoms',
+                            icon: Icons.person_outline,
+                            controller: _prenomsController,
+                            required: true,
+                            focusBorderColor: AppColors.primary,
                           ),
                           SizedBox(
                             height:
@@ -464,90 +350,127 @@ class _SignupScreenState extends State<SignupScreen> {
                                 0.3,
                           ),
                           // Champ Téléphone
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                isTablet ? 20.0 : 16.0,
-                              ),
-                              boxShadow: AppDimensions.getSettingsCardShadow(
-                                context,
-                              ),
-                            ),
-                            child: IntlPhoneField(
-                              controller: _phoneController,
-                              initialCountryCode: 'CI',
-                              onChanged: (phone) {
-                                _completePhoneNumber = phone.completeNumber;
-                              },
-                              validator: (value) {
-                                if (value == null || value.number.isEmpty) {
-                                  return 'Veuillez entrer votre numéro de téléphone';
-                                }
-                                return null;
-                              },
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isTablet ? 18.0 : 16.0,
-                              ),
-                              dropdownTextStyle: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isTablet ? 18.0 : 16.0,
-                              ),
-                              flagsButtonPadding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 12.0 : 8.0,
-                                vertical: isTablet ? 16.0 : 12.0,
-                              ),
-                              showCountryFlag: true,
-                              dropdownIcon: Icon(
-                                Icons.arrow_drop_down,
-                                color: Colors.black54,
-                                size: isTablet ? 28.0 : 24.0,
-                              ),
-                              disableLengthCheck: false,
-                              decoration: InputDecoration(
-                                labelText: 'Numéro de téléphone *',
-                                hintText: 'XX XX XX XX',
-                                labelStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                hintStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.5),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Numéro de téléphone',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : AppColors.screenTextSecondary,
+                                    ),
                                   ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
+                                  const Text(
+                                    ' *',
+                                    style: TextStyle(
+                                      color: AppColors.screenOrange,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 20.0 : 16.0,
-                                  vertical: isTablet ? 16.0 : 12.0,
-                                ),
-                                filled: true,
-                                fillColor: Colors.transparent,
+                                ],
                               ),
-                            ),
+                              const SizedBox(height: 6),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.surfaceDark
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: IntlPhoneField(
+                                  controller: _phoneController,
+                                  initialCountryCode: 'CI',
+                                  cursorColor: AppColors.primary,
+                                  onChanged: (phone) {
+                                    _completePhoneNumber = phone.completeNumber;
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.number.isEmpty) {
+                                      return 'Veuillez entrer votre numéro de téléphone';
+                                    }
+                                    return null;
+                                  },
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 14,
+                                  ),
+                                  dropdownTextStyle: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 14,
+                                  ),
+                                  flagsButtonPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8.0,
+                                    vertical: 12.0,
+                                  ),
+                                  showCountryFlag: true,
+                                  dropdownIcon: Icon(
+                                    Icons.arrow_drop_down,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    size: 20,
+                                  ),
+                                  disableLengthCheck: false,
+                                  decoration: InputDecoration(
+                                    hintText: 'XX XX XX XX',
+                                    hintStyle: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.5),
+                                      fontSize: 13,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: isDark
+                                            ? const Color(0xFF444444)
+                                            : const Color(0xFFCFD4DC),
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: isDark
+                                            ? const Color(0xFF444444)
+                                            : const Color(0xFFCFD4DC),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: AppColors.primary,
+                                        width: AppDimensions.inputFocusedBorderWidth,
+                                      ),
+                                    ),
+                                    focusedErrorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Colors.red,
+                                        width: AppDimensions.inputFocusedBorderWidth,
+                                      ),
+                                    ),
+                                    errorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Colors.red,
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 14,
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           SizedBox(
                             height:
@@ -555,240 +478,27 @@ class _SignupScreenState extends State<SignupScreen> {
                                 0.3,
                           ),
                           // Champ Mot de passe avec bouton d'affichage/masquage
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                isTablet ? 20.0 : 16.0,
+                          CustomTextInput(
+                            label: 'Mot de passe',
+                            hint: 'Votre mot de passe',
+                            icon: Icons.lock_outline,
+                            controller: _passwordController,
+                            required: true,
+                            obscureText: !_isPasswordVisible,
+                            focusBorderColor: AppColors.primary,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.7),
+                                size: isTablet ? 28.0 : 24.0,
                               ),
-                              boxShadow: AppDimensions.getSettingsCardShadow(
-                                context,
-                              ),
-                            ),
-                            child: TextFormField(
-                              controller: _passwordController,
-                              keyboardType: TextInputType.visiblePassword,
-                              obscureText: !_isPasswordVisible,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Veuillez entrer un mot de passe';
-                                }
-                                if (value.length < 6) {
-                                  return 'Le mot de passe doit contenir au moins 6 caractères';
-                                }
-                                return null;
-                              },
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isTablet ? 18.0 : 16.0,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'Mot de passe *',
-                                hintText: 'Votre mot de passe',
-                                labelStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                hintStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.5),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 20.0 : 16.0,
-                                  vertical: isTablet ? 20.0 : 18.0,
-                                ),
-                                filled: true,
-                                fillColor: Colors.transparent,
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _isPasswordVisible
-                                        ? Icons.visibility
-                                        : Icons.visibility_off,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.7),
-                                    size: isTablet ? 28.0 : 24.0,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _isPasswordVisible = !_isPasswordVisible;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            height:
-                                AppDimensions.getFormFieldSpacing(context) *
-                                0.3,
-                          ),
-                          // Champ Code d'invitation
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                isTablet ? 20.0 : 16.0,
-                              ),
-                              boxShadow: AppDimensions.getSettingsCardShadow(
-                                context,
-                              ),
-                            ),
-                            child: TextFormField(
-                              controller: _invitationCodeController,
-                              keyboardType: TextInputType.text,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isTablet ? 18.0 : 16.0,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'Code d\'invitation (optionnel)',
-                                hintText: 'Entrez votre code d\'invitation',
-                                labelStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                hintStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.5),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 20.0 : 16.0,
-                                  vertical: isTablet ? 20.0 : 18.0,
-                                ),
-                                filled: true,
-                                fillColor: Colors.transparent,
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            height:
-                                AppDimensions.getFormFieldSpacing(context) *
-                                0.3,
-                          ),
-                          // Champ Question de sécurité
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                isTablet ? 20.0 : 16.0,
-                              ),
-                              boxShadow: AppDimensions.getSettingsCardShadow(
-                                context,
-                              ),
-                            ),
-                            child: DropdownButtonFormField<String>(
-                              value: _selectedSecurityQuestion,
-                              isExpanded: true,
-                              decoration: InputDecoration(
-                                labelText: 'Question de sécurité *',
-                                labelStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 20.0 : 16.0,
-                                  vertical: isTablet ? 20.0 : 18.0,
-                                ),
-                                filled: true,
-                                fillColor: Colors.transparent,
-                              ),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isTablet ? 18.0 : 16.0,
-                              ),
-                              dropdownColor: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              items: _securityQuestions.map((String question) {
-                                return DropdownMenuItem<String>(
-                                  value: question,
-                                  child: Text(
-                                    question,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                      fontSize: isTablet ? 16.0 : 14.0,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
+                              onPressed: () {
                                 setState(() {
-                                  _selectedSecurityQuestion = newValue!;
+                                  _isPasswordVisible = !_isPasswordVisible;
                                 });
                               },
                             ),
@@ -798,73 +508,45 @@ class _SignupScreenState extends State<SignupScreen> {
                                 AppDimensions.getFormFieldSpacing(context) *
                                 0.3,
                           ),
+                          // Champ Code d'invitation
+                          CustomTextInput(
+                            label: 'Code d\'invitation (optionnel)',
+                            hint: 'Entrez votre code d\'invitation',
+                            icon: Icons.card_giftcard_outlined,
+                            controller: _invitationCodeController,
+                            focusBorderColor: AppColors.primary,
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getFormFieldSpacing(context) *
+                                0.3,
+                          ),
+                          // Champ Question de sécurité
+                          CustomSelectInput(
+                            label: 'Question de sécurité',
+                            value: _selectedSecurityQuestion,
+                            items: _securityQuestions,
+                            isDarkMode: isDark,
+                            required: true,
+                            onChanged: (String newValue) {
+                              setState(() {
+                                _selectedSecurityQuestion = newValue;
+                              });
+                            },
+                          ),
+                          SizedBox(
+                            height:
+                                AppDimensions.getFormFieldSpacing(context) *
+                                0.3,
+                          ),
                           // Champ Réponse de sécurité
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                isTablet ? 20.0 : 16.0,
-                              ),
-                              boxShadow: AppDimensions.getSettingsCardShadow(
-                                context,
-                              ),
-                            ),
-                            child: TextFormField(
-                              controller: _securityAnswerController,
-                              keyboardType: TextInputType.text,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Veuillez répondre à la question de sécurité';
-                                }
-                                return null;
-                              },
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isTablet ? 18.0 : 16.0,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'Réponse de sécurité *',
-                                hintText: 'Votre réponse',
-                                labelStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                hintStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.5),
-                                  fontSize: isTablet ? 16.0 : 14.0,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isTablet ? 20.0 : 16.0,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 20.0 : 16.0,
-                                  vertical: isTablet ? 20.0 : 18.0,
-                                ),
-                                filled: true,
-                                fillColor: Colors.transparent,
-                              ),
-                            ),
+                          CustomTextInput(
+                            label: 'Réponse de sécurité',
+                            hint: 'Votre réponse',
+                            icon: Icons.security_outlined,
+                            controller: _securityAnswerController,
+                            required: true,
+                            focusBorderColor: AppColors.primary,
                           ),
                           SizedBox(
                             height:

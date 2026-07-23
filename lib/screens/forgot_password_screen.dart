@@ -493,6 +493,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final emailController = TextEditingController();
     final subjectController = TextEditingController();
     final bodyController = TextEditingController();
+    String? modalErrorMessage;
 
     showModalBottomSheet(
       context: context,
@@ -502,153 +503,233 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 24.0,
-            right: 24.0,
-            top: 24.0,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Envoyer un mail',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.getTextColor(isDark),
-                ),
-                textAlign: TextAlign.center,
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 24.0,
+                right: 24.0,
+                top: 24.0,
               ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Votre adresse e-mail',
-                  labelStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Colors.green,
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: subjectController,
-                decoration: InputDecoration(
-                  labelText: 'Sujet',
-                  labelStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Colors.green,
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: bodyController,
-                maxLines: 5,
-                decoration: InputDecoration(
-                  labelText: 'Message',
-                  labelStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Colors.green,
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 20),
-              CustomButton(
-                text: 'Envoyer',
-                backgroundColor: Colors.green,
-                onPressed: () async {
-                  final String subject = Uri.encodeComponent(subjectController.text);
-                  final String userEmail = emailController.text.trim();
-                  final String rawBody = userEmail.isNotEmpty 
-                      ? "De : $userEmail\n\n${bodyController.text}" 
-                      : bodyController.text;
-                  final String body = Uri.encodeComponent(rawBody);
-                  final Uri url = Uri.parse('mailto:contacts@groupegain.com?subject=$subject&body=$body');
-                  
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url);
-                    if (context.mounted) Navigator.pop(context);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Impossible d\'ouvrir le client de messagerie.'),
-                        backgroundColor: Colors.red,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Envoyer un mail',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.getTextColor(isDark),
                       ),
-                    );
-                  }
-                },
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    if (modalErrorMessage != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red.withOpacity(0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Colors.red, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                modalErrorMessage!,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    TextField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      onChanged: (_) {
+                        if (modalErrorMessage != null) {
+                          setModalState(() => modalErrorMessage = null);
+                        }
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Votre adresse e-mail',
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.green,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: subjectController,
+                      onChanged: (_) {
+                        if (modalErrorMessage != null) {
+                          setModalState(() => modalErrorMessage = null);
+                        }
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Sujet',
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.green,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: bodyController,
+                      maxLines: 5,
+                      onChanged: (_) {
+                        if (modalErrorMessage != null) {
+                          setModalState(() => modalErrorMessage = null);
+                        }
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Message',
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: isDark ? const Color(0xFF444444) : const Color(0xFFCFD4DC),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Colors.green,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    CustomButton(
+                      text: 'Envoyer',
+                      backgroundColor: Colors.green,
+                      onPressed: () async {
+                        final String userEmail = emailController.text.trim();
+                        final String subjectText = subjectController.text.trim();
+                        final String bodyText = bodyController.text.trim();
+
+                        // 1. Validation de l'adresse e-mail
+                        if (userEmail.isEmpty) {
+                          setModalState(() {
+                            modalErrorMessage = 'Veuillez saisir votre adresse e-mail.';
+                          });
+                          return;
+                        }
+
+                        final bool isEmailValid = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(userEmail);
+                        if (!isEmailValid) {
+                          setModalState(() {
+                            modalErrorMessage = 'Adresse e-mail invalide (ex: exemple@domaine.com).';
+                          });
+                          return;
+                        }
+
+                        // 2. Validation du message
+                        if (bodyText.isEmpty) {
+                          setModalState(() {
+                            modalErrorMessage = 'Veuillez saisir votre message.';
+                          });
+                          return;
+                        }
+
+                        setModalState(() => modalErrorMessage = null);
+
+                        final String subject = Uri.encodeComponent(subjectText.isNotEmpty ? subjectText : 'Demande d\'assistance');
+                        final String rawBody = "De : $userEmail\n\n$bodyText";
+                        final String body = Uri.encodeComponent(rawBody);
+                        final Uri url = Uri.parse('mailto:contacts@groupegain.com?subject=$subject&body=$body');
+                        
+                        try {
+                          final bool launched = await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+                          if (launched) {
+                            if (context.mounted) Navigator.pop(context);
+                          } else {
+                            throw 'Impossible d\'ouvrir l\'application de messagerie.';
+                          }
+                        } catch (e) {
+                          setModalState(() {
+                            modalErrorMessage = 'Aucune application de messagerie installée (ex: Gmail).';
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            );
+          },
         );
       },
     );

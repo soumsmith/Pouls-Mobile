@@ -1,6 +1,6 @@
 ---
 name: "Intégration OneSignal Push Notifications"
-description: "Guide complet d'intégration de OneSignal (SDK v5.x) pour les notifications push dans une application Flutter (Android & iOS). Couvre la configuration étape par étape sur Apple Developer Portal, Firebase Console, OneSignal Dashboard, la résolution des erreurs courantes, l'identification des utilisateurs, le tagging, et le code de production."
+description: "Guide complet d'intégration de OneSignal (SDK v5.x) pour les notifications push dans une application Flutter (Android & iOS). Couvre la configuration étape par étape sur Apple Developer Portal, Firebase Console, OneSignal Dashboard, la résolution des erreurs courantes, l'identification des utilisateurs, le tagging, la gestion des mises à jour, et le code de production."
 ---
 
 # Intégration OneSignal Push Notifications — Flutter (Guide Complet Étape par Étape)
@@ -17,8 +17,9 @@ Ce skill décrit l'intégration de bout en bout de OneSignal (SDK v5.x) dans une
 4. [Configuration Android (FCM) sur Firebase & OneSignal](#4-configuration-android-fcm-sur-firebase--onesignal)
 5. [Installation et Configuration Flutter (Code Production)](#5-installation-et-configuration-flutter-code-production)
 6. [Configuration Native iOS (Xcode)](#6-configuration-native-ios-xcode)
-7. [Tests et Validation des Abonnements (Users & Subscriptions)](#7-tests-et-validation-des-abonnements-users--subscriptions)
-8. [Résolution des Erreurs Courantes (Troubleshooting)](#8-résolution-des-erreurs-courantes-troubleshooting)
+7. [Notifications de Mise à Jour & Tests Postman](#7-notifications-de-mise-à-jour--tests-postman)
+8. [Tests et Validation des Abonnements (Users & Subscriptions)](#8-tests-et-validation-des-abonnements-users--subscriptions)
+9. [Résolution des Erreurs Courantes (Troubleshooting)](#9-résolution-des-erreurs-courantes-troubleshooting)
 
 ---
 
@@ -42,7 +43,7 @@ Ce skill décrit l'intégration de bout en bout de OneSignal (SDK v5.x) dans une
 1. Se connecter sur [https://onesignal.com](https://onesignal.com)
 2. Cliquer sur **"New App/Website"**
 3. Nommer l'application (ex: `Parent Responsable`)
-4. Récupérer le **OneSignal App ID** dans **Settings → Keys & IDs**.
+4. Récupérer le **OneSignal App ID** et la **REST API Key** dans **Settings → Keys & IDs**.
 
 ---
 
@@ -121,17 +122,21 @@ Puis exécuter : `flutter pub get`.
 import 'package:flutter/foundation.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../config/app_config.dart';
 
+/// Service pour gérer les notifications Push avec OneSignal (SDK v5.x)
 class OneSignalService {
   static final OneSignalService _instance = OneSignalService._internal();
   factory OneSignalService() => _instance;
   OneSignalService._internal();
 
+  /// App ID OneSignal
   static const String appId = '1caa5070-bc9c-4720-a6a4-9d5189401ff0';
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
+  /// Initialiser le SDK OneSignal
   Future<void> init() async {
     if (_isInitialized) return;
 
@@ -152,14 +157,11 @@ class OneSignalService {
       // Listener clic notification
       OneSignal.Notifications.addClickListener((event) {
         debugPrint('🔔 [OneSignal] Notification cliquée: ${event.notification.title}');
-        final data = event.notification.additionalData;
-        if (data != null) {
-          _handleNotificationData(data);
-        }
+        _handleNotificationClick(event.notification);
       });
 
       _isInitialized = true;
-      debugPrint('✅ [OneSignal] Initialisé avec succès');
+      debugPrint('✅ [OneSignal] Initialisé avec succès (App ID: $appId)');
     } catch (e) {
       debugPrint('❌ [OneSignal] Erreur initialisation: $e');
     }
@@ -167,17 +169,45 @@ class OneSignalService {
 
   void login(String externalUserId) {
     if (externalUserId.isEmpty) return;
-    OneSignal.login(externalUserId);
-    debugPrint('👤 [OneSignal] Login external_id: $externalUserId');
+    try {
+      OneSignal.login(externalUserId);
+      debugPrint('👤 [OneSignal] Login external_id: $externalUserId');
+    } catch (e) {
+      debugPrint('❌ [OneSignal] Erreur login: $e');
+    }
   }
 
   void logout() {
-    OneSignal.logout();
-    debugPrint('👤 [OneSignal] Logout');
+    try {
+      OneSignal.logout();
+      debugPrint('👤 [OneSignal] Logout');
+    } catch (e) {
+      debugPrint('❌ [OneSignal] Erreur logout: $e');
+    }
+  }
+
+  void addTag(String key, String value) {
+    try {
+      OneSignal.User.addTagWithKey(key, value);
+    } catch (e) {
+      debugPrint('❌ [OneSignal] Erreur addTag: $e');
+    }
   }
 
   void addTags(Map<String, String> tags) {
-    OneSignal.User.addTags(tags);
+    try {
+      OneSignal.User.addTags(tags);
+    } catch (e) {
+      debugPrint('❌ [OneSignal] Erreur addTags: $e');
+    }
+  }
+
+  void removeTag(String key) {
+    try {
+      OneSignal.User.removeTag(key);
+    } catch (e) {
+      debugPrint('❌ [OneSignal] Erreur removeTag: $e');
+    }
   }
 
   void setEmail(String email) {
@@ -188,13 +218,58 @@ class OneSignalService {
     if (phoneNumber.isNotEmpty) OneSignal.User.addSms(phoneNumber);
   }
 
-  Future<void> _handleNotificationData(Map<String, dynamic> data) async {
-    final String? urlString = data['url'] ?? data['link'] ?? data['store_url'];
-    if (urlString != null && urlString.isNotEmpty) {
-      final uri = Uri.tryParse(urlString);
-      if (uri != null && await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+  /// Gérer le clic sur une notification et la redirection vers l'URL / Store
+  Future<void> _handleNotificationClick(OSNotification notification) async {
+    try {
+      final Map<String, dynamic> data = notification.additionalData ?? {};
+      final String? launchUrlStr = notification.launchUrl;
+      final String? type = data['type']?.toString();
+      debugPrint('📦 [OneSignal] Clic notification: title="${notification.title}", launchUrl=$launchUrlStr, data=$data');
+
+      // 1. Gestion des notifications de paiement WicPay
+      if (type == 'payment_success' || type == 'wicpay_payment') {
+        final String? transactionId = data['transaction_id']?.toString();
+        final String? montant = data['montant']?.toString();
+        debugPrint('💳 [OneSignal] Paiement WicPay reçu ! TXN: $transactionId, Montant: $montant');
       }
+
+      // 2. Recherche de l'URL cible (Priorité au launchUrl natif OneSignal ou URLs custom de data)
+      String? targetUrl;
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        targetUrl =
+            data['appstore_url'] ??
+            data['ios_url'] ??
+            launchUrlStr ??
+            data['url'] ??
+            data['link'] ??
+            data['store_url'] ??
+            AppConfig.IOS_STORE_URL;
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        targetUrl =
+            data['playstore_url'] ??
+            data['android_url'] ??
+            launchUrlStr ??
+            data['url'] ??
+            data['link'] ??
+            data['store_url'] ??
+            AppConfig.ANDROID_STORE_URL;
+      } else {
+        targetUrl =
+            launchUrlStr ??
+            data['url'] ??
+            data['link'] ??
+            data['store_url'];
+      }
+
+      if (targetUrl != null && targetUrl.isNotEmpty) {
+        final uri = Uri.tryParse(targetUrl);
+        if (uri != null && await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          debugPrint('🌐 [OneSignal] Redirection réussie vers: $targetUrl');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [OneSignal] Erreur traitement clic notification: $e');
     }
   }
 }
@@ -213,62 +288,83 @@ void main() async {
 }
 ```
 
-### 5.4. Liaison avec l'Authentification (`lib/services/auth_service.dart`)
-
-```dart
-// À la connexion réussie de l'utilisateur :
-OneSignalService().login(user.id.toString());
-if (user.email != null) OneSignalService().setEmail(user.email!);
-if (user.phone != null && user.phone.isNotEmpty) OneSignalService().setSms('+225${user.phone}');
-OneSignalService().addTags({
-  'role': user.role ?? 'parent',
-  'parent_uid': user.parentUid ?? '',
-});
-
-// À la déconnexion :
-OneSignalService().logout();
-```
-
 ---
 
 ## 6. Configuration Native iOS (Xcode)
 
-Pour recevoir les notifications riches (images) et autoriser les notifications en arrière-plan sous iOS :
+Pour recevoir les notifications sous iOS et résoudre l'erreur `Missing Push Capability` :
 
-1. Ouvrir `ios/Runner.xcworkspace` dans Xcode.
-2. Sélectionner le target **Runner → Signing & Capabilities → + Capability** :
+1. Créer le fichier `ios/Runner/Runner.entitlements` :
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+   <plist version="1.0">
+   <dict>
+   	<key>aps-environment</key>
+   	<string>development</string>
+   </dict>
+   </plist>
+   ```
+2. Ouvrir `ios/Runner.xcworkspace` dans Xcode.
+3. Sélectionner le target **Runner → Signing & Capabilities → + Capability** :
    - Ajouter **Push Notifications**
    - Ajouter **Background Modes** → Cocher **Remote notifications**
-3. (Optionnel) Ajouter la **Notification Service Extension** pour l'affichage des images.
 
 ---
 
-## 7. Tests et Validation des Abonnements (Users & Subscriptions)
+## 7. Notifications de Mise à Jour & Tests Postman
+
+### Envoi d'une notification Push de mise à jour ciblée via Postman :
+
+```http
+POST https://onesignal.com/api/v1/notifications
+Headers:
+  Content-Type: application/json
+  Authorization: Key VOTRE_REST_API_KEY_ONESIGNAL
+
+Body (raw JSON):
+{
+  "app_id": "1caa5070-bc9c-4720-a6a4-9d5189401ff0",
+  "filters": [
+    { "field": "tag", "key": "app_version", "relation": "!=", "value": "1.0.11" }
+  ],
+  "headings": {
+    "en": "Mise à jour disponible 🚀",
+    "fr": "Mise à jour disponible 🚀"
+  },
+  "contents": {
+    "en": "Une nouvelle version de l'application est disponible. Cliquez pour mettre à jour.",
+    "fr": "Une nouvelle version de l'application est disponible. Cliquez pour mettre à jour."
+  },
+  "url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable",
+  "data": {
+    "type": "app_update",
+    "playstore_url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable",
+    "appstore_url": "https://apps.apple.com/app/parent-responsable/id6763526336"
+  }
+}
+```
+
+---
+
+## 8. Tests et Validation des Abonnements (Users & Subscriptions)
 
 ### Différence entre Users et Subscriptions :
 
-- **Audience → Users** : Affiche les utilisateurs authentifiés (`external_id`). Un utilisateur peut être enregistré dès le login.
+- **Audience → Users** : Affiche les utilisateurs authentifiés (`external_id`).
 - **Audience → Subscriptions** : Affiche les jetons de push actifs (tokens APNs / FCM).
 
 > ⚠️ **IMPORTANT — TEST SUR SIMULATEUR VS VRAI APPAREIL** :
-> - **Simulateur iOS** : Ne génère PAS de jetons de push APNs réels. La section *Subscriptions* restera vide sur un simulateur iOS.
-> - **Appareil Physique iOS / Android ou Émulateur Android** : Génère un vrai jeton push dès que la permission est acceptée.
-
-### Envoi d'un test push depuis OneSignal :
-
-1. Allez sur **Messages → New Push**.
-2. Titre : `Test Notification`
-3. Message : `Message de test OneSignal`
-4. Audience : `Send to All Subscribed Users`
-5. Cliquez sur **Review & Send**.
+> - **Simulateur iOS** : Ne génère PAS de jetons de push APNs réels. La section *Subscriptions* affichera `Never Subscribed`.
+> - **iPhone Physique / Android** : Génère un vrai jeton push (`Subscribed`) dès que la permission est acceptée.
 
 ---
 
-## 8. Résolution des Erreurs Courantes (Troubleshooting)
+## 9. Résolution des Erreurs Courantes (Troubleshooting)
 
 | Message d'erreur / Symptôme | Cause Probable | Solution |
 |-----------------------------|----------------|----------|
-| `We were unable to validate the key` | Bundle ID non enregistré avec Push sur Apple Developer, ou mauvaise association Team ID / Key ID. | 1. Vérifier que le Bundle ID a **Push Notifications** coché dans Identifiers sur Apple Developer.<br>2. Vérifier que l'Environnement de la clé `.p8` est bien réglé sur **`Sandbox & Production`**. |
-| Subscriptions est vide sur le dashboard | Test effectué sur un simulateur iOS. | Tester sur un **vrai iPhone** ou un **appareil/émulateur Android**. |
-| Pas de notification reçue sur Android | Fichier Firebase Service Account JSON invalide ou manquant. | Réexporter la clé privée JSON depuis la console Firebase et la réuploader sur OneSignal. |
-| Permission non demandée sur iOS | Clé `requestPermission` non appelée ou annulée. | Appeler `OneSignal.Notifications.requestPermission(true)` après `initialize()`. |
+| `Missing Push Capability` | Option Push Notifications non activée dans Xcode ou fichier `.entitlements` manquant. | 1. Créer `ios/Runner/Runner.entitlements` avec `<key>aps-environment</key>`.<br>2. Dans Xcode → Runner → Signing & Capabilities → `+ Capability` → Ajouter **Push Notifications**. |
+| `Message Notifications must have Any/English language content` | La clé `"en"` est absente du dictionnaire `"contents"`. | Toujours fournir la clé `"en"` dans `"contents"` et `"headings"` dans les requêtes API OneSignal. |
+| `We were unable to validate the key` | Bundle ID non enregistré avec Push sur Apple Developer Portal. | 1. Activer **Push Notifications** sur le Bundle ID dans Identifiers.<br>2. Choisir l'environnement **Sandbox & Production** pour la clé `.p8`. |
+| Subscriptions est vide (`Never Subscribed`) sur iOS | Test effectué sur un simulateur iOS. | Tester sur un **vrai iPhone physique** branché en USB. |

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../config/app_config.dart';
 
 /// Service pour gérer les notifications Push avec OneSignal (SDK v5.x)
 class OneSignalService {
@@ -40,11 +41,7 @@ class OneSignalService {
       // 5. Écouter les clics sur les notifications
       OneSignal.Notifications.addClickListener((event) {
         debugPrint('🔔 [OneSignal] Notification cliquée: ${event.notification.title}');
-        final data = event.notification.additionalData;
-        if (data != null) {
-          debugPrint('📦 [OneSignal] Données additionnelles: $data');
-          _handleNotificationData(data);
-        }
+        _handleNotificationClick(event.notification);
       });
 
       // 6. Écouter les changements d'état des permissions
@@ -132,18 +129,68 @@ class OneSignalService {
     }
   }
 
-  /// Gérer le clic sur une notification et les données associées
-  Future<void> _handleNotificationData(Map<String, dynamic> data) async {
+  /// Gérer le clic sur une notification et la redirection vers l'URL / Store
+  Future<void> _handleNotificationClick(OSNotification notification) async {
     try {
-      final String? urlString = data['url'] ?? data['link'] ?? data['store_url'];
-      if (urlString != null && urlString.isNotEmpty) {
-        final uri = Uri.tryParse(urlString);
+      final Map<String, dynamic> data = notification.additionalData ?? {};
+      final String? launchUrlStr = notification.launchUrl;
+      final String? type = data['type']?.toString();
+      debugPrint(
+        '📦 [OneSignal] Clic notification: title="${notification.title}", launchUrl=$launchUrlStr, data=$data',
+      );
+
+      // 1. Gestion des notifications de paiement WicPay
+      if (type == 'payment_success' || type == 'wicpay_payment') {
+        final String? transactionId = data['transaction_id']?.toString();
+        final String? montant = data['montant']?.toString();
+        debugPrint(
+          '💳 [OneSignal] Notification de paiement WicPay reçue ! TXN: $transactionId, Montant: $montant',
+        );
+      }
+
+      // 2. Recherche de l'URL cible (Priorité au launchUrl natif OneSignal ou URLs custom de data)
+      String? targetUrl;
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        targetUrl =
+            data['appstore_url'] ??
+            data['ios_url'] ??
+            launchUrlStr ??
+            data['url'] ??
+            data['link'] ??
+            data['store_url'] ??
+            AppConfig.IOS_STORE_URL;
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        targetUrl =
+            data['playstore_url'] ??
+            data['android_url'] ??
+            launchUrlStr ??
+            data['url'] ??
+            data['link'] ??
+            data['store_url'] ??
+            AppConfig.ANDROID_STORE_URL;
+      } else {
+        targetUrl =
+            launchUrlStr ??
+            data['url'] ??
+            data['link'] ??
+            data['store_url'];
+      }
+
+      if (targetUrl != null && targetUrl.isNotEmpty) {
+        final uri = Uri.tryParse(targetUrl);
         if (uri != null && await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
+          debugPrint('🌐 [OneSignal] Redirection réussie vers: $targetUrl');
+        } else {
+          debugPrint(
+            '⚠️ [OneSignal] Impossible de lancer l\'URL: $targetUrl',
+          );
         }
       }
     } catch (e) {
-      debugPrint('❌ [OneSignal] Erreur de traitement des données de notification: $e');
+      debugPrint(
+        '❌ [OneSignal] Erreur de traitement du clic notification: $e',
+      );
     }
   }
 }

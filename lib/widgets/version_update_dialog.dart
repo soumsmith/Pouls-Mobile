@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/version_check_result.dart';
 import 'dart:io';
 import '../config/app_colors.dart';
+import '../config/app_config.dart';
 
 class VersionUpdateDialog extends StatelessWidget {
   final VersionCheckResult result;
@@ -15,7 +16,13 @@ class VersionUpdateDialog extends StatelessWidget {
   }) : super(key: key);
 
   Future<void> _launchStoreUrl() async {
-    final uri = Uri.parse(result.storeUrl);
+    String url = result.storeUrl;
+    if (url.isEmpty) {
+      url = Platform.isIOS
+          ? AppConfig.IOS_STORE_URL
+          : AppConfig.ANDROID_STORE_URL;
+    }
+    final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

@@ -121,21 +121,6 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     if (updateResult != null) {
-      // Déclencher une notification push locale pour informer l'utilisateur
-      if (!VersionUpdateService.hasShownUpdateNotification) {
-        VersionUpdateService.hasShownUpdateNotification = true;
-        try {
-          await NotificationService().showNotification(
-            id: 999,
-            title: 'Mise à jour disponible 🚀',
-            body: 'Une nouvelle version (${updateResult.latestVersion}) de l\'application est disponible. Cliquez pour l\'installer.',
-            payload: updateResult.storeUrl,
-          );
-        } catch (e) {
-          debugPrint('Erreur lors du déclenchement de la notification locale de mise à jour : $e');
-        }
-      }
-
       if (updateResult.forceUpdate) {
         // Redirection vers l'écran de blocage
         Navigator.of(context).pushReplacement(

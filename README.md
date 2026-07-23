@@ -57,3 +57,58 @@ Mot de passe : _@26SoumGain
 COMPTE iCloud
 mous-soum@groupegain.com
 DevApple@C0mpte!26
+
+
+
+======= 
+
+🛠️ Comment la coller dans Postman :
+Dans Postman, dans l'onglet Headers :
+
+{
+  "app_id": "1caa5070-bc9c-4720-a6a4-9d5189401ff0",
+  "included_segments": ["All"],
+  "headings": {
+    "en": "Mise à jour disponible 🚀",
+    "fr": "Mise à jour disponible 🚀"
+  },
+  "contents": {
+    "en": "Une nouvelle version de l'application est disponible. Cliquez pour mettre à jour.",
+    "fr": "Une nouvelle version de l'application est disponible. Cliquez pour mettre à jour."
+  },
+  "url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr",
+  "data": {
+    "type": "app_update",
+    "playstore_url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr",
+    "appstore_url": "https://apps.apple.com/app/parent-responsable/id6763526336"
+  }
+}
+
+
+
+
+=====
+
+https://api2.vie-ecoles.com/api/vie-ecoles/app-versions
+
+
+{
+    "platform":"ios",
+    "latest_version": "1.0.9",
+    "minimum_version": "1.0.9",
+    "force_update": false,
+    "store_url": "https://apps.apple.com/app/parent-responsable/id6763526336",
+    "changelog": "Corrections et améliorations"
+}
+
+
+{
+    "platform":"android",
+    "latest_version": "1.0.9",
+    "minimum_version": "1.0.9",
+    "force_update": false,
+    "store_url": "https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable&hl=fr",
+    "changelog": "Corrections et améliorations"
+}
+
+

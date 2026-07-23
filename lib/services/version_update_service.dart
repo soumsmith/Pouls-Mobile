@@ -72,8 +72,8 @@ class VersionUpdateService {
       // On parse les données dans notre Model
       final result = VersionCheckResult.fromJson(platformData, currentVersion);
 
-      // On ne retourne le résultat que s'il y a une mise à jour disponible
-      if (result.updateAvailable) {
+      // On ne retourne le résultat que s'il y a une mise à jour disponible ou forcée
+      if (result.updateAvailable || result.forceUpdate) {
         return result;
       }
 

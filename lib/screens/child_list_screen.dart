@@ -4998,14 +4998,6 @@ class _ChildListScreenState extends State<ChildListScreen>
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
           );
-
-          NotificationService().showNotification(
-            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            title: 'Paiement en ligne validé',
-            body:
-                'Un paiement de $montant FCFA pour $serviceType de ${widget.child.firstName} a été enregistré avec succès.',
-            payload: 'paiement_success',
-          );
         }
       } catch (e) {
         // En cas d'erreur de vérification, on laisse tourner

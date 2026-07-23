@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:parents_responsable/config/app_config.dart';
 
 import 'dart:ui';
@@ -668,24 +669,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _hasUpdateNotification = true;
           });
         }
-
-        // Déclencher une notification push locale
-        if (!VersionUpdateService.hasShownUpdateNotification) {
-          VersionUpdateService.hasShownUpdateNotification = true;
-          try {
-            await NotificationService().showNotification(
-              id: 999,
-              title: 'Mise à jour disponible 🚀',
-              body:
-                  'Une nouvelle version (${updateResult.latestVersion}) de l\'application est disponible. Cliquez pour l\'installer.',
-              payload: updateResult.storeUrl,
-            );
-          } catch (e) {
-            debugPrint(
-              'Erreur lors du déclenchement de la notification locale : $e',
-            );
-          }
-        }
       }
     } catch (e) {
       // Ignorer l'erreur silencieusement
@@ -699,7 +682,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     try {
       MainScreenWrapper.of(context).refreshCurrentUser();
-      final parentId = MainScreenWrapper.of(context).currentUserId ?? 'parent1';
+      final user = AuthService.instance.getCurrentUser();
+      final parentId = user?.id ??
+          MainScreenWrapper.of(context).currentUserId ??
+          'parent1';
       final apiService = MainScreenWrapper.of(context).apiService;
       final children = await apiService.getChildrenForParent(parentId);
       if (!mounted) return;
@@ -2670,8 +2656,19 @@ class _HomeScreenState extends State<HomeScreen> {
       content: FutureBuilder<VersionCheckResult?>(
         future: VersionUpdateService.checkForUpdate(),
         builder: (context, snapshot) {
+          final bool isLoading =
+              snapshot.connectionState == ConnectionState.waiting;
           final bool hasUpdate =
-              snapshot.hasData && snapshot.data!.updateAvailable;
+              snapshot.hasData &&
+              snapshot.data != null &&
+              (snapshot.data!.updateAvailable || snapshot.data!.forceUpdate);
+
+          if (isLoading) {
+            return const Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
 
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -2680,7 +2677,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 InkWell(
                   onTap: () async {
                     Navigator.pop(context);
-                    final url = Uri.parse(snapshot.data!.storeUrl);
+                    final String rawUrl = snapshot.data!.storeUrl;
+                    final String targetUrl = rawUrl.isNotEmpty
+                        ? rawUrl
+                        : (Platform.isIOS
+                              ? AppConfig.IOS_STORE_URL
+                              : AppConfig.ANDROID_STORE_URL);
+                    final url = Uri.parse(targetUrl);
                     if (await canLaunchUrl(url)) {
                       await launchUrl(
                         url,
@@ -2710,7 +2713,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Mise à jour disponible',
+                                'Mise à jour disponible 🚀',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -2718,7 +2721,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'La version ${snapshot.data!.latestVersion} est prête.',
+                                snapshot.data!.latestVersion.isNotEmpty
+                                    ? 'La version ${snapshot.data!.latestVersion} est disponible.'
+                                    : 'Une nouvelle version est disponible.',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Colors.black54,
@@ -2738,7 +2743,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            'Ouvrir',
+                            'Mettre à jour',
                             style: TextStyle(
                               color: Colors.grey[800],
                               fontWeight: FontWeight.bold,
@@ -2752,17 +2757,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const Divider(),
               ],
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
               Icon(
                 Icons.notifications_off_outlined,
-                size: 64,
+                size: 56,
                 color: Colors.grey[400],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
                 hasUpdate
                     ? 'Aucune autre notification'
-                    : 'Contenu bientot disponible',
+                    : 'Aucune notification pour le moment',
                 style: TextStyle(
                   fontSize: _textSizeService.getScaledFontSize(14),
                   color: _kTextSecondary,

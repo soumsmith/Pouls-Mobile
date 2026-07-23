@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'screens/cart_screen.dart';
 import 'screens/orders_screen.dart';
@@ -24,13 +26,21 @@ void main() async {
 
   // Initialiser les services de l'application
   try {
+    // Initialiser Firebase
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase initialisé');
+
     // Initialiser la base de données
     await DatabaseService.instance.database;
     print('✅ Base de données initialisée');
 
     // Déconnecter l'utilisateur à chaque démarrage (pas de session persistante)
     await AuthService.instance.logout();
-    print('✅ Service d\'authentification initialisé (session effacée au démarrage)');
+    print(
+      '✅ Service d\'authentification initialisé (session effacée au démarrage)',
+    );
 
     // Initialiser OneSignal Push Notifications
     await OneSignalService().init();

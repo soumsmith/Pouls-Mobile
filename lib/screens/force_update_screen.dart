@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/version_check_result.dart';
 import 'dart:io';
 import '../config/app_colors.dart';
+import '../config/app_config.dart';
 import '../config/app_dimensions.dart';
 
 class ForceUpdateScreen extends StatefulWidget {
@@ -79,7 +80,13 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen>
   }
 
   Future<void> _launchStoreUrl() async {
-    final uri = Uri.parse(widget.result.storeUrl);
+    String url = widget.result.storeUrl;
+    if (url.isEmpty) {
+      url = Platform.isIOS
+          ? AppConfig.IOS_STORE_URL
+          : AppConfig.ANDROID_STORE_URL;
+    }
+    final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

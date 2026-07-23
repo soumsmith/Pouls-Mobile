@@ -160,12 +160,15 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
   }
 
   ApiService get apiService => _apiService;
-  String? get currentUserId => _currentUserId;
+  String? get currentUserId =>
+      AuthService.instance.getCurrentUser()?.id ?? _currentUserId;
 
   /// Met à jour l'utilisateur actuel (utile après reconnexion)
   void refreshCurrentUser() {
     final user = AuthService.instance.getCurrentUser();
-    _currentUserId = user?.id;
+    if (user?.id != null) {
+      _currentUserId = user!.id;
+    }
   }
 
   /// Met à jour l'index de l'onglet actif (utilisé par les menus externes)

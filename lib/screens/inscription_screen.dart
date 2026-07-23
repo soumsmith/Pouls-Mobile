@@ -895,7 +895,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   Widget _buildCustomAppBar(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return CustomSliverAppBar(
-      title: 'Inscription – ${widget.child.firstName}',
+      title: 'Inscription de ${widget.child.firstName}',
       isDark: isDark,
       onBackTap: () => Navigator.of(context).pop(),
       // actions: [
@@ -916,7 +916,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       //     ),
       //   ),
       // ],
-      backgroundColor: cardColor,
+      // backgroundColor: cardColor,
       elevation: 0,
     );
   }
@@ -950,7 +950,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             child: LinearProgressIndicator(
               value: (_currentPageIndex + 1) / steps.length,
               backgroundColor: dividerColor,
-              valueColor: const AlwaysStoppedAnimation(AppColors.integrationBlue),
+              valueColor: const AlwaysStoppedAnimation(
+                AppColors.integrationBlue,
+              ),
               minHeight: 4,
             ),
           ),
@@ -982,7 +984,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                         boxShadow: isCurrent
                             ? [
                                 BoxShadow(
-                                  color: AppColors.integrationBlue.withOpacity(0.25),
+                                  color: AppColors.integrationBlue.withOpacity(
+                                    0.25,
+                                  ),
                                   blurRadius: 6,
                                   spreadRadius: 1,
                                 ),
@@ -1179,67 +1183,60 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   );
 
   Widget _buildSkipState(String title, String subtitle, IconData icon) =>
-      Container(
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : AppColors.shopBlueSurface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: (isDark ? AppColors.shopBlueLight : AppColors.shopBlue)
-                .withOpacity(0.15),
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white10 : Colors.grey.shade200,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 32,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: (isDark ? AppColors.shopBlueLight : AppColors.shopBlue)
-                    .withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: (isDark ? AppColors.shopBlueLight : AppColors.shopBlue)
-                    .withOpacity(0.6),
-              ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
             ),
-            const SizedBox(height: 16),
-            Text(
-              title,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white10 : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Appuyez sur Suivant pour continuer',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              style: TextStyle(fontSize: 13, color: textSecondaryColor),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: (isDark ? AppColors.shopBlueLight : AppColors.shopBlue)
-                    .withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Appuyez sur Suivant pour continuer',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.shopBlueLight : AppColors.shopBlue,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
 
   // ─── ÉTAPE 1 – Scolarité ───────────────────────────────────────────────────
@@ -1319,42 +1316,49 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                     )
                   : Container(
                       padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: AppDimensions.getSettingsCardShadow(context),
-                        border: _reservation!.status
-                            ? Border.all(
+                      decoration: _reservation!.status
+                          ? BoxDecoration(
+                              color: cardColor,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: AppDimensions.getSettingsCardShadow(
+                                context,
+                              ),
+                              border: Border.all(
                                 color:
                                     (isDark
                                             ? AppColors.shopBlueLight
                                             : AppColors.shopBlue)
                                         .withOpacity(0.3),
-                              )
-                            : null,
-                      ),
+                              ),
+                            )
+                          : null,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
-                            width: 72,
-                            height: 72,
+                            width: 64,
+                            height: 64,
                             decoration: BoxDecoration(
                               color: _reservation!.status
                                   ? AppColors.shopBlueSurface
-                                  : AppColors.screenSurface,
+                                  : (isDark
+                                        ? Colors.white10
+                                        : Colors.grey.shade200),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               _reservation!.status
                                   ? Icons.bookmark_added_rounded
                                   : Icons.bookmark_border_rounded,
-                              size: 34,
+                              size: 32,
                               color: _reservation!.status
                                   ? (isDark
                                         ? AppColors.shopBlueLight
                                         : AppColors.shopBlue)
-                                  : textSecondaryColor,
+                                  : (isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -1363,26 +1367,58 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                                 ? 'Réservation active'
                                 : 'Aucune réservation',
                             style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                               color: _reservation!.status
                                   ? (isDark
                                         ? AppColors.shopBlueLight
                                         : AppColors.shopBlue)
-                                  : textColor,
+                                  : (isDark
+                                        ? Colors.grey.shade300
+                                        : Colors.grey.shade700),
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
                             _reservation!.status
                                 ? 'Une déduction sera appliquée au montant total'
                                 : 'Aucune déduction ne sera appliquée',
                             style: TextStyle(
                               fontSize: 13,
-                              color: textSecondaryColor,
+                              color: _reservation!.status
+                                  ? textSecondaryColor
+                                  : (isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600),
                             ),
                             textAlign: TextAlign.center,
                           ),
+                          if (!_reservation!.status) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white10
+                                    : Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'Appuyez sur Récap pour continuer',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+                          ],
                           if (_reservation!.status &&
                               _reservation!.sommeReservation > 0) ...[
                             const SizedBox(height: 20),
@@ -1401,7 +1437,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(14),
-                                boxShadow: AppDimensions.getSettingsCardShadow(context),
+                                boxShadow: AppDimensions.getSettingsCardShadow(
+                                  context,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1910,30 +1948,20 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             ),
           ),
 
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.shopBlueSurface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, color: AppColors.shopBlue, size: 16),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    "L'inscription sera confirmée après validation par l'administration.",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.shopBlue,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              "L'inscription sera confirmée après validation par l'administration.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
+          const SizedBox(height: 100),
         ],
       ),
     );
@@ -2389,7 +2417,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   Future<void> _effectuerPaiementEnLigne() async {
     FocusScope.of(context).unfocus();
-    
+
     final totalAmount = _totalScolarite + _totalServices + _totalTransport;
 
     try {
@@ -2407,17 +2435,29 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           final uri = Uri.parse(paymentUrl);
           try {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
-            
+
             final selectedServiceNames = <String>[];
             if (_totalScolarite > 0) selectedServiceNames.add('Scolarité');
-            selectedServiceNames.addAll(_services.where((s) => s.selectionnee).map((s) => s.service ?? ''));
-            final hasTransService = _services.where((s) => s.selectionnee).any((s) => s.service == 'TRANS');
-            if (_selectedZone != null && hasTransService && _totalTransport > 0) {
+            selectedServiceNames.addAll(
+              _services
+                  .where((s) => s.selectionnee)
+                  .map((s) => s.service ?? ''),
+            );
+            final hasTransService = _services
+                .where((s) => s.selectionnee)
+                .any((s) => s.service == 'TRANS');
+            if (_selectedZone != null &&
+                hasTransService &&
+                _totalTransport > 0) {
               selectedServiceNames.add('Transport');
             }
             final servicesText = selectedServiceNames.join(', ');
-            
-            _showPaymentVerificationLoader(_uid_eleve, totalAmount, servicesText);
+
+            _showPaymentVerificationLoader(
+              _uid_eleve,
+              totalAmount,
+              servicesText,
+            );
           } catch (e) {
             _showError('Impossible d\'ouvrir la page de paiement.');
           }
@@ -2433,7 +2473,11 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     }
   }
 
-  void _showPaymentVerificationLoader(String uidEleve, int totalAmount, String servicesText) {
+  void _showPaymentVerificationLoader(
+    String uidEleve,
+    int totalAmount,
+    String servicesText,
+  ) {
     if (uidEleve.isEmpty) return;
 
     Timer? timer;
@@ -2453,59 +2497,64 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     const int maxAttempts = AppConfig.PAYMENT_VERIFICATION_MAX_ATTEMPTS;
 
     // Lancement du polling
-    timer = Timer.periodic(const Duration(seconds: AppConfig.PAYMENT_VERIFICATION_INTERVAL_SECONDS), (t) async {
-      if (isChecking || !mounted) return;
+    timer = Timer.periodic(
+      const Duration(seconds: AppConfig.PAYMENT_VERIFICATION_INTERVAL_SECONDS),
+      (t) async {
+        if (isChecking || !mounted) return;
 
-      attempts++;
-      if (attempts >= maxAttempts) {
-        t.cancel();
-        if (mounted) {
-          Navigator.of(context).pop(); // Fermer uniquement le loader
-          _showError(
-            'Le délai de vérification est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
-          );
-          
-          NotificationService().showNotification(
-            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            title: 'Validation d\'inscription en attente',
-            body: 'Le délai de vérification du paiement d\'inscription de $totalAmount FCFA pour l\'élève ${widget.child.firstName} à l\'école ${widget.child.establishment} est dépassé. Si votre compte n\'a pas été débité, n\'hésitez pas à réessayer le paiement. Sinon, la mise à jour se fera automatiquement.',
-            payload: 'paiement_timeout',
-          );
-        }
-        return;
-      }
-
-      isChecking = true;
-
-      try {
-        final success = await InscriptionApiService.checkPaiementStatus(
-          uidEleve,
-        );
-        if (success && mounted) {
+        attempts++;
+        if (attempts >= maxAttempts) {
           t.cancel();
-          // 1. Fermer le loader
-          Navigator.of(context).pop();
-          // 2. Afficher le succès
-          _showSuccess(
-            'Paiement validé et inscription de ${widget.child.firstName} enregistrée avec succès !',
-          );
-          
-          NotificationService().showNotification(
-            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            title: 'Inscription validée',
-            body: 'L\'inscription en ligne de $totalAmount FCFA pour ${widget.child.firstName} a été enregistrée avec succès. Services: $servicesText',
-            payload: 'inscription_success',
-          );
+          if (mounted) {
+            Navigator.of(context).pop(); // Fermer uniquement le loader
+            _showError(
+              'Le délai de vérification est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
+            );
 
-          // 3. Quitter l'écran d'inscription
-          Navigator.of(context).pop();
+            NotificationService().showNotification(
+              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              title: 'Validation d\'inscription en attente',
+              body:
+                  'Le délai de vérification du paiement d\'inscription de $totalAmount FCFA pour l\'élève ${widget.child.firstName} à l\'école ${widget.child.establishment} est dépassé. Si votre compte n\'a pas été débité, n\'hésitez pas à réessayer le paiement. Sinon, la mise à jour se fera automatiquement.',
+              payload: 'paiement_timeout',
+            );
+          }
+          return;
         }
-      } catch (e) {
-        // En cas d'erreur de vérification, on laisse tourner
-      } finally {
-        isChecking = false;
-      }
-    });
+
+        isChecking = true;
+
+        try {
+          final success = await InscriptionApiService.checkPaiementStatus(
+            uidEleve,
+          );
+          if (success && mounted) {
+            t.cancel();
+            // 1. Fermer le loader
+            Navigator.of(context).pop();
+            // 2. Afficher le succès
+            _showSuccess(
+              'Paiement validé et inscription de ${widget.child.firstName} enregistrée avec succès !',
+            );
+
+            NotificationService().showNotification(
+              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              title: 'Inscription validée',
+              body:
+                  'L\'inscription en ligne de $totalAmount FCFA pour ${widget.child.firstName} a été enregistrée avec succès. Services: $servicesText',
+              payload: 'inscription_success',
+            );
+
+            // 3. Quitter l'écran d'inscription
+            Navigator.of(context).pop();
+          }
+        } catch (e) {
+          // En cas d'erreur de vérification, on laisse tourner
+        } finally {
+          isChecking = false;
+        }
+      },
+    );
   }
 
   void _showPaymentChoiceBottomSheet() {

@@ -59,59 +59,61 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     int attempts = 0;
     const int maxAttempts = AppConfig.PAYMENT_VERIFICATION_MAX_ATTEMPTS;
 
-    timer = Timer.periodic(const Duration(seconds: AppConfig.PAYMENT_VERIFICATION_INTERVAL_SECONDS), (t) async {
-      if (isChecking || !mounted) return;
+    timer = Timer.periodic(
+      const Duration(seconds: AppConfig.PAYMENT_VERIFICATION_INTERVAL_SECONDS),
+      (t) async {
+        if (isChecking || !mounted) return;
 
-      attempts++;
-      if (attempts >= maxAttempts) {
-        t.cancel();
-        if (mounted) {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Le délai de vérification est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          
-          NotificationService().showNotification(
-            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            title: 'Vérification d\'abonnement en attente',
-            body: 'Le délai de vérification de l\'abonnement \${offer.title} est dépassé. Si votre compte a été débité, votre abonnement s\'activera automatiquement.',
-            payload: 'abonnement_timeout',
-          );
-        }
-        return;
-      }
-
-      isChecking = true;
-
-      try {
-        final success = await PaiementService().checkSubscriptionPaymentStatus(userId);
-        if (success && mounted) {
+        attempts++;
+        if (attempts >= maxAttempts) {
           t.cancel();
-          Navigator.of(context).pop();
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Paiement validé ! Abonnement \${offer.title} activé avec succès.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          
-          NotificationService().showNotification(
-            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            title: 'Abonnement validé',
-            body: 'Votre abonnement \${offer.title} a été activé avec succès !',
-            payload: 'abonnement_success',
-          );
+          if (mounted) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Le délai de vérification est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
+                ),
+                backgroundColor: Colors.orange,
+              ),
+            );
+
+            NotificationService().showNotification(
+              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              title: 'Vérification d\'abonnement en attente',
+              body:
+                  'Le délai de vérification de l\'abonnement ${offer.title} est dépassé. Si votre compte a été débité, votre abonnement s\'activera automatiquement.',
+              payload: 'abonnement_timeout',
+            );
+          }
+          return;
         }
-      } catch (e) {
-        // Ignorer les erreurs
-      } finally {
-        isChecking = false;
-      }
-    });
+
+        isChecking = true;
+
+        try {
+          final success = await PaiementService()
+              .checkSubscriptionPaymentStatus(userId);
+          if (success && mounted) {
+            t.cancel();
+            Navigator.of(context).pop();
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Paiement validé ! Abonnement ${offer.title} activé avec succès.',
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } catch (e) {
+          // Ignorer les erreurs
+        } finally {
+          isChecking = false;
+        }
+      },
+    );
   }
 
   Future<void> _subscribe(SubscriptionOffer offer) async {
@@ -122,12 +124,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         barrierDismissible: false,
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
-      final success = await SubscriptionService.instance.subscribeToOffer(offer);
+      final success = await SubscriptionService.instance.subscribeToOffer(
+        offer,
+      );
       if (!mounted) return;
       Navigator.pop(context);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Abonnement ${offer.title} activé !'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('Abonnement ${offer.title} activé !'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context);
       }
@@ -146,32 +153,43 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       final userId = user?.id ?? '19421';
 
       // Récupérer la liste des enfants (élèves) du parent pour l'abonnement
-      final children = await DatabaseService.instance.getChildrenByParent(userId);
+      final children = await DatabaseService.instance.getChildrenByParent(
+        userId,
+      );
       final eleveIds = children.map((c) => c.id).toList();
 
-      final paiementResponse = await PaiementService().initierPaiementAbonnement(
-        subscriptionPlanId: int.tryParse(offer.id) ?? 1,
-        userId: userId,
-        amountPaid: offer.price.toInt(),
-        eleveIds: eleveIds,
-      );
+      final paiementResponse = await PaiementService()
+          .initierPaiementAbonnement(
+            subscriptionPlanId: int.tryParse(offer.id) ?? 1,
+            userId: userId,
+            amountPaid: offer.price.toInt(),
+            eleveIds: eleveIds,
+          );
 
       if (!mounted) return;
       Navigator.pop(context); // Fermer le loader
 
       if (paiementResponse.success && paiementResponse.url.isNotEmpty) {
-        final launched = await PaiementService().lancerUrlPaiement(paiementResponse.url);
+        final launched = await PaiementService().lancerUrlPaiement(
+          paiementResponse.url,
+        );
         if (launched) {
           // Lancer le polling pour vérifier le statut du paiement
           _showPaymentVerificationLoader(userId, offer);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Impossible d\'ouvrir la page de paiement.'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text('Impossible d\'ouvrir la page de paiement.'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(paiementResponse.message), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(paiementResponse.message),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
@@ -191,10 +209,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       backgroundColor: isDark ? Colors.black : Colors.white,
       body: CustomScrollView(
         slivers: [
-          CustomSliverAppBar(
-            title: 'Passer Premium',
-            isDark: isDark,
-          ),
+          CustomSliverAppBar(title: 'Passer Premium', isDark: isDark),
           if (_isLoading)
             SliverFillRemaining(
               child: Center(
@@ -217,24 +232,23 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             SliverPadding(
               padding: const EdgeInsets.all(16.0),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final offer = _offers[index];
-                    return _buildOfferCard(offer, isDark, context);
-                  },
-                  childCount: _offers.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final offer = _offers[index];
+                  return _buildOfferCard(offer, isDark, context);
+                }, childCount: _offers.length),
               ),
             ),
-          SliverToBoxAdapter(
-            child: const BottomSpacer(),
-          ),
+          SliverToBoxAdapter(child: const BottomSpacer()),
         ],
       ),
     );
   }
 
-  Widget _buildOfferCard(SubscriptionOffer offer, bool isDark, BuildContext context) {
+  Widget _buildOfferCard(
+    SubscriptionOffer offer,
+    bool isDark,
+    BuildContext context,
+  ) {
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black;
     final subtitleColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
@@ -247,7 +261,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         boxShadow: AppDimensions.getBottomSheetShadow(context),
         border: offer.isPopular
             ? Border.all(color: Colors.amber.shade400, width: 2)
-            : Border.all(color: isDark ? Colors.white10 : Colors.black12, width: 1),
+            : Border.all(
+                color: isDark ? Colors.white10 : Colors.black12,
+                width: 1,
+              ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -282,25 +299,34 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 Container(
                   height: 24, // Espace minimal si pas d'image
                   decoration: BoxDecoration(
-                    color: offer.isPopular ? Colors.amber.shade400 : Colors.transparent,
+                    color: offer.isPopular
+                        ? Colors.amber.shade400
+                        : Colors.transparent,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(22),
                       topRight: Radius.circular(22),
                     ),
                   ),
                 ),
-                
+
               if (offer.isPopular)
                 Positioned(
                   top: offer.image != null ? 12 : 0,
                   right: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.amber.shade400,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: const [
-                        BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
                       ],
                     ),
                     child: const Text(
@@ -316,7 +342,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 ),
             ],
           ),
-          
+
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -336,18 +362,20 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 Text(
                   offer.description,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: subtitleColor,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: subtitleColor, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Section Prix
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade50,
+                    color: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -370,11 +398,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text(
-                              offer.activePrice == 0 ? 'Gratuit' : '${offer.activePrice.toInt()} ${offer.currency}',
+                              offer.activePrice == 0
+                                  ? 'Gratuit'
+                                  : '${offer.activePrice.toInt()} ${offer.currency}',
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w900,
-                                color: offer.isPromoActive ? Colors.green.shade600 : textColor,
+                                color: offer.isPromoActive
+                                    ? Colors.green.shade600
+                                    : textColor,
                               ),
                             ),
                             if (offer.activePrice > 0)
@@ -393,7 +425,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.family_restroom, size: 16, color: subtitleColor),
+                          Icon(
+                            Icons.family_restroom,
+                            size: 16,
+                            color: subtitleColor,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'Jusqu\'à ${offer.maxStudents} enfant${offer.maxStudents > 1 ? 's' : ''}',
@@ -407,11 +443,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 12),
-                
+
                 // Liste des modules
                 Align(
                   alignment: Alignment.centerLeft,
@@ -425,52 +461,60 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...offer.packageModules.map((module) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(1),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.check_circle,
-                                color: Colors.green, size: 16),
+                ...offer.packageModules.map(
+                  (module) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(1),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                          child: const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                module.nom,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (module.description != null &&
+                                  module.description!.isNotEmpty) ...[
+                                const SizedBox(height: 2),
                                 Text(
-                                  module.nom, 
+                                  module.description!,
                                   style: TextStyle(
-                                    color: textColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                                    color: subtitleColor,
+                                    fontSize: 12,
                                   ),
                                 ),
-                                if (module.description != null && module.description!.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    module.description!,
-                                    style: TextStyle(
-                                      color: subtitleColor,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ]
                               ],
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    )),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 CustomButton(
-                  text: offer.activePrice == 0 ? 'Commencer' : "Sélectionner ce plan",
+                  text: offer.activePrice == 0
+                      ? 'Commencer'
+                      : "Sélectionner ce plan",
                   onPressed: () => _subscribe(offer),
                   backgroundColor: offer.isPopular
                       ? Colors.amber.shade600

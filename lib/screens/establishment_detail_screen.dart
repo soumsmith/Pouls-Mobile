@@ -279,7 +279,8 @@ const _kActions = <String, _ActionDef>{
     icon: Icons.grade_rounded,
     label: 'Avis & commentaire',
     subtitle: 'Donner un avis',
-    color: Color(0xFFF59E0B),
+    color: const Color(0xFFF59E0B),
+    imagePath: 'assets/images/icons/note-avis.png',
   ),
   'consult_requests': _ActionDef(
     icon: Icons.search_rounded,
@@ -3486,7 +3487,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 subtitle: def.subtitle,
                 icon: def.icon,
                 imagePath: def.imagePath,
-                iconColor: def.color,
+                iconColor: Colors.white,
                 iconBackgroundColor: def.color,
                 imageBorderRadius: AppDimensions.getImageBorderRadius(context),
                 initialChildSize: 0.95,

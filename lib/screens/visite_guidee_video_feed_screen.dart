@@ -4,6 +4,7 @@ import 'package:parents_responsable/services/auth_service.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../widgets/share_bottom_sheet.dart';
+import '../services/app_share_service.dart';
 import 'visite_guidee_video_feed_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../utils/html_helper.dart';
@@ -353,12 +354,7 @@ class _VisiteGuideeVideoFeedScreenState
       _youtubeControllers[_currentIndex]!.pause();
     }
 
-    final videoId = currentVideo.youtubeVideoId.isEmpty
-        ? currentVideo.youtubeUrl
-        : currentVideo.youtubeVideoId;
-    final String videoUrl = 'https://www.youtube.com/watch?v=$videoId';
     final String videoTitle = HtmlHelper.stripHtmlTags(currentVideo.title ?? 'Vidéo');
-    final String videoDesc = HtmlHelper.stripHtmlTags(currentVideo.description ?? '');
 
     showModalBottomSheet(
       context: context,
@@ -367,8 +363,7 @@ class _VisiteGuideeVideoFeedScreenState
       builder: (context) => ShareBottomSheet(
         title: 'Partager la vidéo',
         itemTitle: videoTitle,
-        shareText:
-            '🎬 Regarde cette vidéo incroyable : $videoTitle\n\n$videoDesc\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}\n\n#PoulsMobile #Éducation',
+        shareText: AppShareService.buildVisiteGuideeShareText(currentVideo),
       ),
     );
   }

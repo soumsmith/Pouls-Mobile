@@ -9,6 +9,7 @@ import '../models/event.dart';
 import '../models/event_rating_comment.dart';
 import '../models/ecole.dart';
 import '../models/ticket_category.dart';
+import '../services/app_share_service.dart';
 import '../services/event_service.dart';
 import '../services/event_rating_service.dart';
 import '../services/auth_service.dart';
@@ -797,18 +798,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       builder: (context) => ShareBottomSheet(
         title: 'Partager l\'événement',
         itemTitle: widget.event.title,
-        shareText:
-            '''
-🎓 ${widget.event.title}
-
-📅 ${widget.event.toUiMap()['date']}
-🏫 ${widget.event.nomecole}
-
-${widget.event.content}
-${widget.event.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${widget.event.toUiMap()['liendetailblog']}\n' : ''}
-Découvrez plus d'événements sur notre application! 📱
-Téléchargez l'application ici : ${AppConfig.storeUrl}
-''',
+        shareText: AppShareService.buildEventShareText(widget.event),
       ),
     );
   }
@@ -1100,18 +1090,7 @@ class _HeroBanner extends StatelessWidget {
                     builder: (context) => ShareBottomSheet(
                       title: 'Partager l\'événement',
                       itemTitle: event.title,
-                      shareText:
-                          '''
-🎓 ${event.title}
-
-📅 ${event.toUiMap()['date']}
-🏫 ${event.nomecole}
-
-${event.content}
-${event.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${event.toUiMap()['liendetailblog']}\n' : ''}
-Découvrez plus d'événements sur notre application! 📱
-Téléchargez l'application ici : ${AppConfig.storeUrl}
-''',
+                      shareText: AppShareService.buildEventShareText(event),
                     ),
                   );
                 },

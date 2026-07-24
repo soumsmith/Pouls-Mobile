@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../widgets/share_bottom_sheet.dart';
+import '../services/app_share_service.dart';
 import '../models/coulisse_excellence.dart';
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
@@ -284,9 +285,6 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       _youtubeControllers[_currentIndex]!.pause();
     }
 
-    final String videoUrl =
-        'https://www.youtube.com/watch?v=${item.youtubeVideoId}';
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -296,8 +294,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       builder: (context) => ShareBottomSheet(
         title: 'Partager la vidéo',
         itemTitle: item.titre,
-        shareText:
-            '🎬 Regarde cette vidéo incroyable : ${item.titre}\n\n${item.description}\n\nRegardez la vidéo ici : $videoUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}\n\n#CoulissesExcellence #Éducation',
+        shareText: AppShareService.buildCoulisseShareText(item),
       ),
     );
   }

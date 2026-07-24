@@ -4,6 +4,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../models/product.dart';
 import '../services/cart_service.dart';
+import '../services/app_share_service.dart';
 import '../services/produit_service.dart';
 import '../utils/image_helper.dart';
 import '../widgets/custom_loader.dart';
@@ -950,7 +951,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       builder: (context) => ShareBottomSheet(
         title: 'Partager ce produit',
         itemTitle: widget.product.title,
-        shareText: 'Découvrez ce produit sur Pouls : ${widget.product.title}\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}',
+        shareText: AppShareService.buildProductShareText(widget.product),
       ),
     );
   }

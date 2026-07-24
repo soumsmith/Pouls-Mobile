@@ -17,6 +17,7 @@ import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../config/app_config.dart';
+import '../services/app_share_service.dart';
 import '../services/blog_service.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import 'all_blogs_screen.dart';
@@ -213,17 +214,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
       builder: (context) => ShareBottomSheet(
         title: 'Partager l\'actualité',
         itemTitle: widget.blog.title,
-        shareText:
-            '''
-📰 ${widget.blog.title}
-
-🏫 ${widget.blog.nomecole}
-
-${widget.blog.content.replaceAll(RegExp(r'<[^>]*>'), '').trim()}
-${widget.blog.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${widget.blog.toUiMap()['liendetailblog']}\n' : ''}
-Découvrez plus d\'actualités sur notre application! 📱
-Téléchargez l'application ici : ${AppConfig.storeUrl}
-''',
+        shareText: AppShareService.buildArticleShareText(widget.blog),
       ),
     );
   }
@@ -1040,17 +1031,7 @@ class _HeroBanner extends StatelessWidget {
                     builder: (context) => ShareBottomSheet(
                       title: 'Partager l\'actualité',
                       itemTitle: blog.title,
-                      shareText:
-                          '''
-📰 ${blog.title}
-
-🏫 ${blog.nomecole}
-
-${blog.content.replaceAll(RegExp(r'<[^>]*>'), '').trim()}
-${blog.toUiMap()['liendetailblog'] != null ? '\n🔗 Lien: ${blog.toUiMap()['liendetailblog']}\n' : ''}
-Découvrez plus d\'actualités sur notre application! 📱
-Téléchargez l'application ici : ${AppConfig.storeUrl}
-''',
+                      shareText: AppShareService.buildArticleShareText(blog),
                     ),
                   );
                 },

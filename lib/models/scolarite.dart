@@ -14,12 +14,21 @@ class Scolarite {
   });
 
   factory Scolarite.fromJson(Map<String, dynamic> json) {
+    int? montant;
+    if (json['total_montant'] is int) {
+      montant = json['total_montant'] as int;
+    } else if (json['total_montant'] is num) {
+      montant = (json['total_montant'] as num).toInt();
+    } else if (json['total_montant'] != null) {
+      montant = int.tryParse(json['total_montant'].toString());
+    }
+
     return Scolarite(
       branche: json['branche'] as String?,
       rubrique: json['rubrique'] as String?,
       dateLimite: json['datelimite'] as String?,
       statut: json['statut'] as String?,
-      totalMontant: json['total_montant'] as int?,
+      totalMontant: montant,
     );
   }
 
@@ -43,9 +52,13 @@ class Scolarite {
       case 'INS':
         return 'Inscription';
       case 'SCO':
+      case 'SCOLARITE':
         return 'Scolarité';
       case 'ANX':
+      case 'AUT FRAIS':
         return 'Frais annexes';
+      case 'INS/RINS':
+        return 'Inscription / Réinscription';
       case 'FC':
         return 'Frais cantine';
       case 'BEPC':

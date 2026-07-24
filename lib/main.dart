@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -7,6 +8,7 @@ import 'screens/cart_screen.dart';
 import 'screens/orders_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/inscription_screen.dart';
+import 'screens/deep_link_resolver_screen.dart';
 import 'models/child.dart';
 import 'services/theme_service.dart';
 import 'services/database_service.dart';
@@ -14,6 +16,7 @@ import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'services/onesignal_service.dart';
 import 'services/connectivity_service.dart';
+import 'services/deep_link_service.dart';
 import 'utils/notification_helper.dart';
 
 // NavigatorKey global pour accéder au contexte depuis n'importe quel écran
@@ -53,6 +56,10 @@ void main() async {
     // Initialiser le service de connectivité
     await ConnectivityService().init();
     print('✅ Service de connectivité initialisé');
+
+    // Initialiser le service de Deep Linking
+    await DeepLinkService().init();
+    print('✅ Deep Link Service initialisé');
   } catch (e) {
     print('⚠️ Erreur lors de l\'initialisation des services: $e');
     // Continuer même si l'initialisation échoue
@@ -70,15 +77,41 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final ThemeService _themeService = ThemeService();
+  StreamSubscription<DeepLinkData>? _deepLinkSubscription;
 
   @override
   void initState() {
     super.initState();
     _themeService.loadTheme();
+    _listenDeepLinks();
+  }
+
+  /// Écoute les deep links entrants et navigue vers l'écran vidéo.
+  void _listenDeepLinks() {
+    _deepLinkSubscription = DeepLinkService().onLinkReceived.listen(
+      (DeepLinkData data) {
+        print('📱 Deep Link reçu dans MyApp: $data');
+        // Attendre que le navigator soit prêt
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final navigator = navigatorKey.currentState;
+          if (navigator != null) {
+            navigator.push(
+              MaterialPageRoute(
+                builder: (context) => DeepLinkResolverScreen(
+                  deepLinkData: data,
+                ),
+              ),
+            );
+          }
+        });
+      },
+    );
   }
 
   @override
   void dispose() {
+    _deepLinkSubscription?.cancel();
+    DeepLinkService().dispose();
     super.dispose();
   }
 

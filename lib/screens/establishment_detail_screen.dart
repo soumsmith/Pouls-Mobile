@@ -38,6 +38,8 @@ import '../models/video.dart';
 import 'all_videos_screen.dart';
 import 'all_visite_guidee_videos_screen.dart';
 import 'integration_conditions_screen.dart';
+import '../services/inscription_api_service.dart' as inscription_api;
+import '../services/scolarite_service.dart';
 import '../models/fee.dart';
 import '../models/scolarite.dart';
 import '../models/niveau.dart';
@@ -3501,7 +3503,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                       ? 0
                       : 20 + MediaQuery.of(context).viewInsets.bottom,
                 ),
-                showScrollToTopFab: actionType == 'scolarite',
+                showScrollToTopFab: actionType == 'scolarite' || actionType == 'services',
                 fixedBottomWidget: actionType == 'voir_les_avis'
                     ? Padding(
                         padding: EdgeInsets.fromLTRB(
@@ -5176,6 +5178,14 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
               final sortedLabels = niveauLabels.toList()..sort();
 
+              final filteredLabels = _searchQuery.isEmpty
+                  ? sortedLabels
+                  : sortedLabels
+                      .where((lbl) => lbl.toLowerCase().contains(_searchQuery))
+                      .toList();
+              final displayLabels =
+                  filteredLabels.isNotEmpty ? filteredLabels : sortedLabels;
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -5191,7 +5201,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                   physics: const BouncingScrollPhysics(),
                   children: [
                     // Chips des niveaux individuels
-                    ...sortedLabels.map((lbl) {
+                    ...displayLabels.map((lbl) {
                       final isSelected = _selectedNiveauFiltre == lbl;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),
@@ -5248,9 +5258,35 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               SearchBarWidget(
                 isSearching: _isSearchingScolarite,
           searchController: _searchController,
-          hintText: 'Rechercher un frais...',
+          hintText: 'Rechercher un frais ou un niveau...',
           onChanged: (v) {
-            setSheetState(() => _searchQuery = v.toLowerCase());
+            final query = v.trim().toLowerCase();
+            setSheetState(() {
+              _searchQuery = query;
+              if (query.isNotEmpty) {
+                final exactMatch = sortedLabels.firstWhere(
+                  (lbl) => lbl.toLowerCase() == query,
+                  orElse: () => '',
+                );
+                final partialMatch = sortedLabels.firstWhere(
+                  (lbl) => lbl.toLowerCase().contains(query),
+                  orElse: () => '',
+                );
+                final matchedLevel = exactMatch.isNotEmpty
+                    ? exactMatch
+                    : partialMatch;
+
+                if (matchedLevel.isNotEmpty &&
+                    matchedLevel != _selectedNiveauFiltre) {
+                  _selectedNiveauFiltre = matchedLevel;
+                  _scolariteFuture =
+                      ScolariteService.getScolaritesByEcole(
+                        widget.ecole.parametreCode ?? '',
+                        code: _selectedNiveauFiltre!,
+                      );
+                }
+              }
+            });
           },
           onClear: () {
             setSheetState(() => _searchQuery = '');
@@ -5362,10 +5398,26 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                     (e) =>
                         _searchQuery.isEmpty ||
                         e.key.toLowerCase().contains(_searchQuery) ||
+                        (_selectedNiveauFiltre != null &&
+                            _selectedNiveauFiltre!.toLowerCase().contains(_searchQuery)) ||
                         e.value.any(
-                          (scol) => (scol.rubriqueLibelle
-                              .toLowerCase()
-                              .contains(_searchQuery)),
+                          (scol) =>
+                              (scol.rubriqueLibelle
+                                  .toLowerCase()
+                                  .contains(_searchQuery)) ||
+                              (scol.rubrique != null &&
+                                  scol.rubrique!
+                                      .toLowerCase()
+                                      .contains(_searchQuery)) ||
+                              (scol.statut != null &&
+                                  scol.statut!
+                                      .toLowerCase()
+                                      .contains(_searchQuery)) ||
+                              (ScolariteService.getStatutLibelle(scol.statut)
+                                  .toLowerCase()
+                                  .contains(_searchQuery)) ||
+                              (scol.totalMontant != null &&
+                                  scol.totalMontant.toString().contains(_searchQuery)),
                         ),
                   )
                   .toList();
@@ -7250,50 +7302,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       imagePath: 'assets/images/icons/services_complementaires.png',
       iconBackgroundColor: Colors.purple,
       imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-      initialChildSize: 0.5,
+      initialChildSize: 0.6,
       minChildSize: 0.4,
-      maxChildSize: 0.9,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      content: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 60),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.purple.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.construction_rounded,
-              size: 48,
-              color: Colors.purple,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Bientôt disponible',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.screenTextPrimaryThemed(context),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'Les services complémentaires pour cet établissement seront bientôt accessibles.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.screenTextSecondaryThemed(context),
-                height: 1.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 60),
-        ],
+      maxChildSize: 0.95,
+      showScrollToTopFab: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      content: _ServicesComplementairesContent(
+        ecoleCode: widget.ecole.parametreCode ?? '',
       ),
     );
   }
@@ -9032,6 +9047,574 @@ class _AnimatedPulseButtonState extends State<AnimatedPulseButton>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ServicesComplementairesContent extends StatefulWidget {
+  final String ecoleCode;
+
+  const _ServicesComplementairesContent({
+    required this.ecoleCode,
+  });
+
+  @override
+  State<_ServicesComplementairesContent> createState() =>
+      __ServicesComplementairesContentState();
+}
+
+class __ServicesComplementairesContentState
+    extends State<_ServicesComplementairesContent> {
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<inscription_api.Service> _services = [];
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  final Map<String, List<inscription_api.EcheanceService>> _echeancesMap = {};
+  final Map<String, bool> _loadingEcheancesMap = {};
+  final Set<String> _expandedServiceIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchServices();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchServices() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final services = await inscription_api.InscriptionApiService.fetchServices(
+        ecoleCode: widget.ecoleCode,
+      );
+      if (!mounted) return;
+      setState(() {
+        _services = services;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleExpandService(inscription_api.Service service) async {
+    final serviceId = service.iddetail;
+    final isExpanding = !_expandedServiceIds.contains(serviceId);
+
+    setState(() {
+      if (isExpanding) {
+        _expandedServiceIds.add(serviceId);
+      } else {
+        _expandedServiceIds.remove(serviceId);
+      }
+    });
+
+    if (isExpanding &&
+        !_echeancesMap.containsKey(serviceId) &&
+        _loadingEcheancesMap[serviceId] != true) {
+      setState(() {
+        _loadingEcheancesMap[serviceId] = true;
+      });
+
+      try {
+        final echeances = await inscription_api.InscriptionApiService.fetchEcheancesService(
+          serviceId: serviceId,
+          ecoleCode: widget.ecoleCode,
+        );
+        if (!mounted) return;
+        setState(() {
+          _echeancesMap[serviceId] = echeances;
+          _loadingEcheancesMap[serviceId] = false;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _echeancesMap[serviceId] = [];
+          _loadingEcheancesMap[serviceId] = false;
+        });
+      }
+    }
+  }
+
+  IconData _getCategoryIcon(String category) {
+    final catUpper = category.toUpperCase();
+    if (catUpper.contains('CANTINE')) {
+      return Icons.restaurant_rounded;
+    } else if (catUpper.contains('TRANS')) {
+      return Icons.directions_bus_rounded;
+    }
+    return Icons.widgets_rounded;
+  }
+
+  Color _getCategoryColor(String category) {
+    final catUpper = category.toUpperCase();
+    if (catUpper.contains('CANTINE')) {
+      return const Color(0xFFF59E0B);
+    } else if (catUpper.contains('TRANS')) {
+      return const Color(0xFF3B82F6);
+    }
+    return const Color(0xFF8B5CF6);
+  }
+
+  String _getCategoryTitle(String category) {
+    final catUpper = category.toUpperCase();
+    if (catUpper == 'CANTINE') {
+      return 'Services Cantine';
+    } else if (catUpper == 'TRANS') {
+      return 'Services Transport';
+    }
+    return 'Services $category';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: CustomLoader(
+            message: 'Chargement des services complémentaires...',
+            loaderColor: Colors.purple,
+            size: 40.0,
+            showBackground: false,
+          ),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return CustomErrorState(
+        title: 'Erreur de chargement',
+        message: 'Impossible de charger les services complémentaires.',
+        onRetry: _fetchServices,
+        iconColor: Colors.purple,
+        buttonColor: Colors.purple,
+      );
+    }
+
+    if (_services.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+        child: CustomErrorState(
+          title: 'Aucun service complémentaire',
+          message:
+              "Cet établissement n'a pas configuré de services complémentaires.",
+          icon: Icons.miscellaneous_services_rounded,
+          onRetry: _fetchServices,
+          retryText: 'Actualiser',
+          iconColor: Colors.purple,
+          buttonColor: Colors.purple,
+        ),
+      );
+    }
+
+    final filteredServices = _services.where((s) {
+      if (_searchQuery.isEmpty) return true;
+      final q = _searchQuery.toLowerCase();
+      return s.designation.toLowerCase().contains(q) ||
+          s.service.toLowerCase().contains(q) ||
+          s.description.toLowerCase().contains(q);
+    }).toList();
+
+    final Map<String, List<inscription_api.Service>> groupedServices = {};
+    for (final s in filteredServices) {
+      final cat = s.service.isNotEmpty ? s.service : 'AUTRE';
+      groupedServices.putIfAbsent(cat, () => []).add(s);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        SearchBarWidget(
+          isSearching: true,
+          searchController: _searchController,
+          hintText: 'Rechercher un service...',
+          onChanged: (v) {
+            setState(() {
+              _searchQuery = v.trim().toLowerCase();
+            });
+          },
+          onClear: () {
+            setState(() {
+              _searchQuery = '';
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+        if (filteredServices.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 30),
+            child: CustomErrorState(
+              title: 'Aucun résultat',
+              message: 'Aucun service ne correspond à votre recherche.',
+              icon: Icons.search_off_rounded,
+            ),
+          )
+        else
+          ...groupedServices.entries.map((entry) {
+            final category = entry.key;
+            final categoryServices = entry.value;
+            final catColor = _getCategoryColor(category);
+            final catIcon = _getCategoryIcon(category);
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: catColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(catIcon, color: catColor, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _getCategoryTitle(category),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.screenTextPrimaryThemed(context),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${categoryServices.length} service(s)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.screenTextSecondaryThemed(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ...categoryServices.map((service) {
+                    final isExpanded =
+                        _expandedServiceIds.contains(service.iddetail);
+                    final isLoadingEcheances =
+                        _loadingEcheancesMap[service.iddetail] == true;
+                    final echeances = _echeancesMap[service.iddetail];
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.screenSurfaceThemed(context),
+                        borderRadius: BorderRadius.circular(14),
+                        border: isExpanded
+                            ? Border.all(color: catColor, width: 1.5)
+                            : null,
+                        boxShadow: AppDimensions.getSettingsCardShadow(context),
+                      ),
+                      child: Column(
+                        children: [
+                          InkWell(
+                            onTap: () => _toggleExpandService(service),
+                            borderRadius: BorderRadius.circular(14),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: catColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      catIcon,
+                                      color: catColor,
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                service.designation,
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.bold,
+                                                  color:
+                                                      AppColors.screenTextPrimaryThemed(
+                                                    context,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 3,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: catColor.withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                service.service,
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: catColor,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          ScolariteService.formaterMontant(
+                                            service.prix,
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF10B981),
+                                          ),
+                                        ),
+                                        if (service.description.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            service.description,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color:
+                                                  AppColors.screenTextSecondaryThemed(
+                                                context,
+                                              ),
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Icon(
+                                    isExpanded
+                                        ? Icons.keyboard_arrow_up_rounded
+                                        : Icons.keyboard_arrow_down_rounded,
+                                    color: AppColors.screenTextSecondaryThemed(
+                                      context,
+                                    ),
+                                    size: 24,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (isExpanded) ...[
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: AppColors.screenTextSecondaryThemed(context)
+                                  .withOpacity(0.1),
+                            ),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: catColor.withOpacity(0.03),
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(14),
+                                  bottomRight: Radius.circular(14),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_month_rounded,
+                                        size: 16,
+                                        color: catColor,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Échéancier du service',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.screenTextPrimaryThemed(
+                                            context,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  if (isLoadingEcheances)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      child: Center(
+                                        child: CustomLoader(
+                                          message:
+                                              'Chargement des échéances...',
+                                          loaderColor: catColor,
+                                          size: 24.0,
+                                          showBackground: false,
+                                        ),
+                                      ),
+                                    )
+                                  else if (echeances == null ||
+                                      echeances.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      child: Text(
+                                        'Aucune échéance spécifique enregistrée pour ce service.',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontStyle: FontStyle.italic,
+                                          color:
+                                              AppColors.screenTextSecondaryThemed(
+                                            context,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    ...echeances.map((ech) {
+                                      return Container(
+                                        margin: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              AppColors.screenSurfaceThemed(
+                                            context,
+                                          ),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: AppColors
+                                                .screenTextSecondaryThemed(
+                                              context,
+                                            ).withOpacity(0.1),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.event_note_rounded,
+                                              size: 18,
+                                              color: catColor.withOpacity(0.8),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    ech.libelle.isNotEmpty
+                                                        ? ech.libelle
+                                                        : ech.rubrique,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          AppColors
+                                                              .screenTextPrimaryThemed(
+                                                        context,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  if (ech.dateLimite.isNotEmpty) ...[
+                                                    const SizedBox(height: 2),
+                                                    Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .access_time_rounded,
+                                                          size: 12,
+                                                          color: AppColors
+                                                              .screenTextSecondaryThemed(
+                                                            context,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                          'Limite : ${ech.dateLimite}',
+                                                          style: TextStyle(
+                                                            fontSize: 11,
+                                                            color: AppColors
+                                                                .screenTextSecondaryThemed(
+                                                              context,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                            Text(
+                                              ScolariteService.formaterMontant(
+                                                ech.montant,
+                                              ),
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF10B981),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            );
+          }).toList(),
+        const SizedBox(height: 20),
+      ],
     );
   }
 }

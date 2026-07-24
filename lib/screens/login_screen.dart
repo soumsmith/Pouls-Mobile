@@ -8,6 +8,7 @@ import '../app.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import '../widgets/components/custom_text_input.dart';
 import 'forgot_password_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Écran de connexion
 class LoginScreen extends StatefulWidget {
@@ -24,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   String _completePhoneNumber = '';
+  bool _rememberMe = false;
 
   @override
   void initState() {
@@ -32,9 +34,24 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loadSavedPhone() async {
-    final savedPhone = await AuthService.instance.getSavedPhone();
-    if (savedPhone != null && mounted) {
-      _phoneController.text = savedPhone;
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool('remember_me_checked') ?? false;
+
+    if (rememberMe && mounted) {
+      setState(() {
+        _rememberMe = true;
+        final savedPhone = prefs.getString('remembered_phone');
+        final savedPassword = prefs.getString('remembered_password');
+
+        if (savedPhone != null) _phoneController.text = savedPhone;
+        if (savedPassword != null) _passwordController.text = savedPassword;
+      });
+    } else {
+      // Pour compatibilité avec l'ancien système si l'utilisateur n'avait pas coché
+      final savedPhone = await AuthService.instance.getSavedPhone();
+      if (savedPhone != null && mounted) {
+        _phoneController.text = savedPhone;
+      }
     }
   }
 
@@ -92,6 +109,18 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (result == DirectLoginResult.success && mounted) {
+      // Gestion "Se souvenir de moi"
+      final prefs = await SharedPreferences.getInstance();
+      if (_rememberMe) {
+        await prefs.setBool('remember_me_checked', true);
+        await prefs.setString('remembered_phone', phoneNumber);
+        await prefs.setString('remembered_password', password);
+      } else {
+        await prefs.setBool('remember_me_checked', false);
+        await prefs.remove('remembered_phone');
+        await prefs.remove('remembered_password');
+      }
+
       // Afficher une notification de connexion réussie
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -266,7 +295,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 6),
                           Container(
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.surfaceDark : Colors.white,
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: IntlPhoneField(
@@ -304,10 +335,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               decoration: InputDecoration(
                                 hintText: 'XX XX XX XX',
                                 hintStyle: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.5),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.5),
                                   fontSize: 13,
                                 ),
                                 border: OutlineInputBorder(
@@ -330,14 +360,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
                                     color: AppColors.primary,
-                                    width: AppDimensions.inputFocusedBorderWidth,
+                                    width:
+                                        AppDimensions.inputFocusedBorderWidth,
                                   ),
                                 ),
                                 focusedErrorBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
                                     color: Colors.red,
-                                    width: AppDimensions.inputFocusedBorderWidth,
+                                    width:
+                                        AppDimensions.inputFocusedBorderWidth,
                                   ),
                                 ),
                                 errorBorder: OutlineInputBorder(
@@ -358,9 +390,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-                      SizedBox(
-                        height: AppDimensions.getAdaptiveSpacing(context),
-                      ),
+                      // SizedBox(
+                      //   height: AppDimensions.getAdaptiveSpacing(context),
+                      // ),
                       // Champ mot de passe
                       CustomTextInput(
                         label: 'Mot de passe',
@@ -387,28 +419,97 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
                       ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const ForgotPasswordScreen(),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            'Mot de passe oublié ?',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w500,
-                              fontSize: isTablet ? 14.0 : 12.0,
+                      SizedBox(
+                        height: AppDimensions.getAdaptiveSpacing(context),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _rememberMe = !_rememberMe;
+                              });
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeInOut,
+                                  width: 22,
+                                  height: 22,
+                                  decoration: BoxDecoration(
+                                    color: _rememberMe
+                                        ? AppColors.primary
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: _rememberMe
+                                          ? AppColors.primary
+                                          : (isDark
+                                                ? Colors.grey[700]!
+                                                : Colors.grey[400]!),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: _rememberMe
+                                        ? [
+                                            BoxShadow(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.3),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: _rememberMe
+                                      ? const Icon(
+                                          Icons.check,
+                                          size: 16,
+                                          color: Colors.white,
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Se souvenir de moi',
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 14.0 : 13.0,
+                                    color: AppColors.getTextColor(isDark),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ForgotPasswordScreen(),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'Mot de passe oublié ?',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: isTablet ? 14.0 : 13.0,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(
-                        height: AppDimensions.getAdaptiveSpacing(context) * 0.5,
+                        height: AppDimensions.getAdaptiveSpacing(context),
                       ),
                       // Bouton connexion minimaliste
                       CustomButton(

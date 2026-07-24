@@ -17,8 +17,10 @@ import '../widgets/share_bottom_sheet.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/see_more_card.dart';
 import '../config/app_config.dart';
+import '../services/app_share_service.dart';
 import '../services/astuce_conseil_service.dart';
 import '../services/auth_service.dart';
+import 'tips_advice_screen.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
@@ -192,15 +194,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
       builder: (context) => ShareBottomSheet(
         title: 'Partager l\'astuce',
         itemTitle: widget.astuce.title,
-        shareText:
-            '''
-💡 ${widget.astuce.title}
-
-${HtmlHelper.stripHtmlTags(widget.astuce.content)}
-
-Découvrez plus d\'astuces sur notre application! 📱
-Téléchargez l'application ici : ${AppConfig.storeUrl}
-''',
+        shareText: AppShareService.buildTipShareText(widget.astuce),
       ),
     );
   }
@@ -681,23 +675,57 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
     final containerHeight = imageHeight + textHeight;
 
     const int maxItems = 6;
-    final bool showSeeMore = _otherTips.length > maxItems;
     final int displayItemCount = math.min(_otherTips.length, maxItems);
-    final int totalCount = displayItemCount + (showSeeMore ? 1 : 0);
+    final int totalCount = displayItemCount + 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'Autres astuces et conseils',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimaryThemed(context),
-              letterSpacing: -0.3,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Autres astuces et conseils',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.screenTextPrimaryThemed(context),
+                  letterSpacing: -0.3,
+                ),
+              ),
+              GestureDetector(
+                onTap: _onSeeMoreTips,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _C.orange.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.add,
+                        size: 16,
+                        color: _C.orange,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Voir plus',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: _C.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 14),
@@ -721,6 +749,18 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
     );
   }
 
+  void _onSeeMoreTips() {
+    if (MainScreenWrapper.maybeOf(context) != null) {
+      MainScreenWrapper.of(context).navigateToExtraScreen(const TipsAdviceScreen());
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const TipsAdviceScreen(),
+        ),
+      );
+    }
+  }
+
   Widget _buildSeeMoreCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardWidth = _getCardWidth(context, 16.0);
@@ -739,13 +779,7 @@ Téléchargez l'application ici : ${AppConfig.storeUrl}
           subtitleColor: isDark ? Colors.grey[400]! : Colors.grey[600]!,
           title: 'Voir+',
           subtitle: 'd\'astuces',
-          onTap: () {
-            if (MainScreenWrapper.maybeOf(context) != null) {
-              MainScreenWrapper.of(context).updateCurrentIndex(3);
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
+          onTap: _onSeeMoreTips,
           icon: Icons.add,
           width: cardWidth,
           height: imageHeight,

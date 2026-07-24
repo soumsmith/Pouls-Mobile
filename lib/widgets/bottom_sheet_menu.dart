@@ -280,19 +280,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
           ).navigateToExtraScreen(const MessagesScreen());
         },
       ),
-      _MenuItem(
-        title: 'Passer Premium',
-        subtitle: 'Découvrez nos offres exclusives',
-        icon: Icons.star_rounded,
-        color: Colors.amber.shade600,
-        onTap: () {
-          Navigator.of(context).pop();
-          Navigator.push(
-            widget.parentContext,
-            MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
-          );
-        },
-      ),
+
       _MenuItem(
         title: 'Mes Tickets',
         subtitle: 'Voir vos tickets achetés',

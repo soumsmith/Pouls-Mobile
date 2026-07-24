@@ -40,31 +40,35 @@ class ScolariteService {
       print('   - Body length: ${response.body.length} caractères');
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
+        final dynamic decodedJson = json.decode(response.body);
         print('✅ Données de scolarité reçues et parsées avec succès');
         print('═══════════════════════════════════════════════════════════');
         print('');
 
         List<Scolarite> allScolarites = [];
-        if (jsonList.isNotEmpty) {
-          final dataMap = jsonList.first as Map<String, dynamic>;
-          if (dataMap.containsKey('AFF')) {
-            final affList = dataMap['AFF'] as List<dynamic>;
-            allScolarites.addAll(
-              affList.map(
-                (item) => Scolarite.fromJson(item as Map<String, dynamic>),
-              ),
-            );
-          }
-          if (dataMap.containsKey('NAFF')) {
-            final naffList = dataMap['NAFF'] as List<dynamic>;
-            allScolarites.addAll(
-              naffList.map(
-                (item) => Scolarite.fromJson(item as Map<String, dynamic>),
-              ),
-            );
-          }
+
+        void parseMap(Map<String, dynamic> dataMap) {
+          dataMap.forEach((key, value) {
+            if (value is List) {
+              for (final item in value) {
+                if (item is Map<String, dynamic>) {
+                  allScolarites.add(Scolarite.fromJson(item));
+                }
+              }
+            }
+          });
         }
+
+        if (decodedJson is List) {
+          for (final element in decodedJson) {
+            if (element is Map<String, dynamic>) {
+              parseMap(element);
+            }
+          }
+        } else if (decodedJson is Map<String, dynamic>) {
+          parseMap(decodedJson);
+        }
+
         return allScolarites;
       } else if (response.statusCode == 404) {
         print('ℹ️ Aucun frais de scolarité trouvé pour ce niveau (404)');

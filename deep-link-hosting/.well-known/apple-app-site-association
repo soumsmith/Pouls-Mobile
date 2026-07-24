@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": [
+          "BVJ6PT96L8.com.groupegain.parentsresponsable"
+        ],
+        "paths": [
+          "/deep-link-hosting/share/*"
+        ]
+      }
+    ]
+  }
+}

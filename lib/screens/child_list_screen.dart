@@ -66,6 +66,7 @@ import '../services/notification_service.dart';
 import 'my_tickets_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/custom_sliver_app_bar.dart';
+import 'subscription_screen.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/snackbar.dart';
@@ -4633,6 +4634,21 @@ class _ChildListScreenState extends State<ChildListScreen>
                     );
                   }
                 }
+              },
+            ),
+            EstablishmentAction(
+              key: 'premium',
+              title: 'Passer Premium',
+              subtitle: 'Voir les offres',
+              imagePath: 'assets/images/icons/services_scolaires.png', // Un icon fallback au cas où
+              iconData: Icons.star_rounded,
+              color: Colors.amber.shade600,
+              actionText: 'Voir offres',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
+                );
               },
             ),
           ],

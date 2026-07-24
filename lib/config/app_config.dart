@@ -68,7 +68,6 @@ class AppConfig {
   static const int PAYMENT_VERIFICATION_INTERVAL_SECONDS = 5;
   static const int PAYMENT_VERIFICATION_MAX_ATTEMPTS = 10;
 
-
   // ─── External URLs ───────────────────────────────────────────────────────
   static const String TUTEUR_ADOM_URL =
       'https://tuteur-adom.pouls-scolaire.net/';

@@ -13,6 +13,7 @@ import '../config/app_config.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/components/custom_error_state.dart';
+import '../widgets/scroll_to_top_fab.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -25,11 +26,23 @@ class SubscriptionScreen extends StatefulWidget {
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool _isLoading = true;
   List<SubscriptionOffer> _offers = [];
+  
+  final ScrollController _scrollController = ScrollController();
+  
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadOffers();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadOffers() async {
@@ -205,11 +218,56 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final filteredOffers = _offers.where((offer) {
+      final query = _searchQuery.toLowerCase();
+      return offer.title.toLowerCase().contains(query) ||
+          offer.description.toLowerCase().contains(query);
+    }).toList();
+
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
+      floatingActionButton: ScrollToTopFab(
+        scrollController: _scrollController,
+        bottomSpacerHeight: 70,
+      ),
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           CustomSliverAppBar(title: 'Passer Premium', isDark: isDark),
+          
+          // --- Barre de recherche ---
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _searchQuery = value),
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                decoration: InputDecoration(
+                  hintText: 'Rechercher une offre...',
+                  hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                  prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54),
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear, color: isDark ? Colors.white54 : Colors.black54),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                ),
+              ),
+            ),
+          ),
+
           if (_isLoading)
             SliverFillRemaining(
               child: Center(
@@ -218,12 +276,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 ),
               ),
             )
-          else if (_offers.isEmpty)
+          else if (filteredOffers.isEmpty)
             SliverFillRemaining(
               child: CustomErrorState(
-                title: 'Aucune offre',
-                message: 'Aucun abonnement n\'est disponible pour le moment.',
-                icon: Icons.card_membership,
+                title: _searchQuery.isNotEmpty ? 'Aucune offre trouvée' : 'Aucune offre',
+                message: _searchQuery.isNotEmpty 
+                    ? 'Aucun abonnement ne correspond à votre recherche.'
+                    : 'Aucun abonnement n\'est disponible pour le moment.',
+                icon: _searchQuery.isNotEmpty ? Icons.search_off : Icons.card_membership,
                 retryText: 'Rafraîchir',
                 onRetry: _loadOffers,
               ),
@@ -231,12 +291,29 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           else
             SliverPadding(
               padding: const EdgeInsets.all(16.0),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final offer = _offers[index];
-                  return _buildOfferCard(offer, isDark, context);
-                }, childCount: _offers.length),
-              ),
+              sliver: MediaQuery.of(context).size.width > 600
+                  ? SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisExtent: 560,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          return _buildOfferCard(filteredOffers[index], isDark, context, isGrid: true);
+                        },
+                        childCount: filteredOffers.length,
+                      ),
+                    )
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          return _buildOfferCard(filteredOffers[index], isDark, context);
+                        },
+                        childCount: filteredOffers.length,
+                      ),
+                    ),
             ),
           SliverToBoxAdapter(child: const BottomSpacer()),
         ],
@@ -247,287 +324,408 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget _buildOfferCard(
     SubscriptionOffer offer,
     bool isDark,
-    BuildContext context,
-  ) {
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black;
-    final subtitleColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+    BuildContext context, {
+    bool isGrid = false,
+  }) {
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subtitleColor = isDark ? Colors.grey.shade400 : const Color(0xFF64748B);
+    final primaryColor = offer.isPopular ? const Color(0xFFF59E0B) : const Color(0xFF6366F1);
+    final gradient = offer.isPopular 
+        ? const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)])
+        : const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)]);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
+      margin: isGrid 
+          ? EdgeInsets.zero 
+          : const EdgeInsets.only(bottom: 20, left: 4, right: 4),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: AppDimensions.getBottomSheetShadow(context),
-        border: offer.isPopular
-            ? Border.all(color: Colors.amber.shade400, width: 2)
-            : Border.all(
-                color: isDark ? Colors.white10 : Colors.black12,
-                width: 1,
-              ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: (isDark ? Colors.black : primaryColor).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(
+          color: offer.isPopular
+              ? const Color(0xFFF59E0B).withOpacity(0.5)
+              : (isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+          width: offer.isPopular ? 1.5 : 1,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // En-tête de la carte avec l'image ou le badge
-          Stack(
-            children: [
-              if (offer.image != null)
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(22),
-                    topRight: Radius.circular(22),
-                  ),
-                  child: CachedNetworkImage(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Image et Badge
+            Stack(
+              children: [
+                if (offer.image != null)
+                  CachedNetworkImage(
                     imageUrl: offer.image!,
-                    height: 110,
+                    height: 90,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      height: 110,
-                      color: Colors.grey.withOpacity(0.1),
-                      child: const Center(child: CircularProgressIndicator()),
+                      height: 90,
+                      color: isDark ? Colors.white10 : Colors.black.withOpacity(0.02),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      height: 110,
-                      color: Colors.grey.withOpacity(0.1),
-                      child: const Icon(Icons.image_not_supported),
+                      height: 90,
+                      color: isDark ? Colors.white10 : Colors.black.withOpacity(0.02),
+                      child: Icon(Icons.image_not_supported, size: 24, color: subtitleColor),
                     ),
+                  )
+                else
+                  Container(
+                    height: 6,
+                    decoration: BoxDecoration(gradient: gradient),
                   ),
-                )
-              else
-                Container(
-                  height: 24, // Espace minimal si pas d'image
-                  decoration: BoxDecoration(
-                    color: offer.isPopular
-                        ? Colors.amber.shade400
-                        : Colors.transparent,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(22),
-                      topRight: Radius.circular(22),
-                    ),
-                  ),
-                ),
 
-              if (offer.isPopular)
-                Positioned(
-                  top: offer.image != null ? 12 : 0,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade400,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Text(
-                      'POPULAIRE',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                        fontSize: 12,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  offer.title,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: textColor,
-                    letterSpacing: -0.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  offer.description,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: subtitleColor, fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-
-                // Section Prix
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withOpacity(0.05)
-                        : Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      if (offer.isPromoActive)
-                        Text(
-                          '${offer.price.toInt()} ${offer.currency}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.red.shade400,
-                            decoration: TextDecoration.lineThrough,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              offer.activePrice == 0
-                                  ? 'Gratuit'
-                                  : '${offer.activePrice.toInt()} ${offer.currency}',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                color: offer.isPromoActive
-                                    ? Colors.green.shade600
-                                    : textColor,
-                              ),
-                            ),
-                            if (offer.activePrice > 0)
-                              Text(
-                                ' / ${offer.durationDays}j',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: subtitleColor,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.family_restroom,
-                            size: 16,
-                            color: subtitleColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Jusqu\'à ${offer.maxStudents} enfant${offer.maxStudents > 1 ? 's' : ''}',
-                            style: TextStyle(
-                              color: subtitleColor,
-                              fontWeight: FontWeight.w500,
-                            ),
+                if (offer.isPopular)
+                  Positioned(
+                    top: offer.image != null ? 8 : 0,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: gradient,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFF59E0B).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 12),
-
-                // Liste des modules
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Inclus dans ce forfait :',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                      fontSize: 14,
+                      child: const Text(
+                        'POPULAIRE',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 10,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                   ),
+              ],
+            ),
+
+            if (isGrid)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: _buildCardContent(offer, isDark, textColor, subtitleColor, primaryColor, context, isGrid: isGrid),
                 ),
-                const SizedBox(height: 12),
-                ...offer.packageModules.map(
-                  (module) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: _buildCardContent(offer, isDark, textColor, subtitleColor, primaryColor, context, isGrid: isGrid),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardContent(
+    SubscriptionOffer offer,
+    bool isDark,
+    Color textColor,
+    Color subtitleColor,
+    Color primaryColor,
+    BuildContext context, {
+    bool isGrid = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+                  // En-tête (Titre + Prix)
+                  if (isGrid) ...[
+                    // Sur tablette en grille, on empile verticalement
+                    Text(
+                      offer.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                        letterSpacing: -0.3,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      offer.description,
+                      style: TextStyle(color: subtitleColor, fontSize: 12, height: 1.3),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        children: [
+                          if (offer.isPromoActive)
+                            Text(
+                              '${offer.price.toInt()} ${offer.currency}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.red.shade400,
+                                decoration: TextDecoration.lineThrough,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                offer.activePrice == 0 ? 'Gratuit' : '${offer.activePrice.toInt()}',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: offer.isPromoActive ? const Color(0xFF10B981) : primaryColor,
+                                ),
+                              ),
+                              if (offer.activePrice > 0)
+                                Text(
+                                  ' ${offer.currency}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: offer.isPromoActive ? const Color(0xFF10B981) : primaryColor,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (offer.activePrice > 0)
+                            Text(
+                              '/ ${offer.durationDays}j',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: subtitleColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ] else
+                    // Sur mobile, on affiche côte à côte
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(1),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                module.nom,
+                                offer.title,
                                 style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
                                   color: textColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  letterSpacing: -0.3,
+                                  height: 1.2,
                                 ),
                               ),
-                              if (module.description != null &&
-                                  module.description!.isNotEmpty) ...[
-                                const SizedBox(height: 2),
+                              const SizedBox(height: 4),
+                              Text(
+                                offer.description,
+                                style: TextStyle(color: subtitleColor, fontSize: 12, height: 1.3),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            children: [
+                              if (offer.isPromoActive)
                                 Text(
-                                  module.description!,
+                                  '${offer.price.toInt()} ${offer.currency}',
                                   style: TextStyle(
-                                    color: subtitleColor,
-                                    fontSize: 12,
+                                    fontSize: 11,
+                                    color: Colors.red.shade400,
+                                    decoration: TextDecoration.lineThrough,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              ],
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text(
+                                    offer.activePrice == 0 ? 'Gratuit' : '${offer.activePrice.toInt()}',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                      color: offer.isPromoActive ? const Color(0xFF10B981) : primaryColor,
+                                    ),
+                                  ),
+                                  if (offer.activePrice > 0)
+                                    Text(
+                                      ' ${offer.currency}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: offer.isPromoActive ? const Color(0xFF10B981) : primaryColor,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              if (offer.activePrice > 0)
+                                Text(
+                                  '/ ${offer.durationDays}j',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: subtitleColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
                       ],
                     ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Enfants
+                  Row(
+                    children: [
+                      Icon(Icons.family_restroom, size: 16, color: primaryColor.withOpacity(0.8)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Jusqu\'à ${offer.maxStudents} enfant${offer.maxStudents > 1 ? 's' : ''}',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : const Color(0xFF334155),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                CustomButton(
-                  text: offer.activePrice == 0
-                      ? 'Commencer'
-                      : "Sélectionner ce plan",
-                  onPressed: () => _subscribe(offer),
-                  backgroundColor: offer.isPopular
-                      ? Colors.amber.shade600
-                      : Colors.indigo.shade600,
-                  textColor: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+                  
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(height: 1),
+                  ),
+
+                  // Liste des modules
+                  Text(
+                    'Inclus :',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  ...offer.packageModules.map(
+                    (module) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(top: 2),
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 10,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  module.nom,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                if (module.description != null && module.description!.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    module.description!,
+                                    style: TextStyle(
+                                      color: subtitleColor,
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                         if (isGrid) const Spacer() else const SizedBox(height: 16),
+                  
+                  // Bouton
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: () => _subscribe(offer),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark 
+                            ? Colors.white.withOpacity(0.08) 
+                            : const Color(0xFFF2F4F7),
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        offer.activePrice == 0 ? 'Commencer gratuitement' : "Sélectionner ce plan",
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
     );
   }
 }

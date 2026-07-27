@@ -27,6 +27,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/filter_row_widget.dart';
 import '../services/pays_service.dart';
+import '../services/configuration_ecole_service.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/image_menu_card.dart';
@@ -193,6 +194,10 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
   Map<String, String> _paysReverseMap = {'': 'Tous'};
   bool _isLoadingPays = true;
 
+  List<String> _statutOptions = ConfigurationEcoleService.defaultStatuts;
+  List<String> _ordreOptions = ConfigurationEcoleService.defaultOrdres;
+  List<String> _programmeOptions = ConfigurationEcoleService.defaultProgrammes;
+
   // ── Animations ─────────────────────────────────────────────
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
@@ -244,6 +249,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     _fadeController.forward();
 
     _loadPays();
+    _loadConfigurationOptions();
     _loadEcoles();
     _loadVideos();
     _initializeFeaturedSchools();
@@ -303,6 +309,25 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
       if (mounted) {
         setState(() => _isLoadingPays = false);
       }
+    }
+  }
+
+  Future<void> _loadConfigurationOptions() async {
+    try {
+      final results = await Future.wait([
+        ConfigurationEcoleService.getStatutsOptions(),
+        ConfigurationEcoleService.getOrdresOptions(),
+        ConfigurationEcoleService.getProgrammesOptions(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _statutOptions = results[0];
+          _ordreOptions = results[1];
+          _programmeOptions = results[2];
+        });
+      }
+    } catch (e) {
+      // Les valeurs par défaut sont conservées
     }
   }
 
@@ -830,36 +855,66 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                         Row(
                           children: [
                             Expanded(
-                              child: CustomTextField(
-                                label: 'Statut (ex: Privé)',
-                                hint: 'Statut',
-                                icon: Icons.security_rounded,
-                                controller: _statutController,
-                                iconColor: AppColors.screenOrange,
-                                focusBorderColor: AppColors.screenOrange,
+                              child: SearchableDropdown(
+                                label: 'Statut',
+                                value: _statutController.text.trim().isEmpty
+                                    ? 'Tous'
+                                    : _statutController.text.trim(),
+                                items: _statutOptions,
+                                isDarkMode:
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark,
+                                onChanged: (String val) {
+                                  setState(() {
+                                    _statutController.text =
+                                        val == 'Tous' ? '' : val;
+                                  });
+                                  setModalState(() {});
+                                },
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: CustomTextField(
-                                label: 'Ordre (ex: Laïc)',
-                                hint: 'Ordre',
-                                icon: Icons.menu_book_rounded,
-                                controller: _ordreEnseignementController,
-                                iconColor: AppColors.screenOrange,
-                                focusBorderColor: AppColors.screenOrange,
+                              child: SearchableDropdown(
+                                label: 'Ordre',
+                                value: _ordreEnseignementController.text
+                                        .trim()
+                                        .isEmpty
+                                    ? 'Tous'
+                                    : _ordreEnseignementController.text.trim(),
+                                items: _ordreOptions,
+                                isDarkMode:
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark,
+                                onChanged: (String val) {
+                                  setState(() {
+                                    _ordreEnseignementController.text =
+                                        val == 'Tous' ? '' : val;
+                                  });
+                                  setModalState(() {});
+                                },
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        CustomTextField(
-                          label: 'Programme (ex: Français)',
-                          hint: 'Programme',
-                          icon: Icons.language_rounded,
-                          controller: _programmesEnseignementController,
-                          iconColor: AppColors.screenOrange,
-                          focusBorderColor: AppColors.screenOrange,
+                        SearchableDropdown(
+                          label: 'Programme',
+                          value: _programmesEnseignementController.text
+                                  .trim()
+                                  .isEmpty
+                              ? 'Tous'
+                              : _programmesEnseignementController.text.trim(),
+                          items: _programmeOptions,
+                          isDarkMode:
+                              Theme.of(context).brightness == Brightness.dark,
+                          onChanged: (String val) {
+                            setState(() {
+                              _programmesEnseignementController.text =
+                                  val == 'Tous' ? '' : val;
+                            });
+                            setModalState(() {});
+                          },
                         ),
                         const SizedBox(height: 16),
                         Row(

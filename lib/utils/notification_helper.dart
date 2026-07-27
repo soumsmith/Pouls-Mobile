@@ -65,9 +65,9 @@ class NotificationHelper {
 
       final overlayEntry = OverlayEntry(
         builder: (context) {
-          final bottomPadding = MediaQuery.of(context).padding.bottom;
+          final topPadding = MediaQuery.of(context).padding.top;
           return Positioned(
-            bottom: bottomPadding + 24,
+            top: topPadding + 12,
             left: 16,
             right: 16,
             child: Material(
@@ -462,7 +462,7 @@ class _NotificationOverlayCardState extends State<_NotificationOverlayCard>
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.4),
+      begin: const Offset(0, -0.6),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _controller,
@@ -496,9 +496,17 @@ class _NotificationOverlayCardState extends State<_NotificationOverlayCard>
       child: FadeTransition(
         opacity: _fadeAnimation,
         child: GestureDetector(
+          onVerticalDragEnd: (details) {
+            // Dismiss sur swipe vers le haut
+            if (details.primaryVelocity != null &&
+                details.primaryVelocity! < -100) {
+              dismiss();
+            }
+          },
           onHorizontalDragEnd: (details) {
-            // Dismiss on swipe left or right!
-            if (details.primaryVelocity != null && details.primaryVelocity!.abs() > 250) {
+            // Dismiss sur swipe gauche ou droite
+            if (details.primaryVelocity != null &&
+                details.primaryVelocity!.abs() > 250) {
               dismiss();
             }
           },

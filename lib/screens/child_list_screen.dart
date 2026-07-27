@@ -67,6 +67,8 @@ import 'my_tickets_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import 'subscription_screen.dart';
+import '../services/subscription_service.dart';
+import '../models/subscription_offer.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/components/section_row.dart';
 import '../widgets/snackbar.dart';
@@ -436,6 +438,10 @@ class _ChildListScreenState extends State<ChildListScreen>
   bool _isLoadingEcheance = false;
   bool _echeanceLoaded = false;
 
+  // Variables pour les offres d'abonnement
+  bool _hasSubscriptionOffers = false;
+  bool _isLoadingSubscriptionOffers = false;
+
   // Compter les notifications non lues
   int get unreadNotificationsCount =>
       _notifications.where((notification) => !notification.estLu).length;
@@ -577,6 +583,28 @@ class _ChildListScreenState extends State<ChildListScreen>
       _didInitialLoad = true;
       _loadData();
       _loadNotifications(); // Charger les notifications automatiquement
+      _loadSubscriptionOffers();
+    }
+  }
+
+  Future<void> _loadSubscriptionOffers() async {
+    if (_isLoadingSubscriptionOffers) return;
+    _isLoadingSubscriptionOffers = true;
+    try {
+      final offers = await SubscriptionService.instance.getOffers();
+      if (mounted) {
+        setState(() {
+          _hasSubscriptionOffers = offers.isNotEmpty;
+          _isLoadingSubscriptionOffers = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasSubscriptionOffers = false;
+          _isLoadingSubscriptionOffers = false;
+        });
+      }
     }
   }
 
@@ -1148,6 +1176,18 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _notificationsLoaded = false;
+      _echeanceLoaded = false;
+    });
+    await Future.wait([
+      _loadData(),
+      _loadNotifications(),
+      _loadSubscriptionOffers(),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = _themeService.isDarkMode;
@@ -1160,30 +1200,35 @@ class _ChildListScreenState extends State<ChildListScreen>
       ),
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: _mainScrollController,
-            slivers: [
-              _buildModernSliverAppBar(),
-              SliverToBoxAdapter(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Column(
-                    children: [
-                      _buildModernProfileHeader(),
-                      // const SizedBox(height: 20),
-                      // _buildEleveDetailSection(),
-                      const SizedBox(height: 24),
-                      _buildSectionHeader('Statistique', AppColors.primary),
-                      _buildSummaryCardsGrid(),
-                      const SizedBox(height: 8),
-                      _buildPaymentBannerCard(),
-                      const SizedBox(height: 24),
-                      const BottomSpacer(),
-                    ],
+          RefreshIndicator(
+            onRefresh: _handleRefresh,
+            color: AppColors.primary,
+            child: CustomScrollView(
+              controller: _mainScrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                _buildModernSliverAppBar(),
+                SliverToBoxAdapter(
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Column(
+                      children: [
+                        _buildModernProfileHeader(),
+                        // const SizedBox(height: 20),
+                        // _buildEleveDetailSection(),
+                        const SizedBox(height: 24),
+                        _buildSectionHeader('Statistique', AppColors.primary),
+                        _buildSummaryCardsGrid(),
+                        const SizedBox(height: 8),
+                        _buildPaymentBannerCard(),
+                        const SizedBox(height: 24),
+                        const BottomSpacer(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           // Gradient fade at bottom
           BottomFadeGradient(endColor: AppColors.screenSurfaceThemed(context)),
@@ -1825,7 +1870,6 @@ class _ChildListScreenState extends State<ChildListScreen>
           // ✅ Déclencher le chargement des deux types de notifications UNE SEULE FOIS
           if ((!_notificationsLoaded && !_isLoadingNotifications) ||
               (!_echeanceLoaded && !_isLoadingEcheance)) {
-
             final matricule = _matricule ?? widget.child.matricule;
             if (matricule != null && matricule.isNotEmpty) {
               // Charger les messages de groupe
@@ -1849,7 +1893,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                           _isLoadingNotifications = false;
                           _notificationsLoaded = true;
                         });
-
                       }
                     })
                     .catchError((e) {
@@ -1863,7 +1906,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                           _isLoadingNotifications = false;
                           _notificationsLoaded = true;
                         });
-
                       }
                     });
               }
@@ -1884,7 +1926,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                           _isLoadingEcheance = false;
                           _echeanceLoaded = true;
                         });
-
                       }
                     })
                     .catchError((e) {
@@ -1898,7 +1939,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                           _isLoadingEcheance = false;
                           _echeanceLoaded = true;
                         });
-
                       }
                     });
               }
@@ -3798,14 +3838,50 @@ class _ChildListScreenState extends State<ChildListScreen>
   // ─── NOUVEAU _buildPaymentBannerCard() ─────────────────────────────────────
   Widget _buildPaymentBannerCard() {
     final isDark = _themeService.isDarkMode;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final cardWidth = screenWidth > 600 ? 340.0 : (screenWidth - 32.0);
+    final cardHeight = cardWidth * 0.28;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_hasSubscriptionOffers) ...[
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ImageMenuCardExternalTitle(
+              index: 0,
+              cardKey: 'premium_offers',
+              imagePath: 'assets/images/icons/services_scolaires.png',
+              width: cardWidth,
+              height: null,
+              imageHeight: cardHeight,
+              imageBorderRadius: 16.0,
+              enableInnerBorder: true,
+              enableOuterBorder: true,
+              innerBorderWidth: 0.5,
+              outerBorderWidth: 0.5,
+              innerBorderColor: const Color(0xFFF59E0B).withOpacity(0.3),
+              color: const Color(0xFFF59E0B),
+              moduleIdentifiant: '',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SubscriptionScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         // ════════════════════════════════════════════════════════════════
         // SECTION 1 : Paiements & Inscription
         // ════════════════════════════════════════════════════════════════
         SectionRow(title: 'Paiements & Inscription'),
+
         Padding(
           padding: EdgeInsets.symmetric(
             horizontal:
@@ -4636,21 +4712,6 @@ class _ChildListScreenState extends State<ChildListScreen>
                 }
               },
             ),
-            EstablishmentAction(
-              key: 'premium',
-              title: 'Passer Premium',
-              subtitle: 'Voir les offres',
-              imagePath: 'assets/images/icons/services_scolaires.png', // Un icon fallback au cas où
-              iconData: Icons.star_rounded,
-              color: Colors.amber.shade600,
-              actionText: 'Voir offres',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
-                );
-              },
-            ),
           ],
           isDark: isDark,
           useExternalTitle: true,
@@ -4957,70 +5018,73 @@ class _ChildListScreenState extends State<ChildListScreen>
     const int maxAttempts = AppConfig.PAYMENT_VERIFICATION_MAX_ATTEMPTS;
 
     // Lancement du polling
-    timer = Timer.periodic(const Duration(seconds: AppConfig.PAYMENT_VERIFICATION_INTERVAL_SECONDS), (t) async {
-      if (isChecking || !mounted) return;
+    timer = Timer.periodic(
+      const Duration(seconds: AppConfig.PAYMENT_VERIFICATION_INTERVAL_SECONDS),
+      (t) async {
+        if (isChecking || !mounted) return;
 
-      attempts++;
-      if (attempts >= maxAttempts) {
-        t.cancel();
-        if (mounted) {
-          Navigator.of(context).pop(); // Fermer la modale
-          String notifTitle = 'Validation en attente';
-          String notifBody = '';
-
-          if (serviceType == 'la réservation') {
-            notifTitle = 'Validation de réservation en attente';
-            notifBody =
-                "Le délai de vérification du paiement en ligne de $montant FCFA pour la réservation de l'élève ${widget.child.firstName} à l'école ${widget.child.establishment} est dépassé. Si votre compte n'a pas été débité, n'hésitez pas à réessayer le paiement.";
-          } else {
-            notifTitle = 'Validation de scolarité en attente';
-            notifBody =
-                "Le délai de vérification du paiement en ligne de $montant FCFA pour la scolarité de l'élève ${widget.child.firstName} à l'école ${widget.child.establishment} est dépassé. Si votre compte n'a pas été débité, n'hésitez pas à réessayer le paiement.";
-          }
-
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Vérification en attente',
-            message:
-                'Le délai de vérification de paiement en ligne est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 4),
-          );
-
-          NotificationService().showNotification(
-            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            title: notifTitle,
-            body: notifBody,
-            payload: 'paiement_timeout',
-          );
-        }
-        return;
-      }
-
-      isChecking = true;
-
-      try {
-        final success = await api_service
-            .InscriptionApiService.checkPaiementStatus(uidEleve);
-        if (success && mounted) {
+        attempts++;
+        if (attempts >= maxAttempts) {
           t.cancel();
-          // Fermer le loader
-          Navigator.of(context).pop();
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Paiement validé',
-            message:
-                'Le paiement de la scolarité pour ${widget.child.firstName} a été enregistré avec succès !',
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 4),
-          );
+          if (mounted) {
+            Navigator.of(context).pop(); // Fermer la modale
+            String notifTitle = 'Validation en attente';
+            String notifBody = '';
+
+            if (serviceType == 'la réservation') {
+              notifTitle = 'Validation de réservation en attente';
+              notifBody =
+                  "Le délai de vérification du paiement en ligne de $montant FCFA pour la réservation de l'élève ${widget.child.firstName} à l'école ${widget.child.establishment} est dépassé. Si votre compte n'a pas été débité, n'hésitez pas à réessayer le paiement.";
+            } else {
+              notifTitle = 'Validation de scolarité en attente';
+              notifBody =
+                  "Le délai de vérification du paiement en ligne de $montant FCFA pour la scolarité de l'élève ${widget.child.firstName} à l'école ${widget.child.establishment} est dépassé. Si votre compte n'a pas été débité, n'hésitez pas à réessayer le paiement.";
+            }
+
+            CartSnackBar.showOverlay(
+              context,
+              productName: 'Vérification en attente',
+              message:
+                  'Le délai de vérification de paiement en ligne est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            );
+
+            NotificationService().showNotification(
+              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              title: notifTitle,
+              body: notifBody,
+              payload: 'paiement_timeout',
+            );
+          }
+          return;
         }
-      } catch (e) {
-        // En cas d'erreur de vérification, on laisse tourner
-      } finally {
-        isChecking = false;
-      }
-    });
+
+        isChecking = true;
+
+        try {
+          final success = await api_service
+              .InscriptionApiService.checkPaiementStatus(uidEleve);
+          if (success && mounted) {
+            t.cancel();
+            // Fermer le loader
+            Navigator.of(context).pop();
+            CartSnackBar.showOverlay(
+              context,
+              productName: 'Paiement validé',
+              message:
+                  'Le paiement de la scolarité pour ${widget.child.firstName} a été enregistré avec succès !',
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            );
+          }
+        } catch (e) {
+          // En cas d'erreur de vérification, on laisse tourner
+        } finally {
+          isChecking = false;
+        }
+      },
+    );
   }
 
   Widget _buildInfoRow(IconData icon, String text, bool isDark) {

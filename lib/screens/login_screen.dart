@@ -9,6 +9,7 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import '../widgets/components/custom_text_input.dart';
 import 'forgot_password_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/notification_helper.dart';
 
 /// Écran de connexion
 class LoginScreen extends StatefulWidget {
@@ -63,24 +64,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    FocusScope.of(context).unfocus();
+
     if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez renseigner tous les champs requis.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Veuillez renseigner tous les champs requis.');
       return;
     }
 
     if (_phoneController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez renseigner tous les champs requis.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Veuillez renseigner tous les champs requis.');
       return;
     }
 
@@ -122,19 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // Afficher une notification de connexion réussie
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
-              const Text('Connexion réussie !'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 1),
-        ),
-      );
+      NotificationHelper.showSuccess('Connexion réussie !');
 
       // Attendre 1 seconde avant de rediriger
       await Future.delayed(const Duration(seconds: 1));
@@ -146,33 +127,21 @@ class _LoginScreenState extends State<LoginScreen> {
         ).pushReplacement(MaterialPageRoute(builder: (_) => const App()));
       }
     } else if (result == DirectLoginResult.userNotFound && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Aucun parent lié à ce numéro de téléphone. Veuillez créer un compte.',
-          ),
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 5),
-          action: SnackBarAction(
-            label: 'Créer un compte',
-            textColor: Colors.white,
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SignupScreen()));
-            },
-          ),
-        ),
+      NotificationHelper.show(
+        message: 'Aucun parent lié à ce numéro de téléphone. Veuillez créer un compte.',
+        type: NotificationType.warning,
+        duration: const Duration(seconds: 5),
+        actionText: 'Créer un compte',
+        onActionPressed: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const SignupScreen()));
+        },
       );
     } else if (result == DirectLoginResult.connectionError) {
-      // Ne rien faire, l'ApiExceptionHandler a déjà affiché une notification de connexion
+      // Ne rien faire, l'ApiExceptionHandler a déjà affiché une notification de connexion au haut de l'écran
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erreur lors de la connexion. Veuillez réessayer.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Erreur lors de la connexion. Veuillez réessayer.');
     }
   }
 

@@ -13,6 +13,7 @@ import '../services/app_share_service.dart';
 import '../services/event_service.dart';
 import '../services/event_rating_service.dart';
 import '../services/auth_service.dart';
+import '../utils/auth_guard.dart';
 import '../services/ecole_api_service.dart';
 import '../services/ticket_service.dart';
 import '../widgets/share_bottom_sheet.dart';
@@ -23,6 +24,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/html_text_widget.dart';
 import '../widgets/components/bottom_spacer.dart';
 import 'pdf_viewer_screen.dart';
 import '../config/app_config.dart';
@@ -392,7 +394,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             ),
           ),
           const SizedBox(height: 10),
-          _ExpandableText(text: widget.event.content),
+          ExpandableHtmlTextWidget(
+            html: widget.event.content,
+            accentColor: _AppColors.indigo,
+          ),
         ],
       ),
     );
@@ -447,8 +452,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                   letterSpacing: -0.3,
                 ),
               ),
-              if (AuthService.instance.getCurrentUser() != null)
-                GestureDetector(
+              GestureDetector(
                   onTap: _showAddCommentDialog,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -857,6 +861,14 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   //  Ticket Bottom Sheet
   // ─────────────────────────────────────────────
   Future<void> _showTicketBottomSheet() async {
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour acheter un billet',
+      onAuthenticatedAsync: _openTicketBottomSheet,
+    );
+  }
+
+  Future<void> _openTicketBottomSheet() async {
     await _loadTicketCategories();
     if (!mounted) return;
     showModalBottomSheet(
@@ -927,13 +939,20 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   Future<void> _executeTicketPurchase() async {
     if (_selectedTicketCategory == null) return;
+    if (mounted) Navigator.pop(context); // close confirm dialog
+    if (mounted) Navigator.pop(context); // close ticket bottom sheet
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour acheter ce billet',
+      onAuthenticatedAsync: _performTicketPurchase,
+    );
+  }
+
+  Future<void> _performTicketPurchase() async {
+    if (_selectedTicketCategory == null) return;
     final currentUser = AuthService.instance.getCurrentUser();
-    if (currentUser == null) {
-      _showSnack('Utilisateur non connecté', Colors.red);
-      return;
-    }
-    if (mounted) Navigator.pop(context);
-    if (mounted) Navigator.pop(context); // close bottom sheet
+    if (currentUser == null) return;
+    if (!mounted) return;
     _showLoadingDialog();
     try {
       final tickets = {_selectedTicketCategory!.id: _selectedQuantity};
@@ -997,6 +1016,14 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   // ── Comment bottom sheet ────────────────────
   void _showAddCommentDialog() {
+    AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour laisser un avis',
+      onAuthenticated: _openAddCommentSheet,
+    );
+  }
+
+  void _openAddCommentSheet() {
     final currentUser = AuthService.instance.getCurrentUser();
     if (currentUser == null) return;
     showModalBottomSheet(

@@ -56,7 +56,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
   }
 
   Future<void> _loadAds() async {
-    final ads = await _adService.fetchAds();
+    final ads = await _adService.fetchAds(format: 'portrait');
     if (mounted) {
       setState(() {
         _ads = ads;

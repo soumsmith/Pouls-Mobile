@@ -37,16 +37,16 @@ class _HomeAdBannerState extends State<HomeAdBanner> {
   }
 
   Future<void> _loadAds() async {
-    final ads = await _adService.fetchAds();
+    debugPrint('🏠 [HomeAdBanner] Début du chargement des publicités (paysage) pour la Home Page...');
+    final ads = await _adService.fetchAds(format: 'paysage');
     if (mounted) {
       final initialPage = ads.length > 1 ? ads.length * 5000 : 0;
       _pageController = PageController(initialPage: initialPage);
       setState(() {
-        // Optionnel : on pourrait filtrer sur 'page' == 'accueil' selon les specs de l'API
-        // Pour l'instant on prend toutes les pubs ou celles adaptées.
         _ads = ads;
         _isLoading = false;
       });
+      debugPrint('🏠 [HomeAdBanner] ${ads.length} publicité(s) paysage affichée(s) sur la bannière de la Home Page');
       if (_ads.isNotEmpty) {
         _startTimer();
       }

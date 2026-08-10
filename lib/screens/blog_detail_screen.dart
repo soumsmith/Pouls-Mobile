@@ -22,6 +22,7 @@ import '../services/blog_service.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import 'all_blogs_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../widgets/html_text_widget.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens (cohérents avec EventDetailScreen)
@@ -531,7 +532,10 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
-            child: _ExpandableText(text: _stripHtmlTags(widget.blog.content)),
+            child: ExpandableHtmlTextWidget(
+              html: widget.blog.content,
+              accentColor: _C.emerald,
+            ),
           ),
         ],
       ),

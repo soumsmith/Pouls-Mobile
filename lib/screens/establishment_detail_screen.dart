@@ -87,6 +87,7 @@ import '../services/scolarite_service.dart';
 import '../services/niveau_service.dart';
 import '../services/recommendation_service.dart';
 import '../services/auth_service.dart';
+import '../utils/auth_guard.dart';
 import '../services/database_service.dart';
 import '../services/testimonial_service.dart';
 import '../services/integration_request_service.dart';
@@ -2648,9 +2649,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         color: _kActions['consult_requests']!.color,
         actionText: 'Consulter',
         // moduleIdentifiant: 'demande-intégration',
-        onTap: () => _showActionBottomSheet(
-          'consult_requests',
-          _kActions['consult_requests']!,
+        onTap: () => AuthGuard.ensureLoggedIn(
+          context,
+          reason: 'Connectez-vous pour consulter votre demande',
+          onAuthenticated: () => _showActionBottomSheet(
+            'consult_requests',
+            _kActions['consult_requests']!,
+          ),
         ),
       ),
       EstablishmentAction(
@@ -6686,6 +6691,18 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       _showAvisError('Veuillez donner une note et écrire un commentaire');
       return;
     }
+
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour laisser un avis',
+      onAuthenticatedAsync: _performSendAvis,
+    );
+  }
+
+  Future<void> _performSendAvis() async {
+    final rating = _ratingController.text.trim();
+    final comment = _commentController.text.trim();
+    if (rating.isEmpty || comment.isEmpty) return;
 
     final currentUser = AuthService().getCurrentUser();
     if (currentUser == null || currentUser.phone.isEmpty) {

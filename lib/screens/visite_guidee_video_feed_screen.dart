@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:parents_responsable/services/astuce_conseil_service.dart';
 import 'package:parents_responsable/services/auth_service.dart';
+import 'package:parents_responsable/utils/auth_guard.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../widgets/share_bottom_sheet.dart';
@@ -71,7 +72,7 @@ class _VisiteGuideeVideoFeedScreenState
   }
 
   Future<void> _loadAdsAndInit() async {
-    _ads = await _adService.fetchAds();
+    _ads = await _adService.fetchAds(format: 'portrait');
     _mixedVideos = AdInjector.injectAds<VisiteGuideeVideo>(widget.videos, _ads);
 
     // adjust initial index to account for injected ads
@@ -375,22 +376,28 @@ class _VisiteGuideeVideoFeedScreenState
     final item = _mixedVideos[_currentIndex];
     if (item is! VisiteGuideeVideo) return;
 
-    // Mettre en pause la vidéo actuelle
-    if (_youtubeControllers[_currentIndex] != null) {
-      _youtubeControllers[_currentIndex]!.pause();
-    }
+    AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour commenter cette vidéo',
+      onAuthenticated: () {
+        // Mettre en pause la vidéo actuelle
+        if (_youtubeControllers[_currentIndex] != null) {
+          _youtubeControllers[_currentIndex]!.pause();
+        }
 
-    ReusableBottomSheet.show(
-      context: context,
-      title: 'Commentaires',
-      subtitle: 'Échangez sur cette vidéo',
-      icon: Icons.comment_rounded,
-      iconColor: const Color(0xFF0288D1),
-      wrapWithScrollView: false,
-      initialChildSize: 0.75,
-      maxChildSize: 0.9,
-      contentPadding: EdgeInsets.zero,
-      content: _CommentsSheet(video: item),
+        ReusableBottomSheet.show(
+          context: context,
+          title: 'Commentaires',
+          subtitle: 'Échangez sur cette vidéo',
+          icon: Icons.comment_rounded,
+          iconColor: const Color(0xFF0288D1),
+          wrapWithScrollView: false,
+          initialChildSize: 0.75,
+          maxChildSize: 0.9,
+          contentPadding: EdgeInsets.zero,
+          content: _CommentsSheet(video: item),
+        );
+      },
     );
   }
 
@@ -419,6 +426,11 @@ class _VisiteGuideeVideoFeedScreenState
     );
   }
 
+  // Identifiant générique utilisé pour attribuer les likes des invités
+  // (non connectés), suivant la convention déjà en place dans
+  // ModuleAccessService/SubscriptionService pour les appels sans utilisateur.
+  static const int _anonymousUserId = 19421;
+
   Future<void> _toggleLike() async {
     if (_mixedVideos.isEmpty) return;
 
@@ -426,18 +438,8 @@ class _VisiteGuideeVideoFeedScreenState
     if (item is! VisiteGuideeVideo) return;
 
     final videoId = item.id ?? item.typeVideo.hashCode;
-
-    final userId = InteractionApiService.getCurrentUserId();
-    if (userId == null) {
-      CartSnackBar.showOverlay(
-        context,
-        productName: '',
-        message: 'Vous devez être connecté pour aimer une vidéo',
-        backgroundColor: Colors.red,
-        icon: Icons.error_outline,
-      );
-      return;
-    }
+    final resolvedUserId =
+        InteractionApiService.getCurrentUserId() ?? _anonymousUserId;
 
     // Optimistic UI update
     setState(() {
@@ -451,22 +453,20 @@ class _VisiteGuideeVideoFeedScreenState
     });
 
     final type = _likedVideoIds.contains(videoId) ? 'like' : 'dislike';
-    bool success = false;
+    bool success;
 
     final astuceIdentifier = item.slug ?? item.id?.toString() ?? '';
     if (item.typeVideo == 'astuce' && astuceIdentifier.isNotEmpty) {
       final user = AuthService.instance.getCurrentUser();
-      if (user != null) {
-        success = await AstuceConseilService().likeArticle(
-          astuceIdentifier,
-          nom: user.fullName,
-          userId: int.tryParse(user.id) ?? 0,
-        );
-      }
+      success = await AstuceConseilService().likeArticle(
+        astuceIdentifier,
+        nom: user?.fullName ?? 'Invité',
+        userId: user != null ? (int.tryParse(user.id) ?? 0) : resolvedUserId,
+      );
     } else {
       success = await InteractionApiService.toggleLike(
         videoId: videoId,
-        userId: userId,
+        userId: resolvedUserId,
         type: type,
       );
     }
@@ -1399,15 +1399,22 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   Future<void> _addComment() async {
     if (_commentController.text.trim().isEmpty) return;
     if (_currentUserId == null) {
-      CartSnackBar.showOverlay(
+      await AuthGuard.ensureLoggedIn(
         context,
-        productName: '',
-        message: 'Vous devez être connecté pour commenter',
-        backgroundColor: Colors.red,
-        icon: Icons.error_outline,
+        reason: 'Connectez-vous pour commenter',
+        onAuthenticatedAsync: () async {
+          _currentUserId = InteractionApiService.getCurrentUserId();
+          await _performAddComment();
+        },
       );
       return;
     }
+
+    await _performAddComment();
+  }
+
+  Future<void> _performAddComment() async {
+    if (_currentUserId == null) return;
 
     try {
       Interaction? newComment;
@@ -2110,21 +2117,21 @@ class _RatingSheetState extends State<_RatingSheet> {
     });
 
     final user = AuthService.instance.getCurrentUser();
-    final userId = user != null ? int.tryParse(user.id) ?? 0 : 0;
+    final userId = user != null
+        ? (int.tryParse(user.id) ?? _VisiteGuideeVideoFeedScreenState._anonymousUserId)
+        : _VisiteGuideeVideoFeedScreenState._anonymousUserId;
 
-    if (userId > 0) {
-      try {
-        final videoId = widget.video.id ?? widget.video.typeVideo.hashCode;
+    try {
+      final videoId = widget.video.id ?? widget.video.typeVideo.hashCode;
 
-        await InteractionApiService.createInteraction(
-          videoId: videoId,
-          userId: userId,
-          type: 'rating',
-          content: _currentRating.toString(),
-        );
-      } catch (e) {
-        print('❌ Erreur lors de l\'envoi de la note: $e');
-      }
+      await InteractionApiService.createInteraction(
+        videoId: videoId,
+        userId: userId,
+        type: 'rating',
+        content: _currentRating.toString(),
+      );
+    } catch (e) {
+      print('❌ Erreur lors de l\'envoi de la note: $e');
     }
 
     if (mounted) {

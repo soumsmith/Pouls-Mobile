@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../services/text_size_service.dart';
 import '../../services/avis_service.dart';
+import '../../utils/auth_guard.dart';
 import '../components/custom_error_state.dart';
 import 'reusable_bottom_sheet.dart';
 
@@ -101,6 +102,17 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
       );
       return;
     }
+
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour laisser un avis',
+      onAuthenticatedAsync: _performSendAvis,
+    );
+  }
+
+  Future<void> _performSendAvis() async {
+    final rating = _ratingController.text;
+    final comment = _commentController.text;
 
     try {
       // Appeler le callback si fourni

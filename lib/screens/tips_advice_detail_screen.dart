@@ -21,6 +21,7 @@ import '../services/app_share_service.dart';
 import '../services/astuce_conseil_service.dart';
 import '../services/auth_service.dart';
 import 'tips_advice_screen.dart';
+import '../widgets/html_text_widget.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
@@ -486,8 +487,9 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: AppDimensions.getSettingsCardShadow(context),
             ),
-            child: _ExpandableText(
-              text: HtmlHelper.stripHtmlTags(widget.astuce.content),
+            child: ExpandableHtmlTextWidget(
+              html: widget.astuce.content,
+              accentColor: _C.orange,
             ),
           ),
         ],

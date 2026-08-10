@@ -34,6 +34,7 @@ import '../services/text_size_service.dart';
 import '../services/theme_service.dart';
 import '../services/integration_request_service.dart';
 import '../services/auth_service.dart';
+import '../utils/auth_guard.dart';
 import '../services/recommendation_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
@@ -2815,9 +2816,15 @@ class _HomeScreenState extends State<HomeScreen> {
             title: 'MES ENFANTS',
             onSeeMore: (_filteredChildren.length > 4)
                 ? () {
-                    MainScreenWrapper.of(
+                    AuthGuard.ensureLoggedIn(
                       context,
-                    ).navigateToExtraScreen(const AllChildrenScreen());
+                      reason: 'Connectez-vous pour voir tous vos enfants',
+                      onAuthenticated: () {
+                        MainScreenWrapper.of(
+                          context,
+                        ).navigateToExtraScreen(const AllChildrenScreen());
+                      },
+                    );
                   }
                 : null,
             seeMoreText: 'Voir plus',
@@ -2984,115 +2991,133 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAddChildButton() {
+    final addChildCard = GestureDetector(
+      onTap: () async {
+        await AuthGuard.ensureLoggedIn(
+          context,
+          reason: 'Connectez-vous pour ajouter un enfant',
+          onAuthenticated: () {
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
+          },
+        );
+      },
+      child: SizedBox(
+        width: AppDimensions.getChildImageSize(context) + 16,
+        child: Column(
+          children: [
+            Container(
+              width: AppDimensions.getChildImageSize(context),
+              height: AppDimensions.getChildImageSize(context),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _kDarkBorder,
+                  width: 2,
+                  style: BorderStyle
+                      .solid, // dashed not directly supported; use a package for dashed
+                ),
+              ),
+              child: Icon(
+                Icons.add,
+                color: const Color.fromARGB(255, 226, 226, 240),
+                size: AppDimensions.getChildImageSize(context) * 0.33,
+              ),
+            ),
+            SizedBox(height: 5),
+            Text(
+              'Nouveau',
+              style: TextStyle(
+                color: _kTextSecondary,
+                fontSize: AppDimensions.getChildNameTextSize(context),
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // Un invité doit se voir proposer la connexion immédiatement au tap,
+    // jamais un verrou d'abonnement — le contrôle de privilège
+    // (PrivilegeGuard) ne s'applique donc qu'aux utilisateurs déjà connectés.
+    final child = AuthGuard.isLoggedIn()
+        ? PrivilegeGuard(
+            requiredLevel: 'free',
+            showLockOverlay: false,
+            fallback: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SubscriptionScreen(),
+                  ),
+                );
+              },
+              child: Opacity(
+                opacity: 0.5, // Effet grisé
+                child: SizedBox(
+                  width: AppDimensions.getChildImageSize(context) + 16,
+                  child: Column(
+                    children: [
+                      Container(
+                        width: AppDimensions.getChildImageSize(context),
+                        height: AppDimensions.getChildImageSize(context),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: _kDarkBorder, width: 2),
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(
+                              Icons.add,
+                              color: const Color.fromARGB(
+                                255,
+                                226,
+                                226,
+                                240,
+                              ).withOpacity(0.3),
+                              size:
+                                  AppDimensions.getChildImageSize(context) *
+                                  0.33,
+                            ),
+                            const Icon(
+                              Icons.lock_rounded,
+                              color: Colors.amber,
+                              size: 26,
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        'Nouveau',
+                        style: TextStyle(
+                          color: _kTextSecondary,
+                          fontSize: AppDimensions.getChildNameTextSize(
+                            context,
+                          ),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            child: addChildCard,
+          )
+        : addChildCard;
+
     return ConditionalShowcase(
       showcaseKey: _five,
       description: 'Ajoutez un nouvel enfant en cliquant ici.',
-      child: PrivilegeGuard(
-        requiredLevel: 'free',
-        showLockOverlay: false,
-        fallback: GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const SubscriptionScreen(),
-              ),
-            );
-          },
-          child: Opacity(
-            opacity: 0.5, // Effet grisé
-            child: SizedBox(
-              width: AppDimensions.getChildImageSize(context) + 16,
-              child: Column(
-                children: [
-                  Container(
-                    width: AppDimensions.getChildImageSize(context),
-                    height: AppDimensions.getChildImageSize(context),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: _kDarkBorder, width: 2),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Icon(
-                          Icons.add,
-                          color: const Color.fromARGB(
-                            255,
-                            226,
-                            226,
-                            240,
-                          ).withOpacity(0.3),
-                          size: AppDimensions.getChildImageSize(context) * 0.33,
-                        ),
-                        const Icon(
-                          Icons.lock_rounded,
-                          color: Colors.amber,
-                          size: 26,
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Nouveau',
-                    style: TextStyle(
-                      color: _kTextSecondary,
-                      fontSize: AppDimensions.getChildNameTextSize(context),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        child: GestureDetector(
-          onTap: () async {
-            final result = await Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const AddChildScreen()));
-            // Le résultat n'est plus nécessaire car la redirection est gérée dans AddChildScreen
-          },
-          child: SizedBox(
-            width: AppDimensions.getChildImageSize(context) + 16,
-            child: Column(
-              children: [
-                Container(
-                  width: AppDimensions.getChildImageSize(context),
-                  height: AppDimensions.getChildImageSize(context),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _kDarkBorder,
-                      width: 2,
-                      style: BorderStyle
-                          .solid, // dashed not directly supported; use a package for dashed
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.add,
-                    color: const Color.fromARGB(255, 226, 226, 240),
-                    size: AppDimensions.getChildImageSize(context) * 0.33,
-                  ),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  'Nouveau',
-                  style: TextStyle(
-                    color: _kTextSecondary,
-                    fontSize: AppDimensions.getChildNameTextSize(context),
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: child,
     );
   }
 
@@ -3213,12 +3238,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
                 moduleIdentifiant: 'demande-intégration',
-                onTap: () => showIntegrationBottomSheet(
-                  context: context,
-                  imagePath: 'assets/images/icons/demande_integration.png',
-                  imageBackgroundColor: const Color(0xFFF7FEFC),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
+                onTap: () => AuthGuard.ensureLoggedIn(
+                  context,
+                  reason: 'Connectez-vous pour faire une demande d\'intégration',
+                  onAuthenticated: () => showIntegrationBottomSheet(
+                    context: context,
+                    imagePath: 'assets/images/icons/demande_integration.png',
+                    imageBackgroundColor: const Color(0xFFF7FEFC),
+                    imageBorderRadius: AppDimensions.getImageBorderRadius(
+                      context,
+                    ),
                   ),
                 ),
               ),
@@ -3268,12 +3297,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: AppDimensions.getSquareCardWidthSize(context),
                 height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
-                onTap: () => showSponsorshipBottomSheet(
+                onTap: () => AuthGuard.ensureLoggedIn(
                   context,
-                  imagePath: 'assets/images/icons/parrainer_utilisateur.png',
-                  imageBackgroundColor: const Color(0xFFFCFAFF),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
+                  reason: 'Connectez-vous pour parrainer un utilisateur',
+                  onAuthenticated: () => showSponsorshipBottomSheet(
                     context,
+                    imagePath: 'assets/images/icons/parrainer_utilisateur.png',
+                    imageBackgroundColor: const Color(0xFFFCFAFF),
+                    imageBorderRadius: AppDimensions.getImageBorderRadius(
+                      context,
+                    ),
                   ),
                 ),
               ),

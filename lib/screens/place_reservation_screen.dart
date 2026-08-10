@@ -9,6 +9,7 @@ import '../widgets/components/custom_error_state.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../utils/auth_guard.dart';
 
 /// Écran de gestion des réservations de places
 class PlaceReservationScreen extends StatefulWidget implements MainScreenChild {
@@ -167,16 +168,30 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
   }
 
   void _showCreateReservationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => _buildCreateReservationDialog(),
+    AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour réserver une place',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (context) => _buildCreateReservationDialog(),
+        );
+      },
     );
   }
 
   Future<void> _submitReservation(String reservationId) async {
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour soumettre votre réservation',
+      onAuthenticatedAsync: () => _performSubmitReservation(reservationId),
+    );
+  }
+
+  Future<void> _performSubmitReservation(String reservationId) async {
     try {
       final success = await _reservationService.submitReservation(reservationId);
-      
+
       if (success) {
         _loadData(); // Recharger les données
         ScaffoldMessenger.of(context).showSnackBar(
@@ -240,33 +255,42 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
     );
     
     if (result == true && reasonController.text.isNotEmpty) {
-      try {
-        final success = await _reservationService.cancelReservation(reservationId, reasonController.text);
-        
-        if (success) {
-          _loadData(); // Recharger les données
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Réservation annulée'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Erreur lors de l\'annulation'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-      } catch (e) {
+      await AuthGuard.ensureLoggedIn(
+        context,
+        reason: 'Connectez-vous pour annuler votre réservation',
+        onAuthenticatedAsync: () =>
+            _performCancelReservation(reservationId, reasonController.text),
+      );
+    }
+  }
+
+  Future<void> _performCancelReservation(String reservationId, String reason) async {
+    try {
+      final success = await _reservationService.cancelReservation(reservationId, reason);
+
+      if (success) {
+        _loadData(); // Recharger les données
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
+          const SnackBar(
+            content: Text('Réservation annulée'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de l\'annulation'),
             backgroundColor: AppColors.error,
           ),
         );
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -1474,13 +1498,19 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Logique de création simplifiée
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Fonctionnalité de création à implémenter'),
-                          backgroundColor: AppColors.info,
-                        ),
+                      AuthGuard.ensureLoggedIn(
+                        context,
+                        reason: 'Connectez-vous pour réserver une place',
+                        onAuthenticated: () {
+                          // Logique de création simplifiée
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Fonctionnalité de création à implémenter'),
+                              backgroundColor: AppColors.info,
+                            ),
+                          );
+                        },
                       );
                     },
                     style: ElevatedButton.styleFrom(

@@ -13,6 +13,7 @@ import '../components/capsule_tab_bar.dart';
 import 'reusable_bottom_sheet.dart';
 import '../../services/parrainage_service.dart';
 import '../../services/auth_service.dart';
+import '../../utils/auth_guard.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_dimensions.dart';
 import '../../config/app_config.dart';
@@ -49,6 +50,15 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
       });
       return;
     }
+
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour accéder à votre code de parrainage',
+      onAuthenticatedAsync: _performFetchSponsorshipCode,
+    );
+  }
+
+  Future<void> _performFetchSponsorshipCode() async {
     setState(() {
       _parentTelephoneError = false;
       _isLoading = true;

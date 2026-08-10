@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
-import 'login_screen.dart';
+import '../app.dart';
 
 /// Écran d'introduction avec slider auto-play
 class IntroScreen extends StatefulWidget {
@@ -387,7 +387,7 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
                 if (context.mounted) {
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                      builder: (_) => const LoginScreen(),
+                      builder: (_) => const App(),
                     ),
                   );
                 }

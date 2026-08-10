@@ -19,6 +19,7 @@ import '../models/ad_model.dart';
 import '../utils/ad_injector.dart';
 import '../widgets/ad_banner_card.dart';
 import '../widgets/components/section_row.dart';
+import '../utils/html_helper.dart';
 
 class TipsAdviceScreen extends StatefulWidget {
   const TipsAdviceScreen({super.key});
@@ -75,7 +76,7 @@ class _TipsAdviceScreenState extends State<TipsAdviceScreen>
   }
 
   Future<void> _loadAds() async {
-    final ads = await _adService.fetchAds();
+    final ads = await _adService.fetchAds(format: 'portrait');
     if (mounted) {
       setState(() {
         _ads = ads;
@@ -664,7 +665,7 @@ class _AstuceCard extends StatelessWidget {
     final uiData = astuce.toUiMap();
     final Color color = uiData['color'] as Color;
     final String? imageUrl = uiData['image'] as String?;
-    final String title = astuce.title;
+    final String title = HtmlHelper.stripHtmlTags(astuce.title);
     final String subtitle = astuce.codeecole.isNotEmpty
         ? astuce.codeecole
         : 'Astuces & Conseils';

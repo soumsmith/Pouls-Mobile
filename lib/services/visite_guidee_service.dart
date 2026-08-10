@@ -51,4 +51,38 @@ class VisiteGuideeService {
       throw Exception('Erreur lors de la récupération des vidéos: $e');
     }
   }
+
+  static Future<List<VisiteGuideeVideo>> getAllVisiteGuideeVideos({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    try {
+      final url =
+          '$baseUrl/videos?type_video=visiteguide&per_page=$perPage&page=$page';
+      print('=== API VISITES GUIDÉES (ALL) ===');
+      print('URL: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = json.decode(response.body);
+        if (jsonData['data'] != null) {
+          final List<dynamic> videosData = jsonData['data'];
+          return videosData.map((json) => VisiteGuideeVideo.fromJson(json)).toList();
+        }
+        return [];
+      } else {
+        throw Exception('Erreur HTTP: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Exception dans getAllVisiteGuideeVideos: $e');
+      throw Exception('Erreur lors de la récupération des vidéos: $e');
+    }
+  }
 }

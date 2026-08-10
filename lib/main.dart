@@ -39,10 +39,10 @@ void main() async {
     await DatabaseService.instance.database;
     print('✅ Base de données initialisée');
 
-    // Déconnecter l'utilisateur à chaque démarrage (pas de session persistante)
-    await AuthService.instance.logout();
+    // Recharger la session sauvegardée si elle existe (mode invité sinon)
+    await AuthService.instance.loadSavedSession();
     print(
-      '✅ Service d\'authentification initialisé (session effacée au démarrage)',
+      '✅ Service d\'authentification initialisé (session persistante)',
     );
 
     // Initialiser OneSignal Push Notifications

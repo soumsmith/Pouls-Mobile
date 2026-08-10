@@ -6,6 +6,7 @@ import 'package:parents_responsable/models/ecole.dart';
 import 'package:parents_responsable/services/integration_service.dart';
 import 'package:parents_responsable/services/pouls_scolaire_api_service.dart';
 import 'package:parents_responsable/services/text_size_service.dart';
+import 'package:parents_responsable/utils/auth_guard.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import 'package:parents_responsable/widgets/components/custom_date_input.dart';
 import 'package:parents_responsable/widgets/components/custom_select_input.dart';
@@ -492,6 +493,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       return;
     }
 
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour envoyer votre demande d\'intégration',
+      onAuthenticatedAsync: _performSubmit,
+    );
+  }
+
+  Future<void> _performSubmit() async {
     final requestData = <String, dynamic>{
       'nom': _studentNameController.text,
       'prenoms': _studentFirstNameController.text,

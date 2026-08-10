@@ -13,7 +13,16 @@ import '../utils/notification_helper.dart';
 
 /// Écran de connexion
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  /// Quand true, une connexion réussie fait un `Navigator.pop(true)` au lieu
+  /// de remplacer la pile — utilisé quand l'écran est poussé par [AuthGuard]
+  /// par-dessus un écran/formulaire dont on veut reprendre l'action.
+  final bool popOnSuccess;
+
+  /// Message contextuel affiché au-dessus du formulaire (ex: "Connectez-vous
+  /// pour laisser un avis"), utilisé avec [popOnSuccess].
+  final String? reason;
+
+  const LoginScreen({super.key, this.popOnSuccess = false, this.reason});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -120,11 +129,17 @@ class _LoginScreenState extends State<LoginScreen> {
       // Attendre 1 seconde avant de rediriger
       await Future.delayed(const Duration(seconds: 1));
 
-      // Connexion réussie, naviguer vers l'écran principal
+      // Connexion réussie
       if (mounted) {
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const App()));
+        if (widget.popOnSuccess && Navigator.canPop(context)) {
+          // Poussé par AuthGuard par-dessus un écran/formulaire : on revient
+          // dessus pour que l'action initiale puisse reprendre.
+          Navigator.of(context).pop(true);
+        } else {
+          Navigator.of(
+            context,
+          ).pushReplacement(MaterialPageRoute(builder: (_) => const App()));
+        }
       }
     } else if (result == DirectLoginResult.userNotFound && mounted) {
       NotificationHelper.show(
@@ -151,8 +166,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final isTablet =
         AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
 
+    final canPop = Navigator.canPop(context);
+
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
+      appBar: canPop
+          ? AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              foregroundColor: AppColors.getTextColor(isDark),
+            )
+          : null,
       body: Container(
         decoration: BoxDecoration(
           color: isDark ? null : Colors.white,
@@ -219,7 +243,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Connectez-vous pour suivre le parcours\nscolaire de votre enfant',
+                        widget.reason ??
+                            'Connectez-vous pour suivre le parcours\nscolaire de votre enfant',
                         style: TextStyle(
                           fontSize: AppDimensions.getFormSubtitleFontSize(
                             context,

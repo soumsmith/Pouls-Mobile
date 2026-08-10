@@ -15,6 +15,7 @@ import 'components/bottom_spacer.dart';
 import 'dart:convert';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../services/auth_service.dart';
+import '../utils/auth_guard.dart';
 import '../config/app_config.dart';
 import '../config/app_colors.dart';
 import '../services/theme_service.dart';
@@ -155,6 +156,13 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
     }
   }
 
+  void _goToLogin() {
+    Navigator.of(context).pop(); // Fermer le bottom sheet menu
+    Navigator.of(widget.parentContext).push(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+
   // ── Build ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -225,10 +233,14 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
 
   Widget _buildLogoutButton() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loggedIn = AuthGuard.isLoggedIn();
+    final accentColor = loggedIn
+        ? (isDark ? Colors.red[400]! : Colors.red[600]!)
+        : _kOrange;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
       child: GestureDetector(
-        onTap: _confirmLogout,
+        onTap: loggedIn ? _confirmLogout : _goToLogin,
         child: Container(
           width: double.infinity,
           height: 50,
@@ -236,7 +248,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
             color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.red.withOpacity(isDark ? 0.3 : 0.2),
+              color: accentColor.withOpacity(isDark ? 0.3 : 0.2),
               width: 1,
             ),
           ),
@@ -244,15 +256,15 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.logout_rounded,
-                color: isDark ? Colors.red[400] : Colors.red[600],
+                loggedIn ? Icons.logout_rounded : Icons.login_rounded,
+                color: accentColor,
                 size: 18,
               ),
               const SizedBox(width: 10),
               Text(
-                'Déconnexion',
+                loggedIn ? 'Déconnexion' : 'Se connecter',
                 style: TextStyle(
-                  color: isDark ? Colors.red[400] : Colors.red[600],
+                  color: accentColor,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.2,
@@ -275,9 +287,15 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         color: const Color(0xFF2196F3),
         onTap: () {
           Navigator.of(context).pop();
-          MainScreenWrapper.of(
+          AuthGuard.ensureLoggedIn(
             widget.parentContext,
-          ).navigateToExtraScreen(const MessagesScreen());
+            reason: 'Connectez-vous pour accéder à vos messages',
+            onAuthenticated: () {
+              MainScreenWrapper.of(
+                widget.parentContext,
+              ).navigateToExtraScreen(const MessagesScreen());
+            },
+          );
         },
       ),
 
@@ -289,9 +307,15 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         badgeCount: _ticketCount,
         onTap: () {
           Navigator.of(context).pop();
-          MainScreenWrapper.of(
+          AuthGuard.ensureLoggedIn(
             widget.parentContext,
-          ).navigateToExtraScreen(const MyTicketsScreen());
+            reason: 'Connectez-vous pour voir vos tickets',
+            onAuthenticated: () {
+              MainScreenWrapper.of(
+                widget.parentContext,
+              ).navigateToExtraScreen(const MyTicketsScreen());
+            },
+          );
         },
       ),
       _MenuItem(
@@ -314,9 +338,15 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         color: const Color(0xFF2196F3),
         onTap: () {
           Navigator.of(context).pop();
-          MainScreenWrapper.of(
+          AuthGuard.ensureLoggedIn(
             widget.parentContext,
-          ).navigateToExtraScreen(const ProfileScreen());
+            reason: 'Connectez-vous pour accéder à votre profil',
+            onAuthenticated: () {
+              MainScreenWrapper.of(
+                widget.parentContext,
+              ).navigateToExtraScreen(const ProfileScreen());
+            },
+          );
         },
       ),
       _MenuItem(
@@ -326,9 +356,15 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         color: const Color(0xFFFF6B2C),
         onTap: () {
           Navigator.of(context).pop();
-          MainScreenWrapper.of(
+          AuthGuard.ensureLoggedIn(
             widget.parentContext,
-          ).navigateToExtraScreen(const ReferredUsersScreen());
+            reason: 'Connectez-vous pour voir vos utilisateurs parrainés',
+            onAuthenticated: () {
+              MainScreenWrapper.of(
+                widget.parentContext,
+              ).navigateToExtraScreen(const ReferredUsersScreen());
+            },
+          );
         },
       ),
       _MenuItem(

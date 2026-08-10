@@ -7,6 +7,7 @@ import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../utils/auth_guard.dart';
 
 /// Écran de gestion des suggestions parents
 class ParentSuggestionScreen extends StatefulWidget implements MainScreenChild {
@@ -163,9 +164,15 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
   }
 
   void _showCreateSuggestionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => _buildCreateSuggestionDialog(),
+    AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour créer une suggestion',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (context) => _buildCreateSuggestionDialog(),
+        );
+      },
     );
   }
 
@@ -190,6 +197,14 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
       return;
     }
 
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour envoyer votre suggestion',
+      onAuthenticatedAsync: _performCreateSuggestion,
+    );
+  }
+
+  Future<void> _performCreateSuggestion() async {
     try {
       final suggestion = ParentSuggestion(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -248,11 +263,19 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
   }
 
   Future<void> _voteSuggestion(String suggestionId, bool isUpvote) async {
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour voter',
+      onAuthenticatedAsync: () => _performVoteSuggestion(suggestionId, isUpvote),
+    );
+  }
+
+  Future<void> _performVoteSuggestion(String suggestionId, bool isUpvote) async {
     try {
       final success = isUpvote
           ? await _suggestionService.upvoteSuggestion(suggestionId, widget.parentId ?? 'parent_current')
           : await _suggestionService.downvoteSuggestion(suggestionId, widget.parentId ?? 'parent_current');
-      
+
       if (success) {
         _loadData(); // Recharger les données
       }

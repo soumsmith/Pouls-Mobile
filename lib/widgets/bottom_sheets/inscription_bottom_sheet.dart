@@ -15,6 +15,7 @@ import '../../widgets/components/custom_error_state.dart';
 import '../../widgets/snackbar.dart';
 import '../../config/app_colors.dart';
 import '../../screens/inscription_screen.dart' as inscription;
+import '../../utils/auth_guard.dart';
 import 'reusable_bottom_sheet.dart';
 
 class InscriptionBottomSheet extends StatefulWidget {
@@ -214,14 +215,20 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
       // Naviguer vers l'écran d'inscription
       if (mounted) {
         // Utiliser le root navigator pour naviguer et fermer le bottom sheet
-        Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute(
-            builder: (context) => inscription.InscriptionWizardScreen(
-              child: child,
-              uid: eleveDetail['uid']?.toString(),
-              eleveDetail: eleveDetail,
-            ),
-          ),
+        await AuthGuard.ensureLoggedIn(
+          context,
+          reason: 'Connectez-vous pour vous inscrire',
+          onAuthenticated: () {
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (context) => inscription.InscriptionWizardScreen(
+                  child: child,
+                  uid: eleveDetail['uid']?.toString(),
+                  eleveDetail: eleveDetail,
+                ),
+              ),
+            );
+          },
         );
       }
     } catch (e) {

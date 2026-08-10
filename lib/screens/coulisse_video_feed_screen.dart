@@ -11,6 +11,7 @@ import '../models/interaction.dart';
 import '../services/ecole_api_service.dart';
 import '../services/interaction_api_service.dart';
 import '../services/theme_service.dart';
+import '../utils/auth_guard.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
@@ -64,7 +65,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
   }
 
   Future<void> _loadAdsAndInit() async {
-    _ads = await _adService.fetchAds();
+    _ads = await _adService.fetchAds(format: 'portrait');
     _mixedVideos = AdInjector.injectAds<CoulisseExcellence>(widget.videos, _ads);
     
     // adjust initial index to account for injected ads
@@ -306,22 +307,28 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     if (video is AdGroup) return;
     final item = video as CoulisseExcellence;
 
-    // Mettre en pause la vidéo actuelle
-    if (_youtubeControllers[_currentIndex] != null) {
-      _youtubeControllers[_currentIndex]!.pause();
-    }
+    AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour commenter cette vidéo',
+      onAuthenticated: () {
+        // Mettre en pause la vidéo actuelle
+        if (_youtubeControllers[_currentIndex] != null) {
+          _youtubeControllers[_currentIndex]!.pause();
+        }
 
-    ReusableBottomSheet.show(
-      context: context,
-      title: 'Commentaires',
-      subtitle: 'Échangez sur cette vidéo',
-      icon: Icons.comment_rounded,
-      iconColor: const Color(0xFF0288D1),
-      wrapWithScrollView: false,
-      initialChildSize: 0.75,
-      maxChildSize: 0.9,
-      contentPadding: EdgeInsets.zero,
-      content: _CommentsSheet(videoId: item.id),
+        ReusableBottomSheet.show(
+          context: context,
+          title: 'Commentaires',
+          subtitle: 'Échangez sur cette vidéo',
+          icon: Icons.comment_rounded,
+          iconColor: const Color(0xFF0288D1),
+          wrapWithScrollView: false,
+          initialChildSize: 0.75,
+          maxChildSize: 0.9,
+          contentPadding: EdgeInsets.zero,
+          content: _CommentsSheet(videoId: item.id),
+        );
+      },
     );
   }
 
@@ -350,18 +357,24 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     );
   }
 
+  // Identifiant générique utilisé pour attribuer les likes des invités
+  // (non connectés), suivant la convention déjà en place dans
+  // ModuleAccessService/SubscriptionService pour les appels sans utilisateur.
+  static const int _anonymousUserId = 19421;
+
   void _toggleLike() async {
     if (_mixedVideos.isEmpty) return;
     final video = _mixedVideos[_currentIndex];
     if (video is AdGroup) return;
     final item = video as CoulisseExcellence;
-    
+
     final videoId = item.id;
-    final userId = InteractionApiService.getCurrentUserId();
-    if (userId == null) {
-      print('⚠️ Aucun utilisateur connecté pour aimer la vidéo.');
-      return;
-    }
+    await _performToggleLike(videoId);
+  }
+
+  Future<void> _performToggleLike(int videoId) async {
+    final resolvedUserId =
+        InteractionApiService.getCurrentUserId() ?? _anonymousUserId;
 
     final isLike = !_likedVideoIds.contains(videoId);
 
@@ -379,7 +392,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
     try {
       final success = await InteractionApiService.toggleLike(
         videoId: videoId,
-        userId: userId,
+        userId: resolvedUserId,
         type: isLike ? 'like' : 'dislike',
       );
 
@@ -1264,15 +1277,22 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   Future<void> _addComment() async {
     if (_commentController.text.trim().isEmpty) return;
     if (_currentUserId == null) {
-      CartSnackBar.showOverlay(
+      await AuthGuard.ensureLoggedIn(
         context,
-        productName: '',
-        message: 'Vous devez être connecté pour commenter',
-        backgroundColor: Colors.red,
-        icon: Icons.error_outline,
+        reason: 'Connectez-vous pour commenter',
+        onAuthenticatedAsync: () async {
+          _currentUserId = InteractionApiService.getCurrentUserId();
+          await _performAddComment();
+        },
       );
       return;
     }
+
+    await _performAddComment();
+  }
+
+  Future<void> _performAddComment() async {
+    if (_currentUserId == null) return;
 
     try {
       final newComment = await InteractionApiService.createInteraction(
@@ -1976,22 +1996,13 @@ class _RatingSheetState extends State<_RatingSheet> {
   }
 
   Future<void> _submitRating() async {
-    final userId = InteractionApiService.getCurrentUserId();
-    if (userId == null) {
-      CartSnackBar.showOverlay(
-        context,
-        productName: '',
-        message: 'Vous devez être connecté pour noter',
-        backgroundColor: Colors.red,
-        icon: Icons.error_outline,
-      );
-      return;
-    }
+    final resolvedUserId = InteractionApiService.getCurrentUserId() ??
+        _CoulisseVideoFeedScreenState._anonymousUserId;
 
     try {
       final newRating = await InteractionApiService.createInteraction(
         videoId: widget.video.id,
-        userId: userId,
+        userId: resolvedUserId,
         type: 'rating',
         content: _currentRating.toString(),
       );

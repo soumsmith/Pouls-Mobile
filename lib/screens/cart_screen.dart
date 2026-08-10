@@ -12,6 +12,7 @@ import '../widgets/back_button_widget.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/order_wizard_bottom_sheet.dart';
 import '../services/auth_service.dart';
+import '../utils/auth_guard.dart';
 import '../services/notification_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_sliver_app_bar.dart';
@@ -763,7 +764,11 @@ class _CartScreenState extends State<CartScreen>
 
   Future<void> _proceedToCheckout() async {
     if (_cart?.isEmpty == true) return;
-    _showOrderBottomSheet();
+    await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour passer votre commande',
+      onAuthenticated: _showOrderBottomSheet,
+    );
   }
 
   void _showOrderBottomSheet() {

@@ -49,6 +49,7 @@ import 'messages_screen.dart';
 import '../services/access_control_service.dart';
 import '../models/access_control.dart';
 import '../widgets/bottom_fade_gradient.dart';
+import '../utils/auth_guard.dart';
 import '../widgets/bottom_sheets/child_kits_bottom_sheet.dart';
 import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import '../widgets/components/bottom_spacer.dart';
@@ -4030,15 +4031,21 @@ class _ChildListScreenState extends State<ChildListScreen>
                             ? widget.child.copyWith(ecoleCode: _ecoleCode)
                             : widget.child;
 
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                inscription.InscriptionWizardScreen(
-                                  child: updatedChild,
-                                  uid: _eleveDetail?['uid'],
-                                  eleveDetail: _eleveDetail,
-                                ),
-                          ),
+                        AuthGuard.ensureLoggedIn(
+                          context,
+                          reason: 'Connectez-vous pour vous inscrire',
+                          onAuthenticated: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    inscription.InscriptionWizardScreen(
+                                      child: updatedChild,
+                                      uid: _eleveDetail?['uid'],
+                                      eleveDetail: _eleveDetail,
+                                    ),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -4564,27 +4571,34 @@ class _ChildListScreenState extends State<ChildListScreen>
               actionText: 'Voir messages',
               moduleIdentifiant: _getModuleIdentifiant('communication'),
               onTap: () async {
-                if (_studentMessages.isEmpty && !_isLoadingMessages) {
-                  await _loadMessagesData();
-                }
-                if (mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MessagesScreen(
-                        studentArgs: StudentMessageArgs(
-                          studentName: widget.child.fullName,
-                          studentMatricule:
-                              _matricule ?? widget.child.matricule ?? '',
-                          ecoleName:
-                              _studentClassInfo?.ecole.libelle ??
-                              widget.child.establishment,
-                          ecoleCode: _ecoleCode ?? widget.child.ecoleCode ?? '',
+                await AuthGuard.ensureLoggedIn(
+                  context,
+                  reason: 'Connectez-vous pour voir vos messages',
+                  onAuthenticatedAsync: () async {
+                    if (_studentMessages.isEmpty && !_isLoadingMessages) {
+                      await _loadMessagesData();
+                    }
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MessagesScreen(
+                            studentArgs: StudentMessageArgs(
+                              studentName: widget.child.fullName,
+                              studentMatricule:
+                                  _matricule ?? widget.child.matricule ?? '',
+                              ecoleName:
+                                  _studentClassInfo?.ecole.libelle ??
+                                  widget.child.establishment,
+                              ecoleCode:
+                                  _ecoleCode ?? widget.child.ecoleCode ?? '',
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                }
+                      );
+                    }
+                  },
+                );
               },
             ),
             EstablishmentAction(
@@ -4682,9 +4696,15 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: const Color(0xFFE91E63),
               actionText: 'Voir tickets',
               onTap: () {
-                MainScreenWrapper.of(
+                AuthGuard.ensureLoggedIn(
                   context,
-                ).navigateToExtraScreen(const MyTicketsScreen());
+                  reason: 'Connectez-vous pour voir vos tickets',
+                  onAuthenticated: () {
+                    MainScreenWrapper.of(
+                      context,
+                    ).navigateToExtraScreen(const MyTicketsScreen());
+                  },
+                );
               },
             ),
             EstablishmentAction(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'intro_screen.dart';
-import 'login_screen.dart';
+import '../app.dart';
 import '../services/version_update_service.dart';
 import '../widgets/version_update_dialog.dart';
 import 'force_update_screen.dart';
@@ -138,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
             result: updateResult,
             onDismiss: () {
               // Une fois la popup fermée ou ignorée, on continue
-              _navigateToLogin();
+              _navigateToApp();
             },
           ),
         );
@@ -147,10 +147,10 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     // Pas de mise à jour, on continue normalement
-    await _navigateToLogin();
+    await _navigateToApp();
   }
 
-  Future<void> _navigateToLogin() async {
+  Future<void> _navigateToApp() async {
     if (mounted) {
       // Vérifier si l'intro a déjà été vue
       final prefs = await SharedPreferences.getInstance();
@@ -159,9 +159,9 @@ class _SplashScreenState extends State<SplashScreen>
       if (!mounted) return;
 
       if (introSeen) {
-        // Intro déjà vue → aller directement au login
+        // Intro déjà vue → aller directement au contenu (invité ou connecté)
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(builder: (_) => const App()),
         );
       } else {
         // Première fois → afficher l'intro

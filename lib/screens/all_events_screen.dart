@@ -23,6 +23,7 @@ import '../services/ad_service.dart';
 import '../models/ad_model.dart';
 import '../utils/ad_injector.dart';
 import '../widgets/ad_banner_card.dart';
+import '../utils/html_helper.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -122,7 +123,7 @@ class _AllEventsScreenState extends State<AllEventsScreen>
   }
 
   Future<void> _loadAds() async {
-    final ads = await _adService.fetchAds();
+    final ads = await _adService.fetchAds(format: 'portrait');
     if (mounted) {
       setState(() {
         _ads = ads;
@@ -767,7 +768,7 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color color = event['color'] as Color;
     final String? imageUrl = event['image'] as String?;
-    final String title = event['title'] as String? ?? '';
+    final String title = HtmlHelper.stripHtmlTags(event['title'] as String? ?? '');
     final String subtitle =
         event['subtitle'] as String? ?? event['establishment'] as String? ?? '';
     final String date = event['date'] as String? ?? '';

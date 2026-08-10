@@ -25,7 +25,7 @@ rm -rf ios/Podfile.lock
 flutter pub get
 cd ios
 pod install
-cd ..
+cd ..@
 
 -----------------------------------------------------------------------
 

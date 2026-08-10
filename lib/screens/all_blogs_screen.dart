@@ -22,6 +22,7 @@ import '../services/ad_service.dart';
 import '../models/ad_model.dart';
 import '../utils/ad_injector.dart';
 import '../widgets/ad_banner_card.dart';
+import '../utils/html_helper.dart';
 
 // ─── Design tokens (centralisés dans AppColors) ────────────────────────────────
 
@@ -108,7 +109,7 @@ class _AllBlogsScreenState extends State<AllBlogsScreen>
   }
 
   Future<void> _loadAds() async {
-    final ads = await _adService.fetchAds();
+    final ads = await _adService.fetchAds(format: 'portrait');
     if (mounted) {
       setState(() {
         _ads = ads;
@@ -741,7 +742,7 @@ class _BlogCard extends StatelessWidget {
     final uiData = blog.toUiMap();
     final Color color      = uiData['color'] as Color;
     final String? imageUrl = blog.image;
-    final String title     = blog.title;
+    final String title     = HtmlHelper.stripHtmlTags(blog.title);
     final String subtitle  = blog.nomecole;
     final String date      = uiData['date'] as String;
     final String type      = uiData['type'] as String;

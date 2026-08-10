@@ -49,7 +49,7 @@ class _AdWidgetState extends State<AdWidget> with TickerProviderStateMixin {
   }
 
   Future<void> _loadAds() async {
-    final ads = await _adService.fetchAds();
+    final ads = await _adService.fetchAds(format: 'portrait');
     if (mounted) {
       setState(() {
         _ads = ads;

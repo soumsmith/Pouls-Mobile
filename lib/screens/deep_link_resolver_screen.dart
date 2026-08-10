@@ -1,25 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../services/deep_link_service.dart';
 import '../services/coulisse_excellence_service.dart';
 import '../services/visite_guidee_service.dart';
+import '../services/theme_service.dart';
+import '../widgets/components/custom_error_state.dart';
 import '../models/coulisse_excellence.dart';
 import '../models/visite_guidee_video.dart';
-import '../services/theme_service.dart';
-import '../config/app_colors.dart';
 import 'coulisse_video_feed_screen.dart';
 import 'visite_guidee_video_feed_screen.dart';
 
-// Nouveaux imports
 import '../services/blog_service.dart';
 import '../services/astuce_conseil_service.dart';
 import '../services/event_service.dart';
 import '../services/produit_service.dart';
-import '../models/blog.dart';
-import '../models/astuce_conseil.dart';
-import '../models/event.dart';
-import '../models/product.dart';
 import 'blog_detail_screen.dart';
 import 'tips_advice_detail_screen.dart';
 import 'event_detail_screen.dart';
@@ -73,17 +66,19 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
       switch (data.type) {
         case DeepLinkContentType.coulisse:
           final videoId = int.tryParse(id);
-          if (videoId != null)
+          if (videoId != null) {
             await _loadCoulisseVideo(videoId);
-          else
+          } else {
             _showError('Lien invalide.');
+          }
           break;
         case DeepLinkContentType.visite:
           final videoId = int.tryParse(id);
-          if (videoId != null)
+          if (videoId != null) {
             await _loadVisiteGuideeVideo(videoId);
-          else
+          } else {
             _showError('Lien invalide.');
+          }
           break;
         case DeepLinkContentType.article:
           await _loadArticle(id);
@@ -108,12 +103,31 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
 
   Future<void> _loadCoulisseVideo(int videoId) async {
     try {
-      // L'API ne fournit pas d'endpoint par ID unique, on récupère la liste
-      // et on filtre. C'est acceptable car les vidéos sont mises en cache.
-      final allVideos =
-          await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(
-            perPage: 1000,
-          );
+      final List<CoulisseExcellence> allVideos = [];
+      int currentPage = 1;
+      bool found = false;
+
+      while (!found) {
+        final pageVideos =
+            await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(
+              page: currentPage,
+              perPage: 50,
+            );
+
+        if (pageVideos.isEmpty) {
+          break;
+        }
+
+        allVideos.addAll(pageVideos);
+
+        if (allVideos.any((v) => v.id == videoId)) {
+          found = true;
+        } else if (pageVideos.length < 50) {
+          break;
+        } else {
+          currentPage++;
+        }
+      }
 
       if (!mounted) return;
 
@@ -145,9 +159,49 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
 
   Future<void> _loadVisiteGuideeVideo(int videoId) async {
     try {
-      _showError(
-        'Fonctionnalité bientôt disponible.\n'
-        'Le partage de vidéos visite guidée sera disponible dans une prochaine mise à jour.',
+      final List<VisiteGuideeVideo> allVideos = [];
+      int currentPage = 1;
+      bool found = false;
+
+      while (!found) {
+        final pageVideos = await VisiteGuideeService.getAllVisiteGuideeVideos(
+          page: currentPage,
+          perPage: 50,
+        );
+
+        if (pageVideos.isEmpty) {
+          break;
+        }
+
+        allVideos.addAll(pageVideos);
+
+        if (allVideos.any((v) => v.id == videoId)) {
+          found = true;
+        } else if (pageVideos.length < 50) {
+          break;
+        } else {
+          currentPage++;
+        }
+      }
+
+      if (!mounted) return;
+
+      final targetVideo = allVideos.where((v) => v.id == videoId).toList();
+
+      if (targetVideo.isEmpty) {
+        _showError('Cette vidéo n\'existe plus ou a été supprimée.');
+        return;
+      }
+
+      final targetIndex = allVideos.indexWhere((v) => v.id == videoId);
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => VisiteGuideeVideoFeedScreen(
+            videos: allVideos,
+            initialIndex: targetIndex >= 0 ? targetIndex : 0,
+          ),
+        ),
       );
     } catch (e) {
       _showError(
@@ -341,96 +395,23 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
   }
 
   Widget _buildError(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEE2E2),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Icon(
-              Icons.videocam_off_rounded,
-              color: Color(0xFFEF4444),
-              size: 40,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Contenu introuvable',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : const Color(0xFF1E293B),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _errorMessage ?? 'Une erreur est survenue.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.5,
-              color: isDark ? Colors.white54 : const Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Bouton Réessayer
-              ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _isLoading = true;
-                    _errorMessage = null;
-                  });
-                  _loadAndNavigate();
-                },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Réessayer'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Bouton Fermer
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded, size: 18),
-                label: const Text('Fermer'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark
-                      ? Colors.white70
-                      : const Color(0xFF64748B),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  side: BorderSide(
-                    color: isDark ? Colors.white24 : const Color(0xFFE2E8F0),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+    final bool isNetworkError =
+        _errorMessage?.toLowerCase().contains('connexion') ?? false;
+
+    return CustomErrorState(
+      title: isNetworkError ? 'Erreur de connexion' : 'Contenu introuvable',
+      message: _errorMessage ?? 'Une erreur est survenue.',
+      icon: isNetworkError ? Icons.wifi_off_rounded : Icons.videocam_off_rounded,
+      onRetry: () {
+        setState(() {
+          _isLoading = true;
+          _errorMessage = null;
+        });
+        _loadAndNavigate();
+      },
+      retryText: 'Réessayer',
+      buttonIsLight: true,
+      buttonWidth: 200,
     );
   }
 }

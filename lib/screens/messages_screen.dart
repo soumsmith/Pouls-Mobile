@@ -14,6 +14,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../services/message_service.dart';
 import '../services/auth_service.dart';
+import '../utils/auth_guard.dart';
 import '../services/mock_api_service.dart';
 import '../models/conversation.dart';
 import '../models/child.dart';
@@ -634,8 +635,14 @@ class _MessagesScreenState extends State<MessagesScreen>
       buttonWidth: 220,
       retryText: 'Ajouter un enfant',
       onRetry: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AddChildScreen()),
+        AuthGuard.ensureLoggedIn(
+          context,
+          reason: 'Connectez-vous pour ajouter un enfant',
+          onAuthenticated: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AddChildScreen()),
+            );
+          },
         );
       },
     );

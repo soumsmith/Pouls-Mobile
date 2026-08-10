@@ -7,6 +7,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../config/app_typography.dart';
 import 'add_child_screen.dart';
+import '../utils/auth_guard.dart';
 import 'pdf_viewer_screen.dart';
 import 'visite_guidee_video_feed_screen.dart';
 import '../models/visite_guidee_video.dart';
@@ -295,9 +296,15 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                   return GestureDetector(
                     onTap: () {
                       if (card['title'] == 'Ajouter un enfant') {
-                        MainScreenWrapper.of(
+                        AuthGuard.ensureLoggedIn(
                           context,
-                        ).navigateToExtraScreen(const AddChildScreen());
+                          reason: 'Connectez-vous pour ajouter un enfant',
+                          onAuthenticated: () {
+                            MainScreenWrapper.of(
+                              context,
+                            ).navigateToExtraScreen(const AddChildScreen());
+                          },
+                        );
                       } else if (card['title'] == 'Premiers pas') {
                         MainScreenWrapper.of(context).navigateToExtraScreen(
                           const PDFViewerScreen(

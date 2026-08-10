@@ -43,6 +43,7 @@ import '../widgets/snackbar.dart';
 import '../widgets/skeleton_box.dart';
 import 'rating_children_list_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../utils/auth_guard.dart';
 
 // ─── Action card definition ──────────────────────────────────────────────────
 class _ActionDef {
@@ -1767,13 +1768,19 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     }
 
     if (actionType == 'rating') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => RatingChildrenListScreen(
-            actionColor: def.color,
-            imagePath: def.imagePath,
-          ),
-        ),
+      AuthGuard.ensureLoggedIn(
+        context,
+        reason: 'Connectez-vous pour noter vos enfants',
+        onAuthenticated: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => RatingChildrenListScreen(
+                actionColor: def.color,
+                imagePath: def.imagePath,
+              ),
+            ),
+          );
+        },
       );
       return;
     }

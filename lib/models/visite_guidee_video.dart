@@ -21,7 +21,9 @@ class VisiteGuideeVideo {
 
   factory VisiteGuideeVideo.fromJson(Map<String, dynamic> json) {
     return VisiteGuideeVideo(
-      id: json['id'] as int?,
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse(json['id']?.toString() ?? ''),
       typeVideo: json['typevideo']?.toString() ?? json['type_video']?.toString() ?? '',
       youtubeUrl: json['video_youtube']?.toString() ?? json['youtube_url']?.toString() ?? '',
       title: json['title']?.toString(),

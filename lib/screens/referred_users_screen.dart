@@ -18,6 +18,7 @@ class ReferredUsersScreen extends StatefulWidget {
 
 class _ReferredUsersScreenState extends State<ReferredUsersScreen> {
   bool _isLoading = true;
+  bool _notLoggedIn = false;
   List<ReferredUser> _referredUsers = [];
   String? _referralCode;
 
@@ -29,7 +30,7 @@ class _ReferredUsersScreenState extends State<ReferredUsersScreen> {
 
   Future<void> _loadReferredUsers() async {
     setState(() => _isLoading = true);
-    
+
     final currentUser = AuthService.instance.getCurrentUser();
     if (currentUser != null && currentUser.phone.isNotEmpty) {
       final users = await ReferralService.getReferredUsers(currentUser.phone);
@@ -45,7 +46,10 @@ class _ReferredUsersScreenState extends State<ReferredUsersScreen> {
       }
     } else {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _notLoggedIn = true;
+          _isLoading = false;
+        });
       }
     }
   }
@@ -77,9 +81,11 @@ class _ReferredUsersScreenState extends State<ReferredUsersScreen> {
                         ),
                       ),
                     )
-                  : _referredUsers.isEmpty
-                      ? _buildEmptyState()
-                      : _buildUsersList(),
+                  : _notLoggedIn
+                      ? _buildLoggedOutState()
+                      : _referredUsers.isEmpty
+                          ? _buildEmptyState()
+                          : _buildUsersList(),
             ),
           ],
         ),
@@ -93,6 +99,18 @@ class _ReferredUsersScreenState extends State<ReferredUsersScreen> {
       child: CustomErrorState(
         title: 'Aucun utilisateur parrainé',
         message: 'Vous n\'avez pas encore parrainé d\'utilisateurs. Partagez votre code pour commencer à gagner des points !',
+        icon: Icons.group_add_rounded,
+        iconColor: AppColors.screenOrange,
+      ),
+    );
+  }
+
+  Widget _buildLoggedOutState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
+      child: CustomErrorState(
+        title: 'Connectez-vous',
+        message: 'Connectez-vous pour voir vos utilisateurs parrainés et vos points.',
         icon: Icons.group_add_rounded,
         iconColor: AppColors.screenOrange,
       ),

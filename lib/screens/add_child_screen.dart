@@ -22,9 +22,8 @@ import '../widgets/recommendation_bottom_sheet.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../widgets/snackbar.dart';
 import '../services/recommendation_service.dart';
-import 'login_screen.dart';
-import '../main.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../utils/auth_guard.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -333,13 +332,23 @@ class _AddChildScreenState extends State<AddChildScreen>
     }
   }
 
-  Future<void> _handleAddChild() async {
+  Future<void> _handleAddChild(StateSetter setModalState) async {
     print('🔘 BUTTON CLICKED: _handleAddChild called');
     print('🔘 DEBUG: _isLoading = $_isLoading');
     print(
       '🔘 DEBUG: _foundEleve = ${_foundEleve?.prenomEleve} ${_foundEleve?.nomEleve}',
     );
     print('🔘 DEBUG: _foundEcole = ${_foundEcole?.ecoleclibelle}');
+
+    // Garde-fou anti double-tap : le bouton du bottom sheet n'est pas
+    // reconstruit quand _isLoading change (showModalBottomSheet ne rebuild
+    // pas automatiquement son contenu), donc il reste visuellement actif
+    // pendant l'opération. Sans ce garde-fou, un second tap pendant que le
+    // premier est encore en cours relance tout le processus en parallèle.
+    if (_isLoading) {
+      print('⏳ DEBUG: Ajout déjà en cours, tap ignoré');
+      return;
+    }
 
     if (_foundEleve == null || _foundEcole == null) {
       print('❌ DEBUG: _foundEleve or _foundEcole is null');
@@ -355,24 +364,31 @@ class _AddChildScreenState extends State<AddChildScreen>
       '✅ DEBUG: Starting add child process for ${eleve.prenomEleve} ${eleve.nomEleve}',
     );
     setState(() => _isLoading = true);
+    if (_isFoundStudentSheetOpen) setModalState(() {});
+
+    final ok = await AuthGuard.ensureLoggedIn(
+      context,
+      reason: 'Connectez-vous pour ajouter votre enfant',
+      onAuthenticatedAsync: () => _performAddChild(
+        AuthService.instance.getCurrentUser()!,
+        eleve,
+        ecole,
+        setModalState,
+      ),
+    );
+    if (!ok && mounted) {
+      setState(() => _isLoading = false);
+      if (_isFoundStudentSheetOpen) setModalState(() {});
+    }
+  }
+
+  Future<void> _performAddChild(
+    User currentUser,
+    Eleve eleve,
+    Ecole ecole,
+    StateSetter setModalState,
+  ) async {
     try {
-      User? currentUser = AuthService.instance.getCurrentUser();
-      if (currentUser == null) {
-        await AuthService.instance.loadSavedSession();
-        currentUser = AuthService.instance.getCurrentUser();
-        if (currentUser == null) {
-          _showSnackbar(
-            'Session expirée. Veuillez vous reconnecter.',
-            isError: true,
-          );
-          if (mounted)
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (_) => false,
-            );
-          return;
-        }
-      }
       final parentId = currentUser.id;
       if (eleve.prenomEleve.isEmpty || eleve.nomEleve.isEmpty)
         throw Exception('Informations élève incomplètes');
@@ -391,6 +407,7 @@ class _AddChildScreenState extends State<AddChildScreen>
           '❌ Élève déjà ajouté: ${existingChild.firstName} ${existingChild.lastName}',
         );
         setState(() => _isLoading = false);
+        if (_isFoundStudentSheetOpen) setModalState(() {});
         if (mounted) {
           _showSnackbar('Cet élève est déjà ajouté', isError: true);
         }
@@ -427,13 +444,18 @@ class _AddChildScreenState extends State<AddChildScreen>
         classeName: eleve.classe,
       );
       print('✅ Sauvegarde locale terminée');
-      await _updateNotificationTokenWithNewMatricule(
+      // Ne pas bloquer la confirmation/navigation sur cet appel réseau
+      // best-effort (l'élève est déjà sauvegardé localement à ce stade) :
+      // un appel lent ou qui ne répond pas ne doit pas donner l'impression
+      // que le tap sur "Ajouter" n'a rien fait.
+      _updateNotificationTokenWithNewMatricule(
         parentId,
         eleve.matriculeEleve,
       );
 
       print('✅ Élève ajouté localement avec succès');
       setState(() => _isLoading = false);
+      if (_isFoundStudentSheetOpen) setModalState(() {});
       if (mounted) {
         // La notification de succès sera affichée par MainScreenWrapper
 
@@ -449,6 +471,7 @@ class _AddChildScreenState extends State<AddChildScreen>
     } catch (e) {
       print('💥 DEBUG: Exception in _handleAddChild: $e');
       setState(() => _isLoading = false);
+      if (_isFoundStudentSheetOpen) setModalState(() {});
       if (mounted) _showSnackbar('Erreur : $e', isError: true);
     }
   }
@@ -700,43 +723,47 @@ class _AddChildScreenState extends State<AddChildScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) {
-        return SafeArea(
-          top: false,
-          bottom: false,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.screenSurfaceThemed(context),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-              ),
-              boxShadow: AppDimensions.getBottomSheetShadow(context),
-            ),
-            padding: EdgeInsets.fromLTRB(
-              16,
-              10,
-              16,
-              16 + MediaQuery.of(context).padding.bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 44,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.screenDivider,
-                    borderRadius: BorderRadius.circular(2),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              top: false,
+              bottom: false,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.screenSurfaceThemed(context),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
                   ),
+                  boxShadow: AppDimensions.getBottomSheetShadow(context),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _buildFoundStudentContent(),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  10,
+                  16,
+                  16 + MediaQuery.of(context).padding.bottom,
                 ),
-              ],
-            ),
-          ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.screenDivider,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: _buildFoundStudentContent(setModalState),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     ).whenComplete(() {
@@ -1189,7 +1216,7 @@ class _AddChildScreenState extends State<AddChildScreen>
   }
 
   // ─── FOUND STUDENT CARD ────────────────────────────────────────────────────
-  Widget _buildFoundStudentContent() {
+  Widget _buildFoundStudentContent(StateSetter setModalState) {
     final eleve = _foundEleve!;
     final ecole = _foundEcole!;
 
@@ -1332,7 +1359,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                 ? null
                 : () {
                     print('🔘 ELEVATED BUTTON PRESSED!');
-                    _handleAddChild();
+                    _handleAddChild(setModalState);
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.success,
@@ -1387,7 +1414,7 @@ class _AddChildScreenState extends State<AddChildScreen>
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: _buildFoundStudentContent(),
+        child: _buildFoundStudentContent(setState),
       ),
     );
   }

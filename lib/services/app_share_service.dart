@@ -20,13 +20,51 @@ class AppShareService {
   // ─── Génération de liens ──────────────────────────────────────────────────
 
   /// Génère le lien de partage pour une vidéo Coulisse d'Excellence.
+  ///
+  /// Inclut le code école quand il est disponible, pour que la résolution du
+  /// lien côté app puisse charger la vidéo via le même appel scopé par école
+  /// que la navigation classique (bien plus fiable qu'une recherche dans
+  /// tout le catalogue toutes écoles confondues).
   static String buildCoulisseLink(CoulisseExcellence video) {
-    return '$_baseUrl/share/index.html?type=coulisse&id=${video.id}';
+    var link = '$_baseUrl/share/index.html?type=coulisse&id=${video.id}';
+    if (video.code.isNotEmpty) {
+      link += '&ecole=${Uri.encodeQueryComponent(video.code)}';
+    } else {
+      print(
+        '⚠️ [AppShareService] buildCoulisseLink: video.code est vide pour '
+        'id=${video.id} ("${video.titre}") → lien généré sans paramètre '
+        'ecole, la résolution retombera sur la recherche globale.',
+      );
+    }
+    print('🔗 [AppShareService] Lien coulisse généré: $link');
+    return link;
   }
 
   /// Génère le lien de partage pour une vidéo Visite Guidée.
-  static String buildVisiteGuideeLink(VisiteGuideeVideo video) {
-    return '$_baseUrl/share/index.html?type=visite&id=${video.id}';
+  ///
+  /// Retourne `null` si la vidéo n'a pas d'identifiant exploitable (cas rare
+  /// où `video.id` est absent) — appelant responsable d'empêcher le partage
+  /// dans ce cas plutôt que de générer un lien cassé (`id=null`).
+  static String? buildVisiteGuideeLink(VisiteGuideeVideo video) {
+    if (video.id == null) {
+      print(
+        '⚠️ [AppShareService] buildVisiteGuideeLink: video.id est null '
+        '(typeVideo="${video.typeVideo}", title="${video.title}") → partage refusé.',
+      );
+      return null;
+    }
+    var link = '$_baseUrl/share/index.html?type=visite&id=${video.id}';
+    if (video.code.isNotEmpty) {
+      link += '&ecole=${Uri.encodeQueryComponent(video.code)}';
+    } else {
+      print(
+        '⚠️ [AppShareService] buildVisiteGuideeLink: video.code est vide pour '
+        'id=${video.id} → lien généré sans paramètre ecole, la résolution '
+        'retombera sur la recherche globale.',
+      );
+    }
+    print('🔗 [AppShareService] Lien visite guidée généré: $link');
+    return link;
   }
 
   /// Génère le lien de partage pour un article de blog.
@@ -63,8 +101,11 @@ class AppShareService {
   }
 
   /// Construit le texte de partage complet pour une vidéo Visite Guidée.
-  static String buildVisiteGuideeShareText(VisiteGuideeVideo video) {
+  /// Retourne `null` si la vidéo n'a pas d'identifiant exploitable (voir
+  /// [buildVisiteGuideeLink]) — l'appelant doit alors empêcher le partage.
+  static String? buildVisiteGuideeShareText(VisiteGuideeVideo video) {
     final link = buildVisiteGuideeLink(video);
+    if (link == null) return null;
     final title = video.title ?? 'Visite Guidée';
     final description = video.description ?? '';
     return _buildShareText(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../services/text_size_service.dart';
@@ -594,12 +595,14 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
         'subtitle': 'mous-soum@groupegain.com',
         'icon': Icons.email_outlined,
         'color': const Color(0xFF3B82F6),
+        'action': 'email',
       },
       {
         'title': 'Support Téléphonique',
         'subtitle': "+225 07 48 01 12 47",
         'icon': Icons.phone_outlined,
         'color': AppColors.screenOrange,
+        'action': 'phone',
       },
     ];
 
@@ -637,7 +640,10 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () {}, // Aucune action
+                        onTap: () => _handleContact(
+                          c['action'] as String,
+                          c['subtitle'] as String,
+                        ),
                         borderRadius: BorderRadius.vertical(
                           top: i == 0 ? const Radius.circular(20) : Radius.zero,
                           bottom: isLast
@@ -726,17 +732,27 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
     );
   }
 
-  void _handleContact(String action) {
+  Future<void> _handleContact(String action, [String value = '']) async {
     switch (action) {
       case 'chat':
         _showSnack('Le chat sera bientôt disponible !');
         break;
       case 'email':
-        _showSnack('Ouverture du client email...');
+        await _launchOrShowError(Uri(scheme: 'mailto', path: value));
         break;
       case 'phone':
-        _showSnack('Ouverture du téléphone...');
+        await _launchOrShowError(
+          Uri(scheme: 'tel', path: value.replaceAll(' ', '')),
+        );
         break;
+    }
+  }
+
+  Future<void> _launchOrShowError(Uri uri) async {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else if (mounted) {
+      _showSnack('Impossible d\'ouvrir cette action sur cet appareil');
     }
   }
 

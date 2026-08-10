@@ -27,15 +27,18 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialiser les services de l'application
+  // Services essentiels au premier rendu (état de connexion, deep link
+  // éventuel) : on les attend avant runApp(), mais SEULEMENT eux — avant,
+  // OneSignal/notifications locales/connectivité étaient aussi awaited ici,
+  // ce qui pouvait cumuler plusieurs secondes d'écran blanc (avant même le
+  // premier frame Flutter) puisque aucun de ces 3 services n'est nécessaire
+  // pour afficher le splash screen ni pour résoudre un deep link.
   try {
-    // Initialiser Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     print('✅ Firebase initialisé');
 
-    // Initialiser la base de données
     await DatabaseService.instance.database;
     print('✅ Base de données initialisée');
 
@@ -45,27 +48,42 @@ void main() async {
       '✅ Service d\'authentification initialisé (session persistante)',
     );
 
-    // Initialiser OneSignal Push Notifications
-    await OneSignalService().init();
-    print('✅ OneSignal Push Notifications initialisé');
-
-    // Initialiser les notifications locales
-    await NotificationService().init();
-    print('✅ Service de notifications initialisé');
-
-    // Initialiser le service de connectivité
-    await ConnectivityService().init();
-    print('✅ Service de connectivité initialisé');
-
-    // Initialiser le service de Deep Linking
+    // Initialiser le service de Deep Linking (doit être prêt avant que
+    // MyApp ne s'abonne, pour capturer un éventuel lien de démarrage à froid)
     await DeepLinkService().init();
     print('✅ Deep Link Service initialisé');
   } catch (e) {
-    print('⚠️ Erreur lors de l\'initialisation des services: $e');
+    print('⚠️ Erreur lors de l\'initialisation des services essentiels: $e');
     // Continuer même si l'initialisation échoue
   }
 
   runApp(const MyApp());
+
+  // Services non bloquants pour le premier rendu : lancés en arrière-plan
+  // pendant que le splash screen s'affiche déjà, au lieu de retarder
+  // runApp() et donc le tout premier frame de l'app.
+  unawaited(_initBackgroundServices());
+}
+
+Future<void> _initBackgroundServices() async {
+  try {
+    await OneSignalService().init();
+    print('✅ OneSignal Push Notifications initialisé');
+  } catch (e) {
+    print('⚠️ Erreur init OneSignal: $e');
+  }
+  try {
+    await NotificationService().init();
+    print('✅ Service de notifications initialisé');
+  } catch (e) {
+    print('⚠️ Erreur init NotificationService: $e');
+  }
+  try {
+    await ConnectivityService().init();
+    print('✅ Service de connectivité initialisé');
+  } catch (e) {
+    print('⚠️ Erreur init ConnectivityService: $e');
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -90,22 +108,55 @@ class _MyAppState extends State<MyApp> {
   void _listenDeepLinks() {
     _deepLinkSubscription = DeepLinkService().onLinkReceived.listen(
       (DeepLinkData data) {
-        print('📱 Deep Link reçu dans MyApp: $data');
-        // Attendre que le navigator soit prêt
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final navigator = navigatorKey.currentState;
-          if (navigator != null) {
-            navigator.push(
-              MaterialPageRoute(
-                builder: (context) => DeepLinkResolverScreen(
-                  deepLinkData: data,
-                ),
-              ),
-            );
-          }
-        });
+        print('📱 [MyApp] Deep Link reçu: $data');
+        _pushDeepLinkResolver(data);
       },
     );
+    print('✅ [MyApp] Abonné à DeepLinkService().onLinkReceived.');
+
+    // Traite maintenant le lien de démarrage à froid éventuellement capturé
+    // par DeepLinkService.init() (appelé avant runApp, donc avant que ce
+    // listener n'existe) — sans ça, ce lien serait silencieusement perdu.
+    DeepLinkService().consumePendingInitialLink();
+  }
+
+  void _pushDeepLinkResolver(DeepLinkData data, {int attempt = 1}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final navigator = navigatorKey.currentState;
+      if (navigator == null) {
+        print(
+          '⚠️ [MyApp] Navigator pas encore prêt (tentative $attempt) pour '
+          'deep link $data — nouvel essai dans 300ms.',
+        );
+        if (attempt < 10) {
+          Future.delayed(const Duration(milliseconds: 300), () {
+            _pushDeepLinkResolver(data, attempt: attempt + 1);
+          });
+        } else {
+          print(
+            '❌ [MyApp] Navigator toujours indisponible après $attempt '
+            'tentatives, abandon pour $data.',
+          );
+        }
+        return;
+      }
+      print('📱 [MyApp] Navigation vers DeepLinkResolverScreen pour $data');
+      // pushReplacement (et non push) : au cold start, SplashScreen est
+      // encore la route active à ce moment-là. Si on empilait par-dessus
+      // avec push, SplashScreen resterait monté "en dessous" avec sa propre
+      // navigation différée (Future.delayed vers App()) toujours active ;
+      // une fois ce délai écoulé, Navigator.of(context).pushReplacement
+      // depuis SplashScreen remplace la route ACTUELLEMENT AU SOMMET du
+      // Navigator racine (donc l'écran vidéo, pas SplashScreen lui-même) et
+      // ramène l'utilisateur à l'accueil en pleine lecture. pushReplacement
+      // ici retire SplashScreen de la pile, ce qui neutralise ce timer
+      // (ses callbacks sont déjà protégés par des vérifications `mounted`).
+      navigator.pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => DeepLinkResolverScreen(deepLinkData: data),
+        ),
+      );
+    });
   }
 
   @override

@@ -130,10 +130,17 @@ class _VisiteGuideeVideoFeedScreenState
     if (item is AdGroup) return;
 
     final video = item as VisiteGuideeVideo;
-    final videoId = video.youtubeVideoId.isEmpty
-        ? video.youtubeUrl
-        : video.youtubeVideoId;
-    if (videoId.isEmpty) return;
+    final videoId = video.youtubeVideoId;
+    if (videoId.isEmpty) {
+      // Ne jamais passer l'URL brute en `initialVideoId` (le plugin attend
+      // un ID YouTube, pas une URL — ça produisait un player cassé, bloqué
+      // en chargement, plutôt qu'une erreur explicite).
+      print(
+        '⚠️ [VisiteGuidee] Impossible d\'extraire un id YouTube depuis '
+        '"${video.youtubeUrl}" (index $index) — aucun lecteur créé.',
+      );
+      return;
+    }
 
     final controller = YoutubePlayerController(
       initialVideoId: videoId,
@@ -322,7 +329,20 @@ class _VisiteGuideeVideoFeedScreenState
 
       if (mounted) {
         print('🏫 🚀 Navigation vers EstablishmentDetailScreen...');
-        MainScreenWrapper.of(context).navigateToEstablishmentDetail(ecole);
+        // MainScreenWrapper.of() lève une exception si aucun ancêtre
+        // MainScreenWrapper n'est présent (ex: écran atteint via deep link,
+        // hors de la pile de navigation principale) — repli sur un push
+        // direct dans ce cas, comme fait déjà plus bas dans ce fichier.
+        final wrapper = MainScreenWrapper.maybeOf(context);
+        if (wrapper != null) {
+          wrapper.navigateToEstablishmentDetail(ecole);
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => EstablishmentDetailScreen(ecole: ecole),
+            ),
+          );
+        }
       }
     } catch (e) {
       print('🏫 ❌ ERREUR: $e');
@@ -350,6 +370,18 @@ class _VisiteGuideeVideoFeedScreenState
 
     final currentVideo = item as VisiteGuideeVideo;
 
+    final shareText = AppShareService.buildVisiteGuideeShareText(currentVideo);
+    if (shareText == null) {
+      CartSnackBar.showOverlay(
+        context,
+        productName: '',
+        message: 'Cette vidéo ne peut pas être partagée pour le moment',
+        backgroundColor: Colors.orange,
+        icon: Icons.warning_amber_rounded,
+      );
+      return;
+    }
+
     // Mettre en pause la vidéo actuelle
     if (_youtubeControllers[_currentIndex] != null) {
       _youtubeControllers[_currentIndex]!.pause();
@@ -364,7 +396,7 @@ class _VisiteGuideeVideoFeedScreenState
       builder: (context) => ShareBottomSheet(
         title: 'Partager la vidéo',
         itemTitle: videoTitle,
-        shareText: AppShareService.buildVisiteGuideeShareText(currentVideo),
+        shareText: shareText,
       ),
     );
   }

@@ -58,7 +58,13 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
       final data = widget.deepLinkData;
       final id = data.id;
 
+      print(
+        '🔎 [DeepLinkResolver] _loadAndNavigate → type=${data.type} '
+        'id="$id" ecole="${data.ecole}" uri=${data.originalUri}',
+      );
+
       if (id.isEmpty) {
+        print('❌ [DeepLinkResolver] id vide → "Lien invalide."');
         _showError('Lien invalide.');
         return;
       }
@@ -67,7 +73,7 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
         case DeepLinkContentType.coulisse:
           final videoId = int.tryParse(id);
           if (videoId != null) {
-            await _loadCoulisseVideo(videoId);
+            await _loadCoulisseVideo(videoId, data.ecole);
           } else {
             _showError('Lien invalide.');
           }
@@ -75,7 +81,7 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
         case DeepLinkContentType.visite:
           final videoId = int.tryParse(id);
           if (videoId != null) {
-            await _loadVisiteGuideeVideo(videoId);
+            await _loadVisiteGuideeVideo(videoId, data.ecole);
           } else {
             _showError('Lien invalide.');
           }
@@ -96,36 +102,72 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
           _showError('Type de contenu non reconnu.');
           break;
       }
-    } catch (e) {
+    } catch (e, stack) {
+      print('❌ [DeepLinkResolver] Exception non catchée dans _loadAndNavigate: $e');
+      print(stack.toString());
       _showError('Impossible de charger le contenu.\n$e');
     }
   }
 
-  Future<void> _loadCoulisseVideo(int videoId) async {
+  Future<void> _loadCoulisseVideo(int videoId, String? ecole) async {
+    print('🔎 [DeepLinkResolver] _loadCoulisseVideo videoId=$videoId ecole="$ecole"');
     try {
-      final List<CoulisseExcellence> allVideos = [];
-      int currentPage = 1;
-      bool found = false;
+      List<CoulisseExcellence> allVideos = [];
 
-      while (!found) {
-        final pageVideos =
-            await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(
-              page: currentPage,
-              perPage: 50,
-            );
+      // Chemin nominal : le lien transporte le code école, on réutilise le
+      // même appel scopé que la navigation classique (un seul appel, fiable).
+      if (ecole != null && ecole.isNotEmpty) {
+        print('🔎 [DeepLinkResolver] Tentative scopée école="$ecole"...');
+        allVideos = await CoulisseExcellenceService.getCoulisseExcellenceList(
+          ecole,
+        );
+        print(
+          '🔎 [DeepLinkResolver] getCoulisseExcellenceList("$ecole") → '
+          '${allVideos.length} vidéo(s), ids=${allVideos.map((v) => v.id).toList()}',
+        );
+      } else {
+        print('🔎 [DeepLinkResolver] Pas de code école dans le lien, on saute la recherche scopée.');
+      }
 
-        if (pageVideos.isEmpty) {
-          break;
-        }
+      // Repli (anciens liens sans `ecole`, ou vidéo non trouvée dans l'école
+      // indiquée) : recherche paginée sur tout le catalogue.
+      if (!allVideos.any((v) => v.id == videoId)) {
+        print(
+          '🔎 [DeepLinkResolver] Vidéo $videoId non trouvée dans le lot scopé '
+          '(${allVideos.length} vidéo(s)) → repli sur la recherche paginée globale.',
+        );
+        allVideos = [];
+        int currentPage = 1;
+        bool found = false;
 
-        allVideos.addAll(pageVideos);
+        while (!found) {
+          print('🔎 [DeepLinkResolver] Repli: page $currentPage (perPage=50)...');
+          final pageVideos =
+              await CoulisseExcellenceService.getAllCoulisseExcellenceVideos(
+                page: currentPage,
+                perPage: 50,
+              );
+          print(
+            '🔎 [DeepLinkResolver] Repli: page $currentPage → '
+            '${pageVideos.length} vidéo(s)',
+          );
 
-        if (allVideos.any((v) => v.id == videoId)) {
-          found = true;
-        } else if (pageVideos.length < 50) {
-          break;
-        } else {
-          currentPage++;
+          if (pageVideos.isEmpty) {
+            print('🔎 [DeepLinkResolver] Repli: page vide, fin de la pagination.');
+            break;
+          }
+
+          allVideos.addAll(pageVideos);
+
+          if (allVideos.any((v) => v.id == videoId)) {
+            found = true;
+            print('✅ [DeepLinkResolver] Repli: vidéo $videoId trouvée page $currentPage.');
+          } else if (pageVideos.length < 50) {
+            print('🔎 [DeepLinkResolver] Repli: dernière page atteinte (< 50 résultats), vidéo non trouvée.');
+            break;
+          } else {
+            currentPage++;
+          }
         }
       }
 
@@ -134,12 +176,17 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
       final targetVideo = allVideos.where((v) => v.id == videoId).toList();
 
       if (targetVideo.isEmpty) {
+        print(
+          '❌ [DeepLinkResolver] Vidéo $videoId introuvable au final parmi '
+          '${allVideos.length} vidéo(s) chargée(s) → "Cette vidéo n\'existe plus..."',
+        );
         _showError('Cette vidéo n\'existe plus ou a été supprimée.');
         return;
       }
 
       // Trouver l'index de la vidéo cible dans la liste
       final targetIndex = allVideos.indexWhere((v) => v.id == videoId);
+      print('✅ [DeepLinkResolver] Vidéo $videoId trouvée à l\'index $targetIndex, navigation...');
 
       // Naviguer vers l'écran de lecture avec la liste complète
       Navigator.of(context).pushReplacement(
@@ -150,37 +197,71 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      print('❌ [DeepLinkResolver] Exception dans _loadCoulisseVideo: $e');
+      print(stack.toString());
       _showError(
         'Impossible de charger la vidéo.\nVérifiez votre connexion internet.',
       );
     }
   }
 
-  Future<void> _loadVisiteGuideeVideo(int videoId) async {
+  Future<void> _loadVisiteGuideeVideo(int videoId, String? ecole) async {
+    print('🔎 [DeepLinkResolver] _loadVisiteGuideeVideo videoId=$videoId ecole="$ecole"');
     try {
-      final List<VisiteGuideeVideo> allVideos = [];
-      int currentPage = 1;
-      bool found = false;
+      List<VisiteGuideeVideo> allVideos = [];
 
-      while (!found) {
-        final pageVideos = await VisiteGuideeService.getAllVisiteGuideeVideos(
-          page: currentPage,
-          perPage: 50,
+      // Chemin nominal : le lien transporte le code école, on réutilise le
+      // même appel scopé que la navigation classique (un seul appel, fiable).
+      if (ecole != null && ecole.isNotEmpty) {
+        print('🔎 [DeepLinkResolver] Tentative scopée école="$ecole"...');
+        allVideos = await VisiteGuideeService.getVideosByEcole(ecole);
+        print(
+          '🔎 [DeepLinkResolver] getVideosByEcole("$ecole") → '
+          '${allVideos.length} vidéo(s), ids=${allVideos.map((v) => v.id).toList()}',
         );
+      } else {
+        print('🔎 [DeepLinkResolver] Pas de code école dans le lien, on saute la recherche scopée.');
+      }
 
-        if (pageVideos.isEmpty) {
-          break;
-        }
+      // Repli (anciens liens sans `ecole`, ou vidéo non trouvée dans l'école
+      // indiquée) : recherche paginée sur tout le catalogue.
+      if (!allVideos.any((v) => v.id == videoId)) {
+        print(
+          '🔎 [DeepLinkResolver] Vidéo $videoId non trouvée dans le lot scopé '
+          '(${allVideos.length} vidéo(s)) → repli sur la recherche paginée globale.',
+        );
+        allVideos = [];
+        int currentPage = 1;
+        bool found = false;
 
-        allVideos.addAll(pageVideos);
+        while (!found) {
+          print('🔎 [DeepLinkResolver] Repli: page $currentPage (perPage=50)...');
+          final pageVideos = await VisiteGuideeService.getAllVisiteGuideeVideos(
+            page: currentPage,
+            perPage: 50,
+          );
+          print(
+            '🔎 [DeepLinkResolver] Repli: page $currentPage → '
+            '${pageVideos.length} vidéo(s)',
+          );
 
-        if (allVideos.any((v) => v.id == videoId)) {
-          found = true;
-        } else if (pageVideos.length < 50) {
-          break;
-        } else {
-          currentPage++;
+          if (pageVideos.isEmpty) {
+            print('🔎 [DeepLinkResolver] Repli: page vide, fin de la pagination.');
+            break;
+          }
+
+          allVideos.addAll(pageVideos);
+
+          if (allVideos.any((v) => v.id == videoId)) {
+            found = true;
+            print('✅ [DeepLinkResolver] Repli: vidéo $videoId trouvée page $currentPage.');
+          } else if (pageVideos.length < 50) {
+            print('🔎 [DeepLinkResolver] Repli: dernière page atteinte (< 50 résultats), vidéo non trouvée.');
+            break;
+          } else {
+            currentPage++;
+          }
         }
       }
 
@@ -189,11 +270,16 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
       final targetVideo = allVideos.where((v) => v.id == videoId).toList();
 
       if (targetVideo.isEmpty) {
+        print(
+          '❌ [DeepLinkResolver] Vidéo $videoId introuvable au final parmi '
+          '${allVideos.length} vidéo(s) chargée(s) → "Cette vidéo n\'existe plus..."',
+        );
         _showError('Cette vidéo n\'existe plus ou a été supprimée.');
         return;
       }
 
       final targetIndex = allVideos.indexWhere((v) => v.id == videoId);
+      print('✅ [DeepLinkResolver] Vidéo $videoId trouvée à l\'index $targetIndex, navigation...');
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -203,7 +289,9 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      print('❌ [DeepLinkResolver] Exception dans _loadVisiteGuideeVideo: $e');
+      print(stack.toString());
       _showError(
         'Impossible de charger la vidéo.\nVérifiez votre connexion internet.',
       );

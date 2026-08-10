@@ -123,7 +123,13 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
 
     final video = item as CoulisseExcellence;
     final videoId = video.youtubeVideoId;
-    if (videoId.isEmpty) return;
+    if (videoId.isEmpty) {
+      print(
+        '⚠️ [Coulisse] Impossible d\'extraire un id YouTube depuis '
+        '"${video.videoYoutube}" (index $index) — aucun lecteur créé.',
+      );
+      return;
+    }
 
     final controller = YoutubePlayerController(
       initialVideoId: videoId,

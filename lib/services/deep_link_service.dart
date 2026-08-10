@@ -20,14 +20,22 @@ class DeepLinkData {
   final String id;
   final Uri originalUri;
 
+  /// Code de l'école propriétaire du contenu (optionnel, absent sur les
+  /// anciens liens déjà partagés). Permet de résoudre le contenu via les
+  /// mêmes appels API scopés par école que la navigation classique, au lieu
+  /// de parcourir tout le catalogue toutes écoles confondues.
+  final String? ecole;
+
   const DeepLinkData({
     required this.type,
     required this.id,
     required this.originalUri,
+    this.ecole,
   });
 
   @override
-  String toString() => 'DeepLinkData(type: $type, id: $id, uri: $originalUri)';
+  String toString() =>
+      'DeepLinkData(type: $type, id: $id, ecole: $ecole, uri: $originalUri)';
 }
 
 /// Service singleton pour gérer les deep links (Universal Links iOS + App Links Android).
@@ -68,6 +76,16 @@ class DeepLinkService {
       StreamController<DeepLinkData>.broadcast();
   bool _isInitialized = false;
 
+  /// Lien de démarrage à froid capturé par [init], en attente d'être traité
+  /// via [consumePendingInitialLink] une fois qu'un auditeur est réellement
+  /// attaché à [onLinkReceived]. Nécessaire car [init] s'exécute dans
+  /// `main()` AVANT `runApp()` : si on émettait ce lien immédiatement sur ce
+  /// StreamController broadcast, il n'y aurait encore aucun auditeur (l'écran
+  /// racine ne s'abonne qu'à son `initState`) et l'événement serait perdu
+  /// silencieusement — un broadcast stream ne rejoue jamais les événements
+  /// passés pour les auditeurs qui arrivent après coup.
+  Uri? _pendingInitialUri;
+
   /// Stream de deep links reçus (cold start + warm start)
   Stream<DeepLinkData> get onLinkReceived => _deepLinkController.stream;
 
@@ -80,49 +98,78 @@ class DeepLinkService {
 
     _appLinks = AppLinks();
 
-    // 1. Vérifier s'il y a un lien initial (cold start)
+    // 1. Vérifier s'il y a un lien initial (cold start) — on le mémorise
+    //    seulement, il sera traité via consumePendingInitialLink() une fois
+    //    qu'un auditeur sera attaché (voir MyApp._listenDeepLinks).
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
-        print('🔗 Deep Link (cold start): $initialUri');
-        _handleUri(initialUri);
+        print('🔗 [DeepLink] URI de démarrage à froid capturée: $initialUri');
+        _pendingInitialUri = initialUri;
+      } else {
+        print('🔗 [DeepLink] Pas de lien de démarrage à froid.');
       }
     } catch (e) {
-      print('⚠️ Erreur récupération lien initial: $e');
+      print('⚠️ [DeepLink] Erreur récupération lien initial: $e');
     }
 
     // 2. Écouter les liens entrants (warm start)
     try {
       _linkSubscription = _appLinks.uriLinkStream.listen(
         (Uri uri) {
-          print('🔗 Deep Link (warm start): $uri');
+          print('🔗 [DeepLink] URI reçue (warm start): $uri');
           _handleUri(uri);
         },
         onError: (error) {
-          print('⚠️ Erreur stream deep link: $error');
+          print('⚠️ [DeepLink] Erreur stream deep link: $error');
         },
       );
+      print('✅ [DeepLink] Abonnement au stream app_links effectué.');
     } catch (e) {
-      print('⚠️ Erreur initialisation stream deep link (hot reload ?): $e');
+      print('⚠️ [DeepLink] Erreur initialisation stream (hot reload ?): $e');
     }
+  }
+
+  /// À appeler juste après s'être abonné à [onLinkReceived] (typiquement
+  /// dans `initState` de l'écran racine), pour traiter le lien de démarrage
+  /// à froid éventuellement capturé par [init] sans le perdre.
+  void consumePendingInitialLink() {
+    final uri = _pendingInitialUri;
+    if (uri == null) {
+      print('🔗 [DeepLink] Aucun lien initial en attente à traiter.');
+      return;
+    }
+    _pendingInitialUri = null;
+    print('🔗 [DeepLink] Traitement du lien de démarrage à froid en attente: $uri');
+    _handleUri(uri);
   }
 
   // ─── Parsing ──────────────────────────────────────────────────────────────
 
   /// Parse une URI et émet un [DeepLinkData] si elle correspond à un lien valide.
   void _handleUri(Uri uri) {
+    print('🔎 [DeepLink] _handleUri: $uri');
+    print('🔎 [DeepLink]   host=${uri.host} path=${uri.path} query=${uri.query}');
+
     // Vérifier que le domaine est autorisé
     if (!_allowedHosts.contains(uri.host.toLowerCase())) {
-      print('⚠️ Deep Link ignoré (domaine non autorisé): ${uri.host}');
+      print(
+        '⚠️ [DeepLink] Ignoré (domaine "${uri.host}" non autorisé, '
+        'attendus: $_allowedHosts)',
+      );
       return;
     }
 
     final deepLinkData = parseUri(uri);
     if (deepLinkData != null) {
-      print('✅ Deep Link parsé: $deepLinkData');
+      print('✅ [DeepLink] Parsé avec succès: $deepLinkData');
+      print(
+        '✅ [DeepLink]   auditeurs actuellement abonnés à onLinkReceived: '
+        '${_deepLinkController.hasListener}',
+      );
       _deepLinkController.add(deepLinkData);
     } else {
-      print('⚠️ Deep Link non reconnu: $uri');
+      print('⚠️ [DeepLink] Format non reconnu, aucune donnée extraite: $uri');
     }
   }
 
@@ -138,6 +185,7 @@ class DeepLinkService {
 
     String? typeStr;
     String? id;
+    final String? ecole = uri.queryParameters['ecole'];
 
     // Nouvelle approche : via les query parameters (ex: index.html?type=visite&id=92)
     if (uri.queryParameters.containsKey('type') &&
@@ -160,7 +208,14 @@ class DeepLinkService {
       }
     }
 
-    if (typeStr == null || id == null || id.isEmpty) return null;
+    print(
+      '🔎 [DeepLink] parseUri → typeStr=$typeStr id=$id ecole=$ecole',
+    );
+
+    if (typeStr == null || id == null || id.isEmpty) {
+      print('⚠️ [DeepLink] parseUri: type ou id manquant/vide, lien invalide.');
+      return null;
+    }
 
     DeepLinkContentType type;
     switch (typeStr) {
@@ -186,7 +241,7 @@ class DeepLinkService {
         type = DeepLinkContentType.unknown;
     }
 
-    return DeepLinkData(type: type, id: id, originalUri: uri);
+    return DeepLinkData(type: type, id: id, originalUri: uri, ecole: ecole);
   }
 
   // ─── Navigation ───────────────────────────────────────────────────────────

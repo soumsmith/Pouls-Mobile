@@ -30,6 +30,18 @@ import '../widgets/scroll_to_top_fab.dart';
 // ─── ENUM : types de pièce jointe ────────────────────────────────────────────
 enum AttachmentType { none, image, audio, document }
 
+// ─── Formats de fichiers autorisés en pièce jointe ──────────────────────────
+// Seuls ces formats sont sélectionnables via le bouton "joindre un fichier"
+// (l'audio a son propre flux d'enregistrement, séparé de ce sélecteur).
+// Pour accepter un nouveau format, il suffit d'ajouter son extension ici.
+const Map<String, AttachmentType> kAllowedAttachmentExtensions = {
+  'jpg': AttachmentType.image,
+  'jpeg': AttachmentType.image,
+  'png': AttachmentType.image,
+  'gif': AttachmentType.image,
+  'pdf': AttachmentType.document,
+};
+
 // ─── Modèle local pour les messages affichés ────────────────────────────────
 class _LocalMessage {
   final String body;
@@ -1270,34 +1282,32 @@ class _MessagesScreenState extends State<MessagesScreen>
   Future<void> _pickAnyFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.any,
+        type: FileType.custom,
+        allowedExtensions: kAllowedAttachmentExtensions.keys.toList(),
         allowMultiple: false,
       );
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final fileName = file.path.toLowerCase();
+      if (result == null || result.files.single.path == null) return;
 
-        setState(() {
-          _attachedFile = file;
-          _recordedPath = null;
-          _recordDuration = Duration.zero;
-          _hasContent = true;
+      final file = File(result.files.single.path!);
+      final extension = file.path.split('.').last.toLowerCase();
+      final attachmentType = kAllowedAttachmentExtensions[extension];
 
-          if (fileName.endsWith('.jpg') ||
-              fileName.endsWith('.jpeg') ||
-              fileName.endsWith('.png') ||
-              fileName.endsWith('.gif')) {
-            _attachmentType = AttachmentType.image;
-          } else if (fileName.endsWith('.webm') ||
-              fileName.endsWith('.mp3') ||
-              fileName.endsWith('.wav') ||
-              fileName.endsWith('.m4a')) {
-            _attachmentType = AttachmentType.audio;
-          } else {
-            _attachmentType = AttachmentType.none;
-          }
-        });
+      // Filet de sécurité : certaines versions d'Android ne filtrent pas
+      // toujours strictement par extension malgré `allowedExtensions`.
+      if (attachmentType == null) {
+        _showError(
+          'Format non pris en charge. Formats acceptés : image, PDF.',
+        );
+        return;
       }
+
+      setState(() {
+        _attachedFile = file;
+        _recordedPath = null;
+        _recordDuration = Duration.zero;
+        _hasContent = true;
+        _attachmentType = attachmentType;
+      });
     } catch (e) {
       _showError('Erreur: $e');
     }

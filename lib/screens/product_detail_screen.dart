@@ -12,6 +12,7 @@ import '../widgets/custom_loader.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/bottom_nav.dart';
 import 'cart_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/share_bottom_sheet.dart';
@@ -185,7 +186,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       ),
       child: Scaffold(
         backgroundColor: _T.bg(context),
-        floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70),
+        floatingActionButton: ScrollToTopFab(scrollController: _scrollController, bottomSpacerHeight: 70 + kBottomNavBarHeight),
         body: _isDetailLoading
             ? Center(
                 child: CustomLoader(
@@ -210,15 +211,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                             child: _buildContent(p, productColor),
                           ),
                         ),
-                        // espace pour la bottom bar
-                        const SliverToBoxAdapter(child: BottomSpacer(height: 125)),
+                        // espace pour la bottom bar flottante + la bottom nav globale
+                        SliverToBoxAdapter(child: BottomSpacer(height: 125 + kBottomNavBarHeight)),
                       ],
                     ),
                     // ── Bottom bar flottante ──
+                    // Décalée au-dessus de la bottom nav globale de MainScreenWrapper
+                    // pour éviter le chevauchement.
                     Positioned(
                       left: 0,
                       right: 0,
-                      bottom: 0,
+                      bottom: kBottomNavBarHeight + MediaQuery.of(context).padding.bottom,
                       child: p.price > 0
                           ? _buildBottomActionBar(p, productColor)
                           : _buildFreeServiceAction(p, productColor),
@@ -786,84 +789,81 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         //   ),
         // ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(
-                    color: _T.divider(context),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: _T.divider(context),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              Row(
-                children: [
-                  // Total
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Total',
-                        style: TextStyle(fontSize: 12, color: _T.textMuted(context)),
-                      ),
-                      const SizedBox(height: 2),
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '${total.toStringAsFixed(0)} ',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                color: _T.textPrimary(context),
-                                letterSpacing: -0.8,
-                              ),
+            ),
+            Row(
+              children: [
+                // Total
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total',
+                      style: TextStyle(fontSize: 12, color: _T.textMuted(context)),
+                    ),
+                    const SizedBox(height: 2),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${total.toStringAsFixed(0)} ',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: _T.textPrimary(context),
+                              letterSpacing: -0.8,
                             ),
-                            WidgetSpan(
-                              child: Transform.translate(
-                                offset: const Offset(0, -4),
-                                child: Text(
-                                  'FCFA',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: _T.textPrimary(context),
-                                    letterSpacing: 0.2,
-                                  ),
+                          ),
+                          WidgetSpan(
+                            child: Transform.translate(
+                              offset: const Offset(0, -4),
+                              child: Text(
+                                'FCFA',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: _T.textPrimary(context),
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // CTA
-                  CustomButton(
-                    text: 'Commander',
-                    color: AppColors.screenOrange,
-                    icon: Icons.shopping_bag_outlined,
-                    onPressed: product.isAvailable && !_isLoading
-                        ? () => _addToCart(product)
-                        : null,
-                    isLoading: _isLoading,
-                    width: 160,
-                    height: 44,
-                  ),
-                ],
-              ),
-            ],
-          ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                // CTA
+                CustomButton(
+                  text: 'Commander',
+                  color: AppColors.screenOrange,
+                  icon: Icons.shopping_bag_outlined,
+                  onPressed: product.isAvailable && !_isLoading
+                      ? () => _addToCart(product)
+                      : null,
+                  isLoading: _isLoading,
+                  width: 160,
+                  height: 44,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -876,33 +876,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: AppDimensions.getBottomSheetShadow(context),
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(
-                    color: _T.divider(context),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: _T.divider(context),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              CustomButton(
-                text: 'Accéder au service',
-                color: AppColors.screenOrange,
-                icon: Icons.open_in_new_rounded,
-                onPressed: () => _accessFreeService(product),
-                height: 48,
-              ),
-            ],
-          ),
+            ),
+            CustomButton(
+              text: 'Accéder au service',
+              color: AppColors.screenOrange,
+              icon: Icons.open_in_new_rounded,
+              onPressed: () => _accessFreeService(product),
+              height: 48,
+            ),
+          ],
         ),
       ),
     );

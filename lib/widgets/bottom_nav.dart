@@ -6,6 +6,11 @@ import '../services/cart_service.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 
+// Hauteur totale fixe de la bottom nav (hauteur du container + marge du haut),
+// hors inset de SafeArea (variable selon l'appareil) — à ajouter séparément
+// par les écrans qui doivent positionner un élément flottant au-dessus.
+const double kBottomNavBarHeight = 82;
+
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange = Color(0xFFFF6B2C);
 const _kOrangeLight = Color(0xFFFFF0E8);
@@ -184,12 +189,12 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
 
     return Container(
       // Hauteur fixe + padding système en bas
-      height: 70,
+      height: kBottomNavBarHeight - 12,
       margin: EdgeInsets.fromLTRB(
         horizontalMargin,
         12 + MediaQuery.of(context).padding.bottom,
         horizontalMargin,
-        0, 
+        0,
       ),
       decoration: BoxDecoration(
         color: AppColors.bottomNavBg(context),

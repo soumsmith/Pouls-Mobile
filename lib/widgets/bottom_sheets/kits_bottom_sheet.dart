@@ -102,7 +102,7 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
 
     try {
       final codeEcole = widget.schoolId;
-      final niveauId = niveau.niveau ?? niveau.code ?? '';
+      final niveauId = niveau.code ?? niveau.niveau ?? '';
       
       final kits = await KitsService.getKitsByNiveau(codeEcole, niveauId);
       

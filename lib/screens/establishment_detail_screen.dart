@@ -3454,8 +3454,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               if (niveaux.isNotEmpty) {
                 final niveauLabels = <String>{};
                 for (final n in niveaux) {
-                  final label = (n.niveau?.isNotEmpty == true)
-                      ? n.niveau!
+                  final label = (n.code?.isNotEmpty == true)
+                      ? n.code!
                       : n.nom;
                   if (label != null) {
                     niveauLabels.add(label);
@@ -5140,8 +5140,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                 if (niveaux.isNotEmpty) {
                                   final niveauLabels = <String>{};
                                   for (final n in niveaux) {
-                                    final label = (n.niveau?.isNotEmpty == true)
-                                        ? n.niveau!
+                                    final label = (n.code?.isNotEmpty == true)
+                                        ? n.code!
                                         : n.nom;
                                     if (label != null) niveauLabels.add(label);
                                   }

@@ -26,7 +26,7 @@ import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../utils/notification_helper.dart';
 import '../widgets/skeleton_box.dart';
-import '../widgets/main_screen_wrapper.dart';
+import '../utils/auth_guard.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
@@ -534,9 +534,15 @@ class _LibraryScreenState extends State<LibraryScreen>
             : null,
         badgeColor: Colors.green,
         onTap: () {
-          MainScreenWrapper.of(
+          AuthGuard.ensureLoggedIn(
             context,
-          ).navigateToExtraScreen(const OrdersScreen());
+            reason: 'Connectez-vous pour voir vos commandes',
+            onAuthenticated: () {
+              MainScreenWrapper.of(
+                context,
+              ).navigateToExtraScreen(const OrdersScreen());
+            },
+          );
         },
       ),
       const SizedBox(width: 4),

@@ -3337,9 +3337,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
                 onTap: () {
-                  MainScreenWrapper.of(
+                  AuthGuard.ensureLoggedIn(
                     context,
-                  ).navigateToExtraScreen(const OrdersScreen());
+                    reason: 'Connectez-vous pour voir vos commandes',
+                    onAuthenticated: () {
+                      MainScreenWrapper.of(
+                        context,
+                      ).navigateToExtraScreen(const OrdersScreen());
+                    },
+                  );
                 },
               ),
               SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),

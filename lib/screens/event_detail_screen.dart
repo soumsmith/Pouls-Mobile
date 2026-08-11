@@ -665,7 +665,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     } else if (AppDimensions.isTablet(context)) {
       return availableWidth / 3.5;
     }
-    return availableWidth / 2.2;
+    return availableWidth / 3;
   }
 
   Widget _buildOtherEvents() {

@@ -547,7 +547,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
     } else if (AppDimensions.isTablet(context)) {
       return availableWidth / 3.5;
     }
-    return availableWidth / 2.2;
+    return availableWidth / 3;
   }
 
   Widget _buildOtherBlogs() {

@@ -1110,9 +1110,15 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       actions: [
         GestureDetector(
           onTap: () {
-            _showActionBottomSheet(
-              'voir_les_avis',
-              _kActions['voir_les_avis']!,
+            AuthGuard.ensureLoggedIn(
+              context,
+              reason: 'Connectez-vous pour laisser votre avis',
+              onAuthenticated: () {
+                _showActionBottomSheet(
+                  'voir_les_avis',
+                  _kActions['voir_les_avis']!,
+                );
+              },
             );
           },
           child: Tooltip(
@@ -3438,6 +3444,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             NiveauService.getNiveauxByEcole(
               widget.ecole.parametreCode ?? '',
             ).then((niveaux) {
+              print(
+                '📚 [SCOLARITÉ] Niveaux reçus pour l\'école '
+                '${widget.ecole.parametreCode} (${niveaux.length}):',
+              );
+              for (final n in niveaux) {
+                print('   ${n.toJson()}');
+              }
               if (niveaux.isNotEmpty) {
                 final niveauLabels = <String>{};
                 for (final n in niveaux) {
@@ -3451,8 +3464,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                 final sortedLabels = niveauLabels.toList()..sort();
                 if (sortedLabels.isNotEmpty) {
                   setState(() {
-                    _selectedNiveauFiltre = null;
-                    _scolariteFuture = null;
+                    _selectedNiveauFiltre = sortedLabels.first;
+                    _scolariteFuture = ScolariteService.getScolaritesByEcole(
+                      widget.ecole.parametreCode ?? '',
+                      code: _selectedNiveauFiltre!,
+                    );
                   });
                   // Force bottom sheet rebuild to display _scolariteFuture
                   _avisNotifier.value++;
@@ -5114,6 +5130,13 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                               NiveauService.getNiveauxByEcole(
                                 widget.ecole.parametreCode ?? '',
                               ).then((niveaux) {
+                                print(
+                                  '📚 [SCOLARITÉ] Niveaux reçus (retry) pour l\'école '
+                                  '${widget.ecole.parametreCode} (${niveaux.length}):',
+                                );
+                                for (final n in niveaux) {
+                                  print('   ${n.toJson()}');
+                                }
                                 if (niveaux.isNotEmpty) {
                                   final niveauLabels = <String>{};
                                   for (final n in niveaux) {
@@ -5126,8 +5149,11 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
                                     ..sort();
                                   if (sortedLabels.isNotEmpty) {
                                     setSheetState(() {
-                                      _selectedNiveauFiltre = null;
-                                      _scolariteFuture = null;
+                                      _selectedNiveauFiltre = sortedLabels.first;
+                                      _scolariteFuture = ScolariteService.getScolaritesByEcole(
+                                        widget.ecole.parametreCode ?? '',
+                                        code: _selectedNiveauFiltre!,
+                                      );
                                     });
                                   }
                                 }

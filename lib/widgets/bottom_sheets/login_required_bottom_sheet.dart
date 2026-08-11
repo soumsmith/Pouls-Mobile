@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
+import '../../screens/signup_screen.dart';
 
 /// Bottom sheet informant l'utilisateur invité qu'une connexion est requise
 /// avant de poursuivre une action. Retourne `true` si l'utilisateur choisit
@@ -84,6 +85,42 @@ Future<bool> showLoginRequiredBottomSheet(
                 child: const Text(
                   'Se connecter',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Bouton créer un compte (même style que sur l'écran de connexion)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  backgroundColor: isDark
+                      ? Colors.white.withOpacity(0.08)
+                      : const Color(0xFFF2F4F7),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18.0,
+                    vertical: 12.0,
+                  ),
+                ),
+                onPressed: () {
+                  final navigator = Navigator.of(context);
+                  navigator.pop(false);
+                  navigator.push(
+                    MaterialPageRoute(builder: (_) => const SignupScreen()),
+                  );
+                },
+                child: Text(
+                  'Créer un compte',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontSize: 14.0,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),

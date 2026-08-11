@@ -658,8 +658,8 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
 
   double _getCardWidth(BuildContext context, [double padding = 16.0]) {
     final screenWidth = MediaQuery.of(context).size.width;
-    // Exactement 2.5 éléments visibles à l'écran
-    return (screenWidth - (padding * 2) - 16) / 2.5;
+    // Exactement 3 éléments visibles à l'écran
+    return (screenWidth - (padding * 2) - 16) / 3;
   }
 
   Widget _buildOtherTipsSection() {

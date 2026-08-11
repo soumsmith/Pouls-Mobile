@@ -216,7 +216,7 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ChoiceChip(
-                  label: Text(niveau.niveau ?? niveau.nom ?? 'Inconnu'),
+                  label: Text(niveau.nom ?? niveau.niveau ?? 'Inconnu'),
                   selected: isSelected,
                   onSelected: (selected) {
                     if (selected && _selectedNiveau != niveau) {
@@ -307,7 +307,7 @@ class _KitsBottomSheetState extends State<KitsBottomSheet> {
     if (_kits.isEmpty) {
       return CustomErrorState(
         title: 'Aucun kit disponible',
-        message: 'Il n\'y a pas encore d\'articles configurés pour le niveau ${_selectedNiveau?.niveau ?? _selectedNiveau?.nom ?? ''}.',
+        message: 'Il n\'y a pas encore d\'articles configurés pour le niveau ${_selectedNiveau?.nom ?? _selectedNiveau?.niveau ?? ''}.',
         icon: Icons.inventory_2_outlined,
         iconColor: widget.primaryColor,
       );

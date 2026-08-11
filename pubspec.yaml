@@ -30,6 +30,10 @@ dependencies:
   path_provider: ^2.1.2
   #just_audio: ^0.9.40     # Lecture audio
   audioplayers: ^5.2.1
+  # Transcodage audio à la volée (ex: WebM/Opus -> M4A/AAC, illisible
+  # nativement par AVFoundation sur iOS). Variante "audio" uniquement
+  # (sans codecs vidéo) pour limiter la taille de l'app.
+  ffmpeg_kit_flutter_new_audio: ^2.5.2
 
   syncfusion_flutter_pdfviewer: ^27.1.48
 

@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import '../services/text_size_service.dart';
 import '../services/theme_service.dart';
 import '../services/ticket_service.dart';
+import '../utils/notification_helper.dart';
 import '../models/user_ticket.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/custom_sliver_app_bar.dart';
@@ -132,11 +133,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     print('📱 [TICKET CANCEL SCREEN] Argument ticketUid: "$ticketUid"');
 
     if (evenementId.isEmpty || participantUid.isEmpty || ticketUid.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Impossible d\'annuler ce ticket : informations manquantes.'),
-          backgroundColor: Colors.orange[800],
-        ),
+      NotificationHelper.showWarning(
+        'Impossible d\'annuler ce ticket : informations manquantes.',
       );
       return;
     }
@@ -173,21 +171,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
       if (success) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ticket annulé avec succès.'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          NotificationHelper.showSuccess('Ticket annulé avec succès.');
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Erreur lors de l\'annulation du ticket.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          NotificationHelper.showError('Erreur lors de l\'annulation du ticket.');
         }
       }
 

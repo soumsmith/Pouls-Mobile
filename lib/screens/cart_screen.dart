@@ -14,6 +14,7 @@ import '../widgets/order_wizard_bottom_sheet.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_guard.dart';
 import '../services/notification_service.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/custom_button.dart';
@@ -121,27 +122,11 @@ class _CartScreenState extends State<CartScreen>
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red[400],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    NotificationHelper.showError(msg);
   }
 
   void _showSuccess(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.green[500],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    NotificationHelper.showSuccess(msg);
   }
 
   @override

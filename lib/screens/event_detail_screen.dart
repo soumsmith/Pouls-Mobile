@@ -30,7 +30,7 @@ import 'pdf_viewer_screen.dart';
 import '../config/app_config.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import 'all_events_screen.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
@@ -336,12 +336,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   void _addToCalendar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ajout à l\'agenda bientôt disponible'),
-        backgroundColor: _AppColors.slate900,
-      ),
-    );
+    NotificationHelper.showInfo('Ajout à l\'agenda bientôt disponible');
   }
 
   // ── Info cards (date + lieu) ─────────────────
@@ -808,12 +803,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   void _contactSchool() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Contact de l\'école bientôt disponible'),
-        backgroundColor: _AppColors.emerald,
-      ),
-    );
+    NotificationHelper.showSuccess('Contact de l\'école bientôt disponible');
   }
 
   Future<void> _visitSchool() async {
@@ -851,9 +841,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-      );
+      NotificationHelper.showError('Erreur: $e');
     }
   }
 
@@ -1005,13 +993,17 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   void _showSnack(String msg, Color color) {
-    CartSnackBar.showOverlay(
-      context,
-      productName: '',
-      message: msg,
-      backgroundColor: color,
-      icon: Icons.info_outline,
-    );
+    NotificationType type;
+    if (color == _AppColors.emerald || color == Colors.green) {
+      type = NotificationType.success;
+    } else if (color == Colors.red || color == _AppColors.rose) {
+      type = NotificationType.error;
+    } else if (color == _AppColors.amber || color == Colors.orange) {
+      type = NotificationType.warning;
+    } else {
+      type = NotificationType.info;
+    }
+    NotificationHelper.show(message: msg, type: type);
   }
 
   // ── Comment bottom sheet ────────────────────

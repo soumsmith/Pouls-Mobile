@@ -23,6 +23,7 @@ import '../widgets/image_menu_card_external_title.dart';
 import 'all_blogs_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/html_text_widget.dart';
+import '../utils/notification_helper.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens (cohérents avec EventDetailScreen)
@@ -169,7 +170,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
     
     final user = AuthService.instance.getCurrentUser();
     if (user == null) {
-      _showSnack('Veuillez vous connecter pour aimer', _C.amber);
+      _showSnack('Veuillez vous connecter pour aimer', NotificationType.warning);
       return;
     }
 
@@ -191,7 +192,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
         _isBookmarked = !_isBookmarked;
         _likesCount += _isBookmarked ? 1 : -1;
       });
-      _showSnack('Erreur de connexion', _C.rose);
+      _showSnack('Erreur de connexion', NotificationType.error);
     }
   }
 
@@ -263,7 +264,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
       }
     } catch (e) {
       if (!mounted) return;
-      _showSnack('Erreur: $e', _C.rose);
+      _showSnack('Erreur: $e', NotificationType.error);
     }
   }
 
@@ -273,12 +274,12 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
 
     final user = AuthService.instance.getCurrentUser();
     if (user == null) {
-      _showSnack('Veuillez vous connecter pour commenter', _C.amber);
+      _showSnack('Veuillez vous connecter pour commenter', NotificationType.warning);
       return;
     }
 
     if (_commentController.text.trim().isEmpty) {
-      _showSnack('Veuillez entrer un commentaire', _C.rose);
+      _showSnack('Veuillez entrer un commentaire', NotificationType.error);
       return;
     }
     
@@ -304,21 +305,15 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
         _isSubmittingComment = false;
         _commentController.clear();
       });
-      _showSnack('Commentaire ajouté avec succès', _C.emerald);
+      _showSnack('Commentaire ajouté avec succès', NotificationType.success);
     } else {
       setState(() => _isSubmittingComment = false);
-      _showSnack('Erreur lors de l\'ajout du commentaire', _C.rose);
+      _showSnack('Erreur lors de l\'ajout du commentaire', NotificationType.error);
     }
   }
 
-  void _showSnack(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  void _showSnack(String msg, NotificationType type) {
+    NotificationHelper.show(message: msg, type: type);
   }
 
   // ─────────────────────────────────────────────

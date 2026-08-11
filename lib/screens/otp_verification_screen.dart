@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../utils/notification_helper.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/custom_button.dart';
@@ -135,12 +136,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           _navigateToApp();
         } else {
           print('❌ Échec de la vérification OTP');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Code OTP invalide. Veuillez réessayer.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          NotificationHelper.showError('Code OTP invalide. Veuillez réessayer.');
         }
       }
     } catch (e) {
@@ -150,12 +146,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           _isLoading = false;
         });
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationHelper.showError('Erreur: $e');
       }
     }
   }
@@ -182,12 +173,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         _isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Code OTP renvoyé avec succès.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      NotificationHelper.showSuccess('Code OTP renvoyé avec succès.');
 
       _startResendCountdown();
     }

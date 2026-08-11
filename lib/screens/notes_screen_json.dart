@@ -4,9 +4,9 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import '../config/app_colors.dart';
 import '../services/notes_api_service.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/custom_loader.dart';
-import '../widgets/snackbar.dart';
 import '../widgets/subtle_retry_button.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
@@ -261,32 +261,17 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   void _showError(String msg) {
     if (!mounted) return;
-    CartSnackBar.show(
-      context,
-      productName: 'Erreur',
-      message: msg,
-      backgroundColor: Colors.red[400] ?? Colors.red,
-    );
+    NotificationHelper.showError('Erreur $msg');
   }
 
   void _showSuccess(String msg) {
     if (!mounted) return;
-    CartSnackBar.show(
-      context,
-      productName: 'Succès',
-      message: msg,
-      backgroundColor: AppColors.screenGreen,
-    );
+    NotificationHelper.showSuccess('Succès $msg');
   }
 
   void _showInfo(String msg) {
     if (!mounted) return;
-    CartSnackBar.show(
-      context,
-      productName: 'Information',
-      message: msg,
-      backgroundColor: const Color(0xFF3B82F6),
-    );
+    NotificationHelper.showInfo('Information $msg');
   }
 
   // ─── HELPERS ──────────────────────────────────────────────────────────────

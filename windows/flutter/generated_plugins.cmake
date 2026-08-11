@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   cloud_firestore
   connectivity_plus
+  ffmpeg_kit_flutter_new_audio
   firebase_auth
   firebase_core
   firebase_storage

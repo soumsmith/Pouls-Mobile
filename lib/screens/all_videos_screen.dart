@@ -19,6 +19,7 @@ import '../services/ad_service.dart';
 import '../models/ad_model.dart';
 import '../utils/ad_injector.dart';
 import '../widgets/ad_banner_card.dart';
+import '../utils/notification_helper.dart';
 
 class AllVideosScreen extends StatefulWidget {
   final String ecoleCode;
@@ -118,9 +119,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
         _isLoadingMore = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-        );
+        NotificationHelper.showError('Erreur: $e');
       }
     }
   }

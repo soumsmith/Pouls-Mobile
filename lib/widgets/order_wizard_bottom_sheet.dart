@@ -8,7 +8,7 @@ import '../services/order_service.dart';
 import '../services/auth_service.dart';
 import '../services/cart_service.dart';
 import '../widgets/searchable_dropdown.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 
 class OrderWizardBottomSheet extends StatefulWidget {
   final Cart cart;
@@ -249,15 +249,9 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   }
 
   void _showSuccessNotification(String message) {
-    // Afficher le SnackBar de succès au-dessus du bottom sheet
-    CartSnackBar.showOverlay(
-      context,
-      productName: 'Commande',
-      message: ' passée avec succès !',
-      backgroundColor: Colors.green,
-      duration: const Duration(seconds: 3),
-    );
-    
+    // Afficher la notification de succès au-dessus du bottom sheet
+    NotificationHelper.showSuccess('Commande passée avec succès !');
+
     // Fermer le bottom sheet après un court délai
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
@@ -267,14 +261,8 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
   }
 
   void _showErrorNotification(String message) {
-    // Afficher le SnackBar d'erreur au-dessus du bottom sheet
-    CartSnackBar.showOverlay(
-      context,
-      productName: 'Erreur',
-      message: message,
-      backgroundColor: Colors.red,
-      duration: const Duration(seconds: 4),
-    );
+    // Afficher la notification d'erreur au-dessus du bottom sheet
+    NotificationHelper.showError('Erreur $message');
   }
 
   @override

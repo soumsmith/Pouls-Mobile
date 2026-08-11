@@ -11,6 +11,7 @@ import '../widgets/scroll_to_top_fab.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../services/video_service.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/see_more_card.dart';
 import 'visite_guidee_video_feed_screen.dart';
 import '../widgets/main_screen_wrapper.dart';
@@ -75,9 +76,7 @@ class _AllVisiteGuideeVideosScreenState
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-        );
+        NotificationHelper.showError('Erreur: $e');
       }
     }
   }
@@ -122,9 +121,7 @@ class _AllVisiteGuideeVideosScreenState
         _isLoadingMore = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-        );
+        NotificationHelper.showError('Erreur: $e');
       }
     }
   }

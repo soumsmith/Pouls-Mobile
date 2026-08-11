@@ -21,8 +21,8 @@ import '../models/child.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../services/text_size_service.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/custom_sliver_app_bar.dart';
-import '../widgets/snackbar.dart';
 import '../widgets/custom_button.dart';
 import 'add_child_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
@@ -315,12 +315,8 @@ class _MessagesScreenState extends State<MessagesScreen>
 
       if (e.toString().contains('404') ||
           e.toString().contains('Élève non trouvé')) {
-        CartSnackBar.show(
-          context,
-          productName: 'Élève non trouvé',
-          message: 'Vérifiez le matricule de l\'élève',
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+        NotificationHelper.showError(
+          'Élève non trouvé Vérifiez le matricule de l\'élève',
         );
         setState(() => _isLoading = false);
         return;
@@ -361,35 +357,12 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   void _showError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          msg, 
-          style: const TextStyle(color: Colors.white),
-          maxLines: 5,
-          overflow: TextOverflow.ellipsis,
-        ),
-        backgroundColor: Colors.red[400],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 10,
-        ),
-      ),
-    );
+    NotificationHelper.showError(msg);
   }
 
   void _showSuccess(String msg) {
     if (!mounted) return;
-    CartSnackBar.show(
-      context,
-      productName: msg,
-      message: '',
-      backgroundColor: Colors.green[500],
-      duration: const Duration(seconds: 2),
-    );
+    NotificationHelper.showSuccess(msg);
   }
 
   void _openImageViewer(String imageUrl) {

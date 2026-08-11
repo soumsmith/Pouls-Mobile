@@ -14,8 +14,9 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../utils/notification_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'splash_screen.dart';
+import '../app.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
@@ -87,16 +88,13 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
   }
 
   void _showSnack(String msg, {Color? color}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: TextStyle(color: Colors.white)),
-        backgroundColor: color ?? AppColors.screenOrange,
-        behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    if (color == Colors.red || color == Colors.red[400]) {
+      NotificationHelper.showError(msg);
+    } else if (color == Colors.green || color == Colors.green[500]) {
+      NotificationHelper.showSuccess(msg);
+    } else {
+      NotificationHelper.showInfo(msg);
+    }
   }
 
   // ─── BUILD ────────────────────────────────────────────────────────────────
@@ -552,10 +550,12 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
               await AuthService.instance.logout();
               
               if (!mounted) return;
-              
-              // Rediriger vers le SplashScreen en réinitialisant la pile de navigation
+
+              // Retour direct à l'accueil en mode invité (pas à l'écran de
+              // connexion, ni au splash) — la suppression du compte ne doit
+              // jamais bloquer l'accès au contenu public.
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const SplashScreen()),
+                MaterialPageRoute(builder: (context) => const App()),
                 (route) => false,
               );
             },

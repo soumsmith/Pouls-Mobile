@@ -16,7 +16,7 @@ import '../services/interaction_api_service.dart';
 import '../models/interaction.dart';
 import '../models/visite_guidee_video.dart';
 import '../widgets/custom_sliver_app_bar.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
@@ -289,12 +289,8 @@ class _VisiteGuideeVideoFeedScreenState
 
     if (code.isEmpty) {
       print('🏫 ❌ Code école VIDE ! Navigation annulée.');
-      CartSnackBar.showOverlay(
-        context,
-        productName: '',
-        message: 'Le code de l\'école est manquant pour cette vidéo',
-        backgroundColor: Colors.orange,
-        icon: Icons.warning_amber_rounded,
+      NotificationHelper.showWarning(
+        'Le code de l\'école est manquant pour cette vidéo',
       );
       return;
     }
@@ -372,12 +368,8 @@ class _VisiteGuideeVideoFeedScreenState
 
     final shareText = AppShareService.buildVisiteGuideeShareText(currentVideo);
     if (shareText == null) {
-      CartSnackBar.showOverlay(
-        context,
-        productName: '',
-        message: 'Cette vidéo ne peut pas être partagée pour le moment',
-        backgroundColor: Colors.orange,
-        icon: Icons.warning_amber_rounded,
+      NotificationHelper.showWarning(
+        'Cette vidéo ne peut pas être partagée pour le moment',
       );
       return;
     }
@@ -1492,13 +1484,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       } else {
         await _loadComments();
         _commentController.clear();
-        CartSnackBar.showOverlay(
-          context,
-          productName: '',
-          message: 'Commentaire ajouté avec succès',
-          backgroundColor: Colors.green,
-          icon: Icons.check_circle_outline,
-        );
+        NotificationHelper.showSuccess('Commentaire ajouté avec succès');
       }
     } catch (e) {
       print('Erreur lors de l\'ajout du commentaire: $e');

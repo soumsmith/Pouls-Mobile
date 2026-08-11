@@ -20,7 +20,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/recommendation_bottom_sheet.dart';
 import '../widgets/components/custom_error_state.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 import '../services/recommendation_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../utils/auth_guard.dart';
@@ -167,12 +167,7 @@ class _AddChildScreenState extends State<AddChildScreen>
 
             if (mounted) Navigator.of(context).pop();
             if (mounted) {
-              ScaffoldMessenger.of(this.context).showSnackBar(
-                const SnackBar(
-                  content: Text('Recommandation envoyée avec succès!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              NotificationHelper.showSuccess('Recommandation envoyée avec succès!');
             }
 
             _etablissementController.clear();
@@ -190,12 +185,7 @@ class _AddChildScreenState extends State<AddChildScreen>
             _recommenderNameController.clear();
           } catch (e) {
             if (!mounted) return;
-            ScaffoldMessenger.of(this.context).showSnackBar(
-              SnackBar(
-                content: Text('Erreur: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            NotificationHelper.showError('Erreur: $e');
           }
         },
       ),
@@ -478,18 +468,11 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   // ─── HELPERS UI ────────────────────────────────────────────────────────────
   void _showSnackbar(String msg, {bool isError = false}) {
-    // Utiliser CartSnackBar.showOverlay pour afficher au-dessus du bottomsheet avec une hauteur personnalisée
-    CartSnackBar.showOverlay(
-      context,
-      productName: msg,
-      message: '',
-      backgroundColor: isError ? Colors.red[400] : AppColors.success,
-      duration: const Duration(seconds: 3),
-      minHeight: 80, // Hauteur personnalisée pour une meilleure présentation
-      icon: isError
-          ? Icons.error_outline
-          : Icons.check_circle_outline, // Icône selon le type
-    );
+    if (isError) {
+      NotificationHelper.showError(msg);
+    } else {
+      NotificationHelper.showSuccess(msg);
+    }
   }
 
   void _showDnsDialog() {

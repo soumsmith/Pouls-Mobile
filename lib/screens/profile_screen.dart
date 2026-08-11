@@ -8,8 +8,8 @@ import '../models/child.dart';
 import '../config/app_colors.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
-import 'splash_screen.dart';
-import 'login_screen.dart';
+import '../utils/notification_helper.dart';
+import '../app.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ───────────────────────────
 
@@ -60,27 +60,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showSuccess(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.green[500],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    NotificationHelper.showSuccess(msg);
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red[400],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    NotificationHelper.showError(msg);
   }
 
   // Load children data
@@ -850,8 +834,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (confirmed == true) {
       await AuthService.instance.logout();
       if (mounted) {
+        // Retour à l'accueil en mode invité (pas à l'écran de connexion) —
+        // la déconnexion ne doit jamais bloquer l'accès au contenu public.
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(builder: (_) => const App()),
           (route) => false,
         );
       }

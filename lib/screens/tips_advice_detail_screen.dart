@@ -20,6 +20,7 @@ import '../config/app_config.dart';
 import '../services/app_share_service.dart';
 import '../services/astuce_conseil_service.dart';
 import '../services/auth_service.dart';
+import '../utils/notification_helper.dart';
 import 'tips_advice_screen.dart';
 import '../widgets/html_text_widget.dart';
 
@@ -151,7 +152,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
   Future<void> _toggleBookmark() async {
     final user = AuthService.instance.getCurrentUser();
     if (user == null) {
-      _showSnack('Veuillez vous connecter pour aimer', _C.orange);
+      _showSnack('Veuillez vous connecter pour aimer', NotificationType.warning);
       return;
     }
 
@@ -174,7 +175,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
         _isBookmarked = !_isBookmarked;
         _likesCount += _isBookmarked ? 1 : -1;
       });
-      _showSnack('Erreur lors de l\'enregistrement', _C.rose);
+      _showSnack('Erreur lors de l\'enregistrement', NotificationType.error);
     }
   }
 
@@ -211,12 +212,12 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
   Future<void> _submitComment() async {
     final user = AuthService.instance.getCurrentUser();
     if (user == null) {
-      _showSnack('Veuillez vous connecter pour commenter', _C.orange);
+      _showSnack('Veuillez vous connecter pour commenter', NotificationType.warning);
       return;
     }
 
     if (_commentController.text.trim().isEmpty) {
-      _showSnack('Veuillez entrer un commentaire', _C.rose);
+      _showSnack('Veuillez entrer un commentaire', NotificationType.error);
       return;
     }
 
@@ -243,21 +244,15 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
         _isSubmittingComment = false;
         _commentController.clear();
       });
-      _showSnack('Commentaire ajouté avec succès', _C.emerald);
+      _showSnack('Commentaire ajouté avec succès', NotificationType.success);
     } else {
       setState(() => _isSubmittingComment = false);
-      _showSnack('Erreur lors de l\'ajout du commentaire', _C.rose);
+      _showSnack('Erreur lors de l\'ajout du commentaire', NotificationType.error);
     }
   }
 
-  void _showSnack(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  void _showSnack(String msg, NotificationType type) {
+    NotificationHelper.show(message: msg, type: type);
   }
 
   @override

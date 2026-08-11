@@ -15,7 +15,7 @@ import '../utils/auth_guard.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
@@ -1317,13 +1317,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         // Si l'API retourne un succès mais sans données, on recharge la liste
         await _loadComments();
         _commentController.clear();
-        CartSnackBar.showOverlay(
-          context,
-          productName: '',
-          message: 'Commentaire ajouté avec succès',
-          backgroundColor: Colors.green,
-          icon: Icons.check_circle_outline,
-        );
+        NotificationHelper.showSuccess('Commentaire ajouté avec succès');
       }
     } catch (e) {
       // L'erreur est déjà gérée et affichée par HttpService (ApiExceptionHandler)
@@ -2014,13 +2008,7 @@ class _RatingSheetState extends State<_RatingSheet> {
       );
 
       if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: '',
-          message: 'Note envoyée avec succès',
-          backgroundColor: Colors.green,
-          icon: Icons.check_circle_outline,
-        );
+        NotificationHelper.showSuccess('Note envoyée avec succès');
 
         setState(() {
           _hasRated = true;
@@ -2039,13 +2027,7 @@ class _RatingSheetState extends State<_RatingSheet> {
       }
     } catch (e) {
       if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: '',
-          message: 'Erreur lors de l\'envoi de la note: $e',
-          backgroundColor: Colors.red,
-          icon: Icons.error_outline,
-        );
+        NotificationHelper.showError('Erreur lors de l\'envoi de la note: $e');
       }
     }
   }

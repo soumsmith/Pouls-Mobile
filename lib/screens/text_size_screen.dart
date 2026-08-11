@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/text_size_service.dart';
 import '../config/app_colors.dart';
 import '../widgets/back_button_widget.dart';
+import '../utils/notification_helper.dart';
 
 class TextSizeScreen extends StatefulWidget {
   const TextSizeScreen({super.key});
@@ -363,17 +364,8 @@ class _TextSizeScreenState extends State<TextSizeScreen> {
             ? () async {
                 await _textSizeService.setTextSize(_selectedTextSize);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Taille du texte appliquée: ${_selectedTextSize.label}',
-                        style: TextStyle(
-                          fontSize: _selectedTextSize.scale * 14,
-                        ),
-                      ),
-                      backgroundColor: AppColors.success,
-                      duration: const Duration(seconds: 2),
-                    ),
+                  NotificationHelper.showSuccess(
+                    'Taille du texte appliquée: ${_selectedTextSize.label}',
                   );
                   Navigator.of(context).pop();
                 }

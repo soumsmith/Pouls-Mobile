@@ -19,7 +19,7 @@ import 'package:parents_responsable/widgets/bottom_nav.dart';
 import 'package:parents_responsable/widgets/bottom_sheet_menu.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/feedback_state_widget.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 import 'dart:developer' as developer;
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
@@ -2698,12 +2698,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         color: const Color(0xFF10B981),
         actionText: 'Voir',
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Vitrine école bientôt disponible'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          NotificationHelper.showInfo('Vitrine école bientôt disponible');
         },
       ),
     ];
@@ -3071,11 +3066,8 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       }
     } else {
       // Afficher un message si la vidéo n'est pas trouvée
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Vidéo non trouvée: ${schoolData['title']}'),
-          duration: const Duration(seconds: 2),
-        ),
+      NotificationHelper.showWarning(
+        'Vidéo non trouvée: ${schoolData['title']}',
       );
     }
   }
@@ -3301,12 +3293,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       }
     } else {
       // Afficher un message si la vidéo n'est pas trouvée
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Vidéo non trouvée: ${schoolData['title']}'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      NotificationHelper.showInfo('Vidéo non trouvée: ${schoolData['title']}');
     }
   }
 
@@ -5027,19 +5014,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Ticket acheté avec succès!'),
-                  backgroundColor: Colors.green[500],
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.getSmallCardBorderRadius(context),
-                    ),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
-              );
+              NotificationHelper.showSuccess('Ticket acheté avec succès!');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.screenOrange,
@@ -6311,19 +6286,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
   }
 
   void _showFilePickerMessage(String fileType) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Sélection de fichier pour: $fileType'),
-        backgroundColor: AppColors.screenOrange,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            AppDimensions.getSmallCardBorderRadius(context),
-          ),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    NotificationHelper.showInfo('Sélection de fichier pour: $fileType');
   }
 
   // ── Rating form (Style WhatsApp) ────────────────────────────────────────────────────// Rating form - utilise le widget externalisé RatingBottomSheet
@@ -6361,19 +6324,9 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
       // Implémenter votre logique d'envoi d'avis ici
       // Exemple: await RatingService.submitRating(widget.ecole.id, rating, comment);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Avis envoyé avec succès!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      NotificationHelper.showSuccess('Avis envoyé avec succès!');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de l\'envoi: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Erreur lors de l\'envoi: ${e.toString()}');
     }
   }
 
@@ -6755,36 +6708,12 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   void _showAvisError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red[400],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          bottom: MediaQuery.of(context).padding.bottom + 80,
-        ),
-      ),
-    );
+    NotificationHelper.showError(message);
   }
 
   void _showAvisSuccess(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.green[500],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          bottom: MediaQuery.of(context).padding.bottom + 80,
-        ),
-      ),
-    );
+    NotificationHelper.showSuccess(message);
   }
 
   // ── Informations content ───────────────────────────────────────────────────
@@ -8446,12 +8375,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
 
   Future<void> _submitConsultRequest(String matricule) async {
     if (matricule.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez entrer un matricule'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Veuillez entrer un matricule');
       return;
     }
 
@@ -8487,14 +8411,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
           errorMessage =
               "Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.";
         }
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Erreur',
-          message: errorMessage,
-          backgroundColor: Colors.red.shade600,
-          icon: Icons.error_outline_rounded,
-          duration: const Duration(seconds: 4),
-        );
+        NotificationHelper.showError(errorMessage);
       }
     } catch (e) {
       // Close loader
@@ -8508,14 +8425,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         errorMessage =
             "Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.";
       }
-      CartSnackBar.showOverlay(
-        context,
-        productName: 'Erreur',
-        message: errorMessage,
-        backgroundColor: Colors.red.shade600,
-        icon: Icons.error_outline_rounded,
-        duration: const Duration(seconds: 4),
-      );
+      NotificationHelper.showError(errorMessage);
     }
   }
 

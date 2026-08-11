@@ -15,7 +15,7 @@ import '../../widgets/components/custom_select_input.dart';
 import '../../widgets/components/custom_text_input.dart';
 import '../../widgets/components/custom_button.dart';
 import '../../widgets/components/custom_error_state.dart';
-import '../../widgets/snackbar.dart';
+import '../../utils/notification_helper.dart';
 import 'integration_result_dialog.dart';
 import 'reusable_bottom_sheet.dart';
 
@@ -193,12 +193,7 @@ class _IntegrationRequestBottomSheetState
           errorMessage = ': $rawMessage';
         }
         
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Erreur',
-          message: errorMessage,
-          backgroundColor: Colors.red,
-        );
+        NotificationHelper.showError('Erreur $errorMessage');
       }
     } finally {
       if (mounted) setState(() => _isLoadingRequest = false);

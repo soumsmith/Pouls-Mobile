@@ -42,6 +42,12 @@ class AppShareService {
 
   /// Génère le lien de partage pour une vidéo Visite Guidée.
   ///
+  /// Une vidéo "Astuce & Conseil" est aussi représentée par ce modèle
+  /// (`typeVideo == 'astuce'`, voir tips_advice_screen.dart) — dans ce cas
+  /// on génère un lien `type=tip`, pour que la résolution ouvre la bonne
+  /// liste (Astuces & Conseils) et retrouve la vidéo dans le bon pool
+  /// (l'endpoint "visiteguide" ne contient pas les astuces).
+  ///
   /// Retourne `null` si la vidéo n'a pas d'identifiant exploitable (cas rare
   /// où `video.id` est absent) — appelant responsable d'empêcher le partage
   /// dans ce cas plutôt que de générer un lien cassé (`id=null`).
@@ -53,17 +59,27 @@ class AppShareService {
       );
       return null;
     }
-    var link = '$_baseUrl/share/index.html?type=visite&id=${video.id}';
-    if (video.code.isNotEmpty) {
-      link += '&ecole=${Uri.encodeQueryComponent(video.code)}';
-    } else {
-      print(
-        '⚠️ [AppShareService] buildVisiteGuideeLink: video.code est vide pour '
-        'id=${video.id} → lien généré sans paramètre ecole, la résolution '
-        'retombera sur la recherche globale.',
-      );
+
+    final isAstuce = video.typeVideo == 'astuce';
+    final type = isAstuce ? 'tip' : 'visite';
+    var link = '$_baseUrl/share/index.html?type=$type&id=${video.id}';
+
+    // Le paramètre ecole n'est utile que pour la résolution "visite guidée"
+    // scopée par école (_loadVisiteGuideeVideo) — les astuces sont résolues
+    // par pagination globale (_loadTip), inutile de l'ajouter dans ce cas.
+    if (!isAstuce) {
+      if (video.code.isNotEmpty) {
+        link += '&ecole=${Uri.encodeQueryComponent(video.code)}';
+      } else {
+        print(
+          '⚠️ [AppShareService] buildVisiteGuideeLink: video.code est vide pour '
+          'id=${video.id} → lien généré sans paramètre ecole, la résolution '
+          'retombera sur la recherche globale.',
+        );
+      }
     }
-    print('🔗 [AppShareService] Lien visite guidée généré: $link');
+
+    print('🔗 [AppShareService] Lien ${isAstuce ? "astuce/conseil" : "visite guidée"} généré: $link');
     return link;
   }
 

@@ -13,6 +13,7 @@ import 'pdf_viewer_screen.dart';
 import 'visite_guidee_video_feed_screen.dart';
 import '../models/visite_guidee_video.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../utils/notification_helper.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
 
@@ -59,15 +60,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   }
 
   void _showSnack(String msg, {Color? color}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: color ?? AppColors.screenOrange,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    if (color == Colors.red || color == Colors.red[400]) {
+      NotificationHelper.showError(msg);
+    } else if (color == Colors.green || color == Colors.green[500]) {
+      NotificationHelper.showSuccess(msg);
+    } else {
+      NotificationHelper.showInfo(msg);
+    }
   }
 
   @override
@@ -752,7 +751,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else if (mounted) {
-      _showSnack('Impossible d\'ouvrir cette action sur cet appareil');
+      _showSnack('Impossible d\'ouvrir cette action sur cet appareil',
+          color: Colors.red);
     }
   }
 

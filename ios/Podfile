@@ -45,9 +45,12 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     
-    # Set minimum deployment target for all pods
+    # Set minimum deployment target for all pods (aligné sur `platform :ios`
+    # en tête de fichier — certains plugins, ex: ffmpeg_kit_flutter_new_audio,
+    # exigent au moins iOS 14.0 et échoueraient à builder si on le forçait
+    # plus bas ici)
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
     end
   end
 end

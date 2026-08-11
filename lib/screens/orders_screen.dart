@@ -15,6 +15,7 @@ import '../widgets/search_bar_widget.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/components/custom_error_state.dart';
+import '../utils/notification_helper.dart';
 import 'shop_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -134,15 +135,7 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red[400],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    NotificationHelper.showError(msg);
   }
 
   @override
@@ -1373,45 +1366,15 @@ class _CancelButtonState extends State<_CancelButton> {
       final success = await OrderService().cancelOrder(widget.order.id, reason: finalReason);
       if (success && mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Commande annulée avec succès',
-                style: TextStyle(color: Colors.white)),
-            backgroundColor: Colors.green[500],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
+        NotificationHelper.showSuccess('Commande annulée avec succès');
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Échec de l\'annulation de la commande',
-                  style: TextStyle(color: Colors.white)),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              margin: const EdgeInsets.all(16),
-            ),
-          );
+          NotificationHelper.showError('Échec de l\'annulation de la commande');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e',
-                style: const TextStyle(color: Colors.white)),
-            backgroundColor: Colors.red[400],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
+        NotificationHelper.showError('Erreur: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:parents_responsable/widgets/snackbar.dart';
 import 'dart:async';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
@@ -25,7 +24,7 @@ import '../widgets/filter_row_widget.dart';
 import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/components/bottom_spacer.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/main_screen_wrapper.dart';
 import 'product_detail_screen.dart';
@@ -417,13 +416,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   void _showError(String msg) {
-    CartSnackBar.show(
-      context,
-      productName: 'Erreur',
-      message: msg,
-      backgroundColor: Colors.red[400],
-      duration: const Duration(seconds: 3),
-    );
+    NotificationHelper.showError('Erreur $msg');
   }
 
   void _navigateBack() {
@@ -528,10 +521,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         badge: _cartItemCount > 0 ? '$_cartItemCount' : null,
         badgeColor: AppColors.shopGreen,
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CartScreen()),
-          ).then((_) => _updateCartItemCount());
+          MainScreenWrapper.of(context).navigateToExtraScreen(const CartScreen());
         },
       ),
       const SizedBox(width: 4),
@@ -1183,20 +1173,16 @@ class _LibraryScreenState extends State<LibraryScreen>
         buttonColor: AppColors.shopGreen,
         buttonTextColor: Colors.white,
         onButtonTap: () {
-          CartSnackBar.show(context, productName: product.title);
+          NotificationHelper.showSuccess('${product.title} ajouté au panier');
         },
         actionText: product.price > 0
             ? '${product.price.toStringAsFixed(0)} F'
             : 'Gratuit',
         actionTextColor: product.price > 0 ? AppColors.shopGreen : Colors.green,
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  ProductDetailScreen(product: product, produitUid: product.id),
-            ),
-          ).then((_) => _updateCartItemCount());
+          MainScreenWrapper.of(context).navigateToExtraScreen(
+            ProductDetailScreen(product: product, produitUid: product.id),
+          );
         },
       ),
     );

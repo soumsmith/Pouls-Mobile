@@ -14,6 +14,13 @@ enum NotificationType {
 
 /// Helper centralisé pour afficher des notifications dans toute l'application.
 ///
+/// Modèle visuel unique pour toute l'app : bandeau plein largeur en haut de
+/// l'écran, couleur pleine selon le type, icône + texte blancs, glissement
+/// depuis le haut — le même style que la bannière de connectivité
+/// (« Aucune connexion Internet » / « De nouveau connecté à Internet »,
+/// voir [ConnectivityBanner]). C'est le seul modèle de notification à
+/// utiliser dans toute l'application, à la place de tout SnackBar custom.
+///
 /// Utilise un Overlay Entry global (via le [navigatorKey] de main.dart) pour s'afficher
 /// au tout premier plan, au-dessus de tous les bottom sheets, modales et claviers.
 ///
@@ -61,19 +68,19 @@ class NotificationHelper {
         return;
       }
 
-      final GlobalKey<_NotificationOverlayCardState> cardKey = GlobalKey<_NotificationOverlayCardState>();
+      final GlobalKey<_NotificationBannerState> bannerKey =
+          GlobalKey<_NotificationBannerState>();
 
       final overlayEntry = OverlayEntry(
         builder: (context) {
-          final topPadding = MediaQuery.of(context).padding.top;
           return Positioned(
-            top: topPadding + 12,
-            left: 16,
-            right: 16,
+            top: 0,
+            left: 0,
+            right: 0,
             child: Material(
               color: Colors.transparent,
-              child: _NotificationOverlayCard(
-                key: cardKey,
+              child: _NotificationBanner(
+                key: bannerKey,
                 message: message,
                 type: type,
                 actionText: actionText,
@@ -98,8 +105,8 @@ class NotificationHelper {
 
       // 3. Fermeture automatique après la durée
       _autoDismissTimer = Timer(duration, () {
-        if (cardKey.currentState != null) {
-          cardKey.currentState!.dismiss();
+        if (bannerKey.currentState != null) {
+          bannerKey.currentState!.dismiss();
         } else {
           dismiss();
         }
@@ -134,7 +141,8 @@ class NotificationHelper {
     );
   }
 
-  /// Méthode de repli utilisant l'ancien système de SnackBar
+  /// Méthode de repli utilisant l'ancien système de SnackBar — même style
+  /// (bandeau plein largeur, couleur pleine) que la version Overlay.
   static void _showFallbackSnackBar({
     required String message,
     required NotificationType type,
@@ -152,35 +160,19 @@ class NotificationHelper {
       SnackBar(
         content: Row(
           children: [
-            _AnimatedIcon(icon: config.icon, color: config.iconColor),
-            const SizedBox(width: 12),
+            Icon(config.icon, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
             Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    config.title,
-                    style: TextStyle(
-                      color: config.textColor,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    message,
-                    style: TextStyle(
-                      color: config.textColor.withOpacity(0.85),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w400,
-                      height: 1.3,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             if (actionText != null && onActionPressed != null) ...[
@@ -191,21 +183,16 @@ class NotificationHelper {
                   onActionPressed();
                 },
                 style: TextButton.styleFrom(
-                  foregroundColor: config.textColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                      color: config.textColor.withOpacity(0.3),
-                    ),
-                  ),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 ),
                 child: Text(
                   actionText,
-                  style: TextStyle(
-                    color: config.textColor,
-                    fontWeight: FontWeight.w600,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
                     fontSize: 12,
+                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),
@@ -214,18 +201,10 @@ class NotificationHelper {
         ),
         backgroundColor: config.backgroundColor,
         duration: duration,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: config.borderColor,
-            width: 1,
-          ),
-        ),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        elevation: 12,
+        behavior: SnackBarBehavior.fixed,
+        elevation: 6,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        dismissDirection: DismissDirection.horizontal,
+        dismissDirection: DismissDirection.up,
       ),
     );
   }
@@ -241,14 +220,14 @@ class NotificationHelper {
   }
 
   static void showNoConnection({String? customMessage}) {
-    // Désactivé : L'application utilise maintenant la bannière globale ConnectivityBanner
-    // en haut de l'écran (style YouTube).
-    // Cette notification snackbar en bas de l'écran faisait doublon.
+    // Désactivé : L'application utilise déjà la bannière globale
+    // ConnectivityBanner en haut de l'écran pour ce cas précis — qui suit
+    // exactement le même style visuel que ce helper. Éviter le doublon.
   }
 
   static void showServerError({String? customMessage, int? statusCode}) {
-    final msg = customMessage ?? 
-      (statusCode != null 
+    final msg = customMessage ??
+      (statusCode != null
         ? 'Le serveur a retourné une erreur ($statusCode). Veuillez réessayer plus tard.'
         : 'Une erreur serveur est survenue. Veuillez réessayer plus tard.');
     show(
@@ -275,161 +254,67 @@ class NotificationHelper {
   }
 
   // ─── Configuration visuelle ────────────────────────────────────────
+  // Un seul modèle pour toute l'app : couleur pleine + icône/texte blancs,
+  // identique à ConnectivityBanner (mêmes couleurs pour success/error).
 
   static _NotifConfig _getConfig(NotificationType type) {
     switch (type) {
       case NotificationType.success:
-        return _NotifConfig(
-          title: '✅ Succès',
+        return const _NotifConfig(
           icon: Icons.check_circle_rounded,
-          backgroundColor: const Color(0xFF0D3B20),
-          borderColor: const Color(0xFF10B981).withOpacity(0.3),
-          iconColor: const Color(0xFF34D399),
-          textColor: const Color(0xFFECFDF5),
+          backgroundColor: Color(0xFF2E7D32), // identique à ConnectivityBanner (en ligne)
         );
       case NotificationType.error:
-        return _NotifConfig(
-          title: '❌ Erreur',
+        return const _NotifConfig(
           icon: Icons.error_rounded,
-          backgroundColor: const Color(0xFF3B1219),
-          borderColor: const Color(0xFFEF4444).withOpacity(0.3),
-          iconColor: const Color(0xFFF87171),
-          textColor: const Color(0xFFFEF2F2),
+          backgroundColor: Color(0xFFD32F2F), // identique à ConnectivityBanner (hors ligne)
         );
       case NotificationType.warning:
-        return _NotifConfig(
-          title: '⚠️ Attention',
+        return const _NotifConfig(
           icon: Icons.warning_rounded,
-          backgroundColor: const Color(0xFF3B2E0D),
-          borderColor: const Color(0xFFF59E0B).withOpacity(0.3),
-          iconColor: const Color(0xFFFBBF24),
-          textColor: const Color(0xFFFFFBEB),
+          backgroundColor: Color(0xFFF57C00),
         );
       case NotificationType.info:
-        return _NotifConfig(
-          title: 'ℹ️ Information',
+        return const _NotifConfig(
           icon: Icons.info_rounded,
-          backgroundColor: const Color(0xFF0C2340),
-          borderColor: const Color(0xFF3B82F6).withOpacity(0.3),
-          iconColor: const Color(0xFF60A5FA),
-          textColor: const Color(0xFFEFF6FF),
+          backgroundColor: Color(0xFF0288D1),
         );
       case NotificationType.timeout:
-        return _NotifConfig(
-          title: '⏱️ Délai dépassé',
+        return const _NotifConfig(
           icon: Icons.timer_off_rounded,
-          backgroundColor: const Color(0xFF3B2E0D),
-          borderColor: const Color(0xFFF97316).withOpacity(0.3),
-          iconColor: const Color(0xFFFB923C),
-          textColor: const Color(0xFFFFF7ED),
+          backgroundColor: Color(0xFFF57C00),
         );
       case NotificationType.noConnection:
-        return _NotifConfig(
-          title: '📡 Connexion perdue',
+        return const _NotifConfig(
           icon: Icons.wifi_off_rounded,
-          backgroundColor: const Color(0xFF2D1B3D),
-          borderColor: const Color(0xFFA855F7).withOpacity(0.3),
-          iconColor: const Color(0xFFC084FC),
-          textColor: const Color(0xFFFAF5FF),
+          backgroundColor: Color(0xFFD32F2F),
         );
     }
   }
 }
 
-/// Configuration visuelle d'une notification
+/// Configuration visuelle d'une notification (bandeau plein, texte/icône blancs)
 class _NotifConfig {
-  final String title;
   final IconData icon;
   final Color backgroundColor;
-  final Color borderColor;
-  final Color iconColor;
-  final Color textColor;
 
   const _NotifConfig({
-    required this.title,
     required this.icon,
     required this.backgroundColor,
-    required this.borderColor,
-    required this.iconColor,
-    required this.textColor,
   });
 }
 
-/// Widget d'icône avec animation de pulsation
-class _AnimatedIcon extends StatefulWidget {
-  final IconData icon;
-  final Color color;
-
-  const _AnimatedIcon({required this.icon, required this.color});
-
-  @override
-  State<_AnimatedIcon> createState() => _AnimatedIconState();
-}
-
-class _AnimatedIconState extends State<_AnimatedIcon>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: 1.2)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 1.2, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
-        weight: 50,
-      ),
-    ]).animate(_controller);
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: widget.color.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          widget.icon,
-          color: widget.color,
-          size: 22,
-        ),
-      ),
-    );
-  }
-}
-
-/// Widget de carte de notification affiché en Overlay (au tout premier plan)
-class _NotificationOverlayCard extends StatefulWidget {
+/// Bandeau de notification affiché en Overlay (au tout premier plan) —
+/// même style visuel que [ConnectivityBanner] : plein largeur, couleur
+/// pleine, icône + texte blancs centrés, glissement depuis le haut.
+class _NotificationBanner extends StatefulWidget {
   final String message;
   final NotificationType type;
   final String? actionText;
   final VoidCallback? onActionPressed;
   final VoidCallback onDismiss;
 
-  const _NotificationOverlayCard({
+  const _NotificationBanner({
     super.key,
     required this.message,
     required this.type,
@@ -439,13 +324,12 @@ class _NotificationOverlayCard extends StatefulWidget {
   });
 
   @override
-  State<_NotificationOverlayCard> createState() => _NotificationOverlayCardState();
+  State<_NotificationBanner> createState() => _NotificationBannerState();
 }
 
-class _NotificationOverlayCardState extends State<_NotificationOverlayCard>
+class _NotificationBannerState extends State<_NotificationBanner>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
   @override
@@ -456,17 +340,13 @@ class _NotificationOverlayCardState extends State<_NotificationOverlayCard>
       duration: const Duration(milliseconds: 350),
     );
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    );
-
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -0.6),
+      begin: const Offset(0, -1),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
     ));
 
     _controller.forward();
@@ -490,11 +370,12 @@ class _NotificationOverlayCardState extends State<_NotificationOverlayCard>
   @override
   Widget build(BuildContext context) {
     final config = NotificationHelper._getConfig(widget.type);
-    
+
     return SlideTransition(
       position: _slideAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
+      child: Material(
+        elevation: 6,
+        color: config.backgroundColor,
         child: GestureDetector(
           onVerticalDragEnd: (details) {
             // Dismiss sur swipe vers le haut
@@ -503,98 +384,53 @@ class _NotificationOverlayCardState extends State<_NotificationOverlayCard>
               dismiss();
             }
           },
-          onHorizontalDragEnd: (details) {
-            // Dismiss sur swipe gauche ou droite
-            if (details.primaryVelocity != null &&
-                details.primaryVelocity!.abs() > 250) {
-              dismiss();
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: config.backgroundColor,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: config.borderColor,
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.35),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Icône
-                _AnimatedIcon(
-                  icon: config.icon,
-                  color: config.iconColor,
-                ),
-                const SizedBox(width: 12),
-                // Message
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        config.title,
-                        style: TextStyle(
-                          color: config.textColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.message,
-                        style: TextStyle(
-                          color: config.textColor.withOpacity(0.85),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w400,
-                          height: 1.3,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                // Bouton d'action optionnel
-                if (widget.actionText != null && widget.onActionPressed != null) ...[
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(config.icon, color: Colors.white, size: 16),
                   const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      dismiss();
-                      widget.onActionPressed!();
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: config.textColor,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(
-                          color: config.textColor.withOpacity(0.3),
+                  Flexible(
+                    child: Text(
+                      widget.message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (widget.actionText != null && widget.onActionPressed != null) ...[
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () {
+                        dismiss();
+                        widget.onActionPressed!();
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      ),
+                      child: Text(
+                        widget.actionText!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ),
-                    child: Text(
-                      widget.actionText!,
-                      style: TextStyle(
-                        color: config.textColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

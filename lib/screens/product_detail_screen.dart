@@ -7,11 +7,12 @@ import '../services/cart_service.dart';
 import '../services/app_share_service.dart';
 import '../services/produit_service.dart';
 import '../utils/image_helper.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/custom_loader.dart';
-import '../widgets/snackbar.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/main_screen_wrapper.dart';
+import 'cart_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/share_bottom_sheet.dart';
 import '../config/app_config.dart';
@@ -155,25 +156,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     _slideCtrl.forward();
   }
 
-  // ── SnackBar (logique inchangée) ──────────────────────────────────────
+  // ── SnackBar (délègue au modèle unique NotificationHelper) ─────────────
   void _showSnackBar(
     String msg, {
     bool isError = false,
     bool isSuccess = false,
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-        backgroundColor: isError
-            ? Colors.red[400]
-            : isSuccess
-            ? _T.green
-            : _T.orange,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    if (isError) {
+      NotificationHelper.showError(msg);
+    } else if (isSuccess) {
+      NotificationHelper.showSuccess(msg);
+    } else {
+      NotificationHelper.showWarning(msg);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -924,9 +919,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         quantity: _quantity,
       );
       if (success) {
-        CartSnackBar.show(context, productName: product.title);
+        NotificationHelper.showSuccess('${product.title} ajouté au panier');
         Future.delayed(const Duration(milliseconds: 500), () {
-          Navigator.pushNamed(context, '/cart');
+          if (!mounted) return;
+          final wrapper = MainScreenWrapper.maybeOf(context);
+          if (wrapper != null) {
+            wrapper.navigateToExtraScreen(const CartScreen());
+          } else {
+            Navigator.pushNamed(context, '/cart');
+          }
         });
       } else {
         _showSnackBar('Erreur lors de l\'ajout au panier', isError: true);

@@ -9,6 +9,7 @@ import 'screens/orders_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/inscription_screen.dart';
 import 'screens/deep_link_resolver_screen.dart';
+import 'app.dart';
 import 'models/child.dart';
 import 'services/theme_service.dart';
 import 'services/database_service.dart';
@@ -141,17 +142,25 @@ class _MyAppState extends State<MyApp> {
         return;
       }
       print('📱 [MyApp] Navigation vers DeepLinkResolverScreen pour $data');
-      // pushReplacement (et non push) : au cold start, SplashScreen est
-      // encore la route active à ce moment-là. Si on empilait par-dessus
-      // avec push, SplashScreen resterait monté "en dessous" avec sa propre
-      // navigation différée (Future.delayed vers App()) toujours active ;
-      // une fois ce délai écoulé, Navigator.of(context).pushReplacement
-      // depuis SplashScreen remplace la route ACTUELLEMENT AU SOMMET du
-      // Navigator racine (donc l'écran vidéo, pas SplashScreen lui-même) et
-      // ramène l'utilisateur à l'accueil en pleine lecture. pushReplacement
-      // ici retire SplashScreen de la pile, ce qui neutralise ce timer
-      // (ses callbacks sont déjà protégés par des vérifications `mounted`).
-      navigator.pushReplacement(
+      // On force d'abord l'accueil (App()) comme unique route de base — que
+      // ce soit SplashScreen ou autre chose qui était affiché — puis on
+      // empile le resolver par-dessus. Deux raisons :
+      // 1. SplashScreen a sa propre navigation différée (Future.delayed vers
+      //    App()) ; la laisser vivre "en dessous" causait un retour surprise
+      //    à l'accueil en pleine lecture vidéo une fois ce délai écoulé
+      //    (pushReplacement depuis SplashScreen remplace la route ACTUELLE
+      //    au sommet de la pile, donc la vidéo, pas SplashScreen lui-même).
+      // 2. Sans route en dessous, l'écran vidéo (atteint ensuite par
+      //    pushReplacement depuis DeepLinkResolverScreen) devient l'UNIQUE
+      //    route de la pile : le bouton retour (qui fait un simple
+      //    Navigator.pop faute d'ancêtre MainScreenWrapper) n'a alors nulle
+      //    part où revenir, d'où l'écran noir. Avec App() en dessous, "back"
+      //    retombe proprement sur l'accueil.
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const App()),
+        (route) => false,
+      );
+      navigator.push(
         MaterialPageRoute(
           builder: (context) => DeepLinkResolverScreen(deepLinkData: data),
         ),

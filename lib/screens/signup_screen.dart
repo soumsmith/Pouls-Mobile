@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import 'dart:convert';
 import '../widgets/custom_button.dart';
+import '../utils/notification_helper.dart';
 import '../config/app_colors.dart';
 import '../config/app_config.dart';
 import '../config/app_dimensions.dart';
@@ -125,12 +126,7 @@ class _SignupScreenState extends State<SignupScreen> {
           print('✅ SUCCÈS: Compte créé avec succès');
           print('Redirection vers l\'écran de login...');
           print('---');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Compte créé avec succès!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          NotificationHelper.showSuccess('Compte créé avec succès!');
 
           // Naviguer vers l'écran de connexion
           Navigator.of(context).pushReplacementNamed('/login');
@@ -172,12 +168,10 @@ class _SignupScreenState extends State<SignupScreen> {
             print('Réponse brute: ${response.body}');
           }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
-            ),
+          NotificationHelper.show(
+            message: errorMessage,
+            type: NotificationType.error,
+            duration: const Duration(seconds: 5),
           );
         }
       }
@@ -193,12 +187,7 @@ class _SignupScreenState extends State<SignupScreen> {
           _isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur de connexion: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationHelper.showError('Erreur de connexion: ${e.toString()}');
       }
     }
   }

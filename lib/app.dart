@@ -4,10 +4,15 @@ import 'widgets/main_screen_wrapper.dart';
 
 /// Widget principal de l'application
 class App extends StatelessWidget {
-  const App({super.key});
+  final Widget? initialExtraScreen;
+
+  const App({super.key, this.initialExtraScreen});
 
   @override
   Widget build(BuildContext context) {
-    return const MainScreenWrapper(child: HomeScreen());
+    return MainScreenWrapper(
+      child: const HomeScreen(),
+      initialExtraScreen: initialExtraScreen,
+    );
   }
 }

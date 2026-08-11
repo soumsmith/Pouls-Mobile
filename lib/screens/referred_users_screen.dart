@@ -4,6 +4,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../models/referred_user.dart';
 import '../services/referral_service.dart';
+import '../utils/notification_helper.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
@@ -165,9 +166,7 @@ class _ReferredUsersScreenState extends State<ReferredUsersScreen> {
                          icon: const Icon(Icons.copy_rounded, color: Colors.white),
                          onPressed: () {
                            Clipboard.setData(ClipboardData(text: _referralCode!));
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             const SnackBar(content: Text('Code copié !')),
-                           );
+                           NotificationHelper.showSuccess('Code copié !');
                          },
                        ),
                      ],

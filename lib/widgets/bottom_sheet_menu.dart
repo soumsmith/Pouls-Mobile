@@ -20,6 +20,7 @@ import '../config/app_config.dart';
 import '../config/app_colors.dart';
 import '../services/theme_service.dart';
 import '../screens/login_screen.dart';
+import '../app.dart';
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
 const _kOrange = Color(0xFFFF6B2C);
@@ -148,8 +149,10 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
       Navigator.of(context).pop(); // Fermer le bottom sheet menu
       await AuthService.instance.logout();
       if (mounted) {
+        // Retour à l'accueil en mode invité (pas à l'écran de connexion) —
+        // la déconnexion ne doit jamais bloquer l'accès au contenu public.
         Navigator.of(widget.parentContext).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(builder: (_) => const App()),
           (route) => false,
         );
       }

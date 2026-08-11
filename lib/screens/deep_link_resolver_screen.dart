@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
 import '../services/deep_link_service.dart';
+import '../config/app_colors.dart';
 import '../services/coulisse_excellence_service.dart';
 import '../services/visite_guidee_service.dart';
-import '../services/theme_service.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../models/coulisse_excellence.dart';
 import '../models/visite_guidee_video.dart';
 import 'coulisse_video_feed_screen.dart';
 import 'visite_guidee_video_feed_screen.dart';
+import 'all_videos_screen.dart';
+import 'all_visite_guidee_videos_screen.dart';
+import 'tips_advice_screen.dart';
+import '../services/video_service.dart';
+import '../models/video.dart';
 
 import '../services/blog_service.dart';
 import '../services/astuce_conseil_service.dart';
+import '../models/astuce_conseil.dart';
 import '../services/event_service.dart';
 import '../services/produit_service.dart';
+import '../app.dart';
 import 'blog_detail_screen.dart';
 import 'tips_advice_detail_screen.dart';
 import 'event_detail_screen.dart';
@@ -188,15 +195,26 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
       final targetIndex = allVideos.indexWhere((v) => v.id == videoId);
       print('✅ [DeepLinkResolver] Vidéo $videoId trouvée à l\'index $targetIndex, navigation...');
 
-      // Naviguer vers l'écran de lecture avec la liste complète
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => CoulisseVideoFeedScreen(
-            videos: allVideos,
-            initialIndex: targetIndex >= 0 ? targetIndex : 0,
-          ),
+      final videoRoute = MaterialPageRoute(
+        builder: (context) => CoulisseVideoFeedScreen(
+          videos: allVideos,
+          initialIndex: targetIndex >= 0 ? targetIndex : 0,
         ),
       );
+
+      // Si on connaît l'école, on insère la liste "Coulisses d'Excellence"
+      // sous le lecteur : le bouton retour de la vidéo revient alors sur
+      // cette liste plutôt que directement à l'accueil.
+      if (ecole != null && ecole.isNotEmpty) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => AllVideosScreen(ecoleCode: ecole),
+          ),
+        );
+        Navigator.of(context).push(videoRoute);
+      } else {
+        Navigator.of(context).pushReplacement(videoRoute);
+      }
     } catch (e, stack) {
       print('❌ [DeepLinkResolver] Exception dans _loadCoulisseVideo: $e');
       print(stack.toString());
@@ -281,14 +299,46 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
       final targetIndex = allVideos.indexWhere((v) => v.id == videoId);
       print('✅ [DeepLinkResolver] Vidéo $videoId trouvée à l\'index $targetIndex, navigation...');
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => VisiteGuideeVideoFeedScreen(
-            videos: allVideos,
-            initialIndex: targetIndex >= 0 ? targetIndex : 0,
-          ),
+      final videoRoute = MaterialPageRoute(
+        builder: (context) => VisiteGuideeVideoFeedScreen(
+          videos: allVideos,
+          initialIndex: targetIndex >= 0 ? targetIndex : 0,
         ),
       );
+
+      // Si on connaît l'école, on insère la liste "Visite Guidée" sous le
+      // lecteur : le bouton retour de la vidéo revient alors sur cette liste
+      // plutôt que directement à l'accueil. AllVisiteGuideeVideosScreen
+      // attend le modèle `Video` (via VideoService), distinct du modèle
+      // `VisiteGuideeVideo` utilisé pour la résolution ci-dessus — on
+      // recharge donc sa première page dans le bon format.
+      List<Video>? listScreenVideos;
+      if (ecole != null && ecole.isNotEmpty) {
+        try {
+          listScreenVideos = await VideoService.getVideosByType(
+            'visiteguide',
+            ecoleCode: ecole,
+          );
+        } catch (e) {
+          print('⚠️ [DeepLinkResolver] Échec du chargement de la liste Visite Guidée pour le retour: $e');
+        }
+      }
+
+      if (!mounted) return;
+
+      if (listScreenVideos != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => AllVisiteGuideeVideosScreen(
+              videos: listScreenVideos!,
+              ecoleCode: ecole!,
+            ),
+          ),
+        );
+        Navigator.of(context).push(videoRoute);
+      } else {
+        Navigator.of(context).pushReplacement(videoRoute);
+      }
     } catch (e, stack) {
       print('❌ [DeepLinkResolver] Exception dans _loadVisiteGuideeVideo: $e');
       print(stack.toString());
@@ -317,22 +367,95 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
   }
 
   Future<void> _loadTip(String idStr) async {
+    final id = int.tryParse(idStr);
+    if (id == null) {
+      _showError('Lien invalide.');
+      return;
+    }
+    print('🔎 [DeepLinkResolver] _loadTip id=$id');
+
     try {
-      final response = await AstuceConseilService().getAstucesConseils(page: 1);
+      // Pagine jusqu'à trouver l'astuce ciblée (une astuce partagée depuis
+      // le lecteur vidéo peut être au-delà de la page 1).
+      final List<AstuceConseil> allAstuces = [];
+      int currentPage = 1;
+      AstuceConseil? target;
+
+      while (target == null) {
+        final response = await AstuceConseilService().getAstucesConseils(
+          page: currentPage,
+        );
+        print(
+          '🔎 [DeepLinkResolver] getAstucesConseils(page: $currentPage) → '
+          '${response.data.length} astuce(s), currentPage=${response.currentPage}, lastPage=${response.lastPage}',
+        );
+        allAstuces.addAll(response.data);
+        target = allAstuces.where((t) => t.id == id).firstOrNull;
+        if (target != null || response.currentPage >= response.lastPage) {
+          break;
+        }
+        currentPage++;
+      }
+
       if (!mounted) return;
 
-      final id = int.tryParse(idStr);
-      final target = response.data.firstWhere(
-        (t) => t.id == id,
-        orElse: () => throw Exception('Not found'),
-      );
+      if (target == null) {
+        print('❌ [DeepLinkResolver] Astuce/conseil $id introuvable.');
+        _showError('Ce conseil n\'existe plus ou a été supprimé.');
+        return;
+      }
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => TipsAdviceDetailScreen(astuce: target),
-        ),
-      );
-    } catch (e) {
+      final hasVideo = target.youtubeUrl != null && target.youtubeUrl!.isNotEmpty;
+      print('✅ [DeepLinkResolver] Astuce/conseil $id trouvée, hasVideo=$hasVideo');
+
+      if (hasVideo) {
+        // Même logique d'enveloppe que TipsAdviceScreen : seules les
+        // astuces avec vidéo intègrent le lecteur VisiteGuideeVideoFeedScreen.
+        final videoAstuces = allAstuces
+            .where((a) => a.youtubeUrl != null && a.youtubeUrl!.isNotEmpty)
+            .toList();
+        final videos = videoAstuces
+            .map(
+              (a) => VisiteGuideeVideo(
+                id: a.id,
+                typeVideo: 'astuce',
+                youtubeUrl: a.youtubeUrl!,
+                title: a.title,
+                description: a.content,
+                code: a.codeecole,
+                slug: a.slug,
+              ),
+            )
+            .toList();
+        final targetIndex = videoAstuces.indexWhere((a) => a.id == id);
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const TipsAdviceScreen()),
+        );
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => VisiteGuideeVideoFeedScreen(
+              videos: videos,
+              initialIndex: targetIndex >= 0 ? targetIndex : 0,
+              cameFromGrid: true,
+            ),
+          ),
+        );
+      } else {
+        // Astuce sans vidéo : écran de détail texte, avec la liste des
+        // astuces en dessous pour un retour cohérent.
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const TipsAdviceScreen()),
+        );
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => TipsAdviceDetailScreen(astuce: target!),
+          ),
+        );
+      }
+    } catch (e, stack) {
+      print('❌ [DeepLinkResolver] Exception dans _loadTip: $e');
+      print(stack.toString());
       _showError('Ce conseil n\'existe plus ou a été supprimé.');
     }
   }
@@ -362,10 +485,16 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
       final target = await ProduitService().getProduitDetail(id);
       if (!mounted) return;
 
-      Navigator.of(context).pushReplacement(
+      // Passe par App()/MainScreenWrapper (avec le produit pré-empilé) pour
+      // que la bottom nav reste visible, plutôt qu'un push direct qui en
+      // sortirait complètement.
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) => ProductDetailScreen(product: target),
+          builder: (context) => App(
+            initialExtraScreen: ProductDetailScreen(product: target),
+          ),
         ),
+        (route) => false,
       );
     } catch (e) {
       _showError('Ce produit n\'existe plus ou a été supprimé.');
@@ -382,107 +511,98 @@ class _DeepLinkResolverScreenState extends State<DeepLinkResolverScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = ThemeService().isDarkMode;
-
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: Icon(
             Icons.close_rounded,
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
+            color: AppColors.screenTextPrimaryThemed(context),
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          'Chargement en cours...',
-          style: TextStyle(
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
       ),
       body: Center(
-        child: _isLoading ? _buildLoading(isDark) : _buildError(isDark),
+        child: _isLoading ? _buildLoading(context) : _buildError(context),
       ),
     );
   }
 
-  Widget _buildLoading(bool isDark) {
+  Widget _buildLoading(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Icône de vidéo animée
+        // Icône animée, dans les couleurs de l'application
         AnimatedBuilder(
           animation: _pulseController,
           builder: (context, child) {
             return Transform.scale(
-              scale: 0.9 + (_pulseController.value * 0.15),
+              scale: 0.94 + (_pulseController.value * 0.06),
               child: Container(
-                width: 100,
-                height: 100,
+                width: 84,
+                height: 84,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
-                  ),
-                  borderRadius: BorderRadius.circular(28),
+                  gradient: AppColors.screenOrangeGradient,
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(
-                        0xFF6366F1,
-                      ).withOpacity(0.3 + _pulseController.value * 0.2),
-                      blurRadius: 20 + (_pulseController.value * 10),
-                      spreadRadius: 2,
+                      color: AppColors.screenOrange.withOpacity(
+                        0.25 + _pulseController.value * 0.15,
+                      ),
+                      blurRadius: 22 + (_pulseController.value * 8),
+                      spreadRadius: 1,
                     ),
                   ],
                 ),
                 child: const Icon(
                   Icons.play_arrow_rounded,
                   color: Colors.white,
-                  size: 50,
+                  size: 40,
                 ),
               ),
             );
           },
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 28),
         Text(
-          'Chargement du contenu...',
+          'Chargement du contenu',
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : const Color(0xFF1E293B),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+            color: AppColors.screenTextPrimaryThemed(context),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
-          'Veuillez patienter un instant',
+          'Un instant, on prépare votre vidéo…',
           style: TextStyle(
-            fontSize: 14,
-            color: isDark ? Colors.white54 : const Color(0xFF94A3B8),
+            fontSize: 13,
+            color: AppColors.screenTextSecondaryThemed(context),
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 28),
         SizedBox(
-          width: 200,
-          child: LinearProgressIndicator(
-            backgroundColor: isDark
-                ? Colors.white.withOpacity(0.1)
-                : const Color(0xFFE2E8F0),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+          width: 120,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              minHeight: 3,
+              backgroundColor: AppColors.screenDividerThemed(context),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.screenOrange,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildError(bool isDark) {
+  Widget _buildError(BuildContext context) {
     final bool isNetworkError =
         _errorMessage?.toLowerCase().contains('connexion') ?? false;
 

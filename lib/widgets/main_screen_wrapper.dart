@@ -11,6 +11,7 @@ import '../screens/shop_screen.dart';
 import '../screens/tips_advice_screen.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
+import '../utils/notification_helper.dart';
 import '../config/app_config.dart';
 import '../config/app_colors.dart';
 import '../services/api_service.dart';
@@ -26,12 +27,18 @@ class MainScreenWrapper extends StatefulWidget {
   final Widget? child;
   final int initialIndex;
   final bool showChildAddedSuccess;
+  /// Écran à empiler immédiatement au-dessus de l'onglet actif au montage
+  /// (ex: ouvrir directement un produit depuis un deep link, tout en gardant
+  /// la bottom nav visible). Équivalent à appeler `navigateToExtraScreen`
+  /// juste après la création du wrapper.
+  final Widget? initialExtraScreen;
 
   const MainScreenWrapper({
-    super.key, 
-    this.child, 
+    super.key,
+    this.child,
     this.initialIndex = 0,
     this.showChildAddedSuccess = false,
+    this.initialExtraScreen,
   });
 
   @override
@@ -69,23 +76,22 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    if (widget.initialExtraScreen != null) {
+      _previousIndex = _currentIndex;
+      _extraScreenStack.add(widget.initialExtraScreen!);
+      _currentIndex = -1;
+    }
     _apiService = AppConfig.MOCK_MODE ? MockApiService() : RemoteApiService();
     final user = AuthService.instance.getCurrentUser();
     _currentUserId = user?.id;
     _setupNotificationListener();
     ModuleAccessService().fetchModules();
-    
+
     // Afficher le message de succès si un enfant vient d'être ajouté
     if (widget.showChildAddedSuccess) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Enfant ajouté avec succès !'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
+          NotificationHelper.showSuccess('Enfant ajouté avec succès !');
         }
       });
     }
@@ -103,52 +109,12 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
   void _handleNotification(Map<String, dynamic> data) {
     final title = data['title'] as String? ?? 'Notification';
     final body = data['body'] as String? ?? '';
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: AppColors.getSurfaceColor(isDark),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.getTextColor(isDark),
-                ),
-              ),
-              Text(
-                body,
-                style: TextStyle(
-                  color: AppColors.getTextColor(
-                    isDark,
-                    type: TextType.secondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            bottom: MediaQuery.of(context).padding.bottom + 100, // Espace pour la bottom nav
-            top: 16,
-          ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          action: SnackBarAction(
-            label: 'Fermer',
-            textColor: AppColors.primary,
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            },
-          ),
-        ),
+      NotificationHelper.show(
+        message: body.isNotEmpty ? '$title\n$body' : title,
+        type: NotificationType.info,
+        duration: const Duration(seconds: 4),
       );
     }
   }

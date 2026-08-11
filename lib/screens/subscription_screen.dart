@@ -6,6 +6,7 @@ import '../services/paiement_service.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/payment_verification_dialog.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../config/app_dimensions.dart';
@@ -84,13 +85,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           t.cancel();
           if (mounted) {
             Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Le délai de vérification est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
-                ),
-                backgroundColor: Colors.orange,
-              ),
+            NotificationHelper.showWarning(
+              'Le délai de vérification est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
             );
 
             NotificationService().showNotification(
@@ -113,13 +109,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             t.cancel();
             Navigator.of(context).pop();
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Paiement validé ! Abonnement ${offer.title} activé avec succès.',
-                ),
-                backgroundColor: Colors.green,
-              ),
+            NotificationHelper.showSuccess(
+              'Paiement validé ! Abonnement ${offer.title} activé avec succès.',
             );
           }
         } catch (e) {
@@ -152,12 +143,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     Navigator.pop(context);
 
     if (children.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucun enfant trouvé sur ce compte.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      NotificationHelper.showWarning('Aucun enfant trouvé sur ce compte.');
       return;
     }
 
@@ -195,15 +181,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               children.isNotEmpty && selectedIds.length == selectableCount;
 
           void showLimitReachedMessage() {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  maxAllowed == 1
-                      ? 'Cette offre ne permet de sélectionner qu\'un seul enfant.'
-                      : 'Vous ne pouvez sélectionner que $maxAllowed enfants maximum avec cette offre.',
-                ),
-                backgroundColor: Colors.orange,
-              ),
+            NotificationHelper.showWarning(
+              maxAllowed == 1
+                  ? 'Cette offre ne permet de sélectionner qu\'un seul enfant.'
+                  : 'Vous ne pouvez sélectionner que $maxAllowed enfants maximum avec cette offre.',
             );
           }
 
@@ -564,12 +545,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       if (!mounted) return;
       Navigator.pop(context);
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Abonnement ${offer.title} activé !'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        NotificationHelper.showSuccess('Abonnement ${offer.title} activé !');
         Navigator.pop(context);
       }
       return;
@@ -600,27 +576,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         if (launched) {
           _showPaymentVerificationLoader(userId, offer);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Impossible d\'ouvrir la page de paiement.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          NotificationHelper.showError('Impossible d\'ouvrir la page de paiement.');
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(paiementResponse.message),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationHelper.showError(paiementResponse.message);
       }
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-      );
+      NotificationHelper.showError('Erreur: $e');
     }
   }
 

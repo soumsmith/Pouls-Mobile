@@ -72,7 +72,7 @@ import '../services/subscription_service.dart';
 import '../models/subscription_offer.dart';
 import '../widgets/section_header_widget.dart';
 import '../widgets/components/section_row.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/establishment_action_cards.dart' hide SchoolLifeItemCard;
 import '../models/parent_suggestion.dart';
 import '../services/parent_suggestion_service.dart';
@@ -488,13 +488,6 @@ class _ChildListScreenState extends State<ChildListScreen>
   String? _expandedBulletinId;
   StateSetter? _bulletinsModalSetState;
 
-  void _showSnackBarDeferred(SnackBar snackBar) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-    });
-  }
-
   @override
   void initState() {
     super.initState();
@@ -670,10 +663,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (!errorString.contains('404') ||
           !errorString.contains('Aucune fourniture scolaire trouvée')) {
         if (mounted) {
-          _showSnackBarDeferred(
-            SnackBar(
-              content: Text('Erreur lors du chargement des fournitures: $e'),
-            ),
+          NotificationHelper.showError(
+            'Erreur lors du chargement des fournitures: $e',
           );
         }
       }
@@ -717,10 +708,8 @@ class _ChildListScreenState extends State<ChildListScreen>
         setState(() {
           _isLoadingOrders = false;
         });
-        _showSnackBarDeferred(
-          SnackBar(
-            content: Text('Erreur lors du chargement des commandes: $e'),
-          ),
+        NotificationHelper.showError(
+          'Erreur lors du chargement des commandes: $e',
         );
       }
     }
@@ -861,7 +850,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         setState(() {
           _isLoading = false;
         });
-        _showSnackBarDeferred(SnackBar(content: Text('Erreur: $e')));
+        NotificationHelper.showError('Erreur: $e');
       }
     }
   }
@@ -2502,13 +2491,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         }
 
         print('✅ Message marqué comme lu avec succès');
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Notification',
-          message: 'marquée comme lue',
-          backgroundColor: AppColors.success,
-          duration: const Duration(seconds: 2),
-        );
+        NotificationHelper.showSuccess('Notification marquée comme lue');
       } else {
         print('❌ Échec du marquage du message comme lu');
       }
@@ -2567,13 +2550,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           }
 
           print('✅ Conversation marquée comme lue avec succès');
-          CartSnackBar.show(
-            context,
-            productName: 'Notification',
-            message: 'marquée comme lue',
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
-          );
+          NotificationHelper.showSuccess('Notification marquée comme lue');
         } else {
           print('❌ Échec du marquage de la conversation comme lue');
         }
@@ -3453,13 +3430,7 @@ class _ChildListScreenState extends State<ChildListScreen>
 
       // Afficher un message de succès
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Enfant retiré avec succès'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
+        NotificationHelper.showSuccess('Enfant retiré avec succès');
       }
 
       // Naviguer vers l'écran précédent et rafraîchir la liste
@@ -3476,13 +3447,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     } catch (e) {
       // Afficher un message d'erreur
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors du retrait: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        NotificationHelper.showError('Erreur lors du retrait: $e');
         setState(() {
           _isLoading = false;
         });
@@ -4263,10 +4228,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                         ),
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Informations élève non disponibles'),
-                        ),
+                      NotificationHelper.showInfo(
+                        'Informations élève non disponibles',
                       );
                     }
                   } else if (item['key'] == 'timetable') {
@@ -4723,11 +4686,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 } else {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Impossible d\'ouvrir le lien'),
-                      ),
-                    );
+                    NotificationHelper.showError('Impossible d\'ouvrir le lien');
                   }
                 }
               },
@@ -4867,22 +4826,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         widget.child.ecoleCode ?? widget.child.paramEcole ?? _ecoleCode;
 
     if (matricule == null || matricule.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Matricule de l\'élève non disponible'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Matricule de l\'élève non disponible');
       return;
     }
 
     if (ecoleCode == null || ecoleCode.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Code école non disponible'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Code école non disponible');
       return;
     }
 
@@ -4913,35 +4862,21 @@ class _ChildListScreenState extends State<ChildListScreen>
     String serviceType = 'scolarité',
   ]) async {
     if (montantStr.isEmpty) {
-      CartSnackBar.showOverlay(
-        context,
-        productName: 'Montant requis',
-        message: 'Veuillez entrer un montant',
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      );
+      NotificationHelper.showError('Montant requis Veuillez entrer un montant');
       return;
     }
 
     final montant = int.tryParse(montantStr);
     if (montant == null || montant <= 0) {
-      CartSnackBar.showOverlay(
-        context,
-        productName: 'Montant invalide',
-        message: 'Veuillez entrer un montant valide',
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
+      NotificationHelper.showError(
+        'Montant invalide Veuillez entrer un montant valide',
       );
       return;
     }
 
     if (_matricule == null) {
-      CartSnackBar.showOverlay(
-        context,
-        productName: 'Informations manquantes',
-        message: 'Informations élève non disponibles',
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
+      NotificationHelper.showError(
+        'Informations manquantes Informations élève non disponibles',
       );
       return;
     }
@@ -4986,13 +4921,8 @@ class _ChildListScreenState extends State<ChildListScreen>
               _eleveDetail?['uid']?.toString() ?? _matricule ?? '';
           _showPaymentVerificationLoader(uidToCheck, montant, serviceType);
         } else {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Erreur d\'ouverture',
-            message:
-                'Impossible d\'ouvrir la page de paiement. Veuillez réessayer.',
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 4),
+          NotificationHelper.showWarning(
+            'Erreur d\'ouverture Impossible d\'ouvrir la page de paiement. Veuillez réessayer.',
           );
         }
       } else {
@@ -5001,13 +4931,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       }
     } catch (e) {
       print('❌ Erreur lors du paiement: $e');
-      CartSnackBar.showOverlay(
-        context,
-        productName: 'Erreur de paiement',
-        message: 'Erreur lors du paiement: $e',
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-      );
+      NotificationHelper.showError('Erreur de paiement Erreur lors du paiement: $e');
     } finally {
       CustomLoaderOverlay.hide();
     }
@@ -5061,13 +4985,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   "Le délai de vérification du paiement en ligne de $montant FCFA pour la scolarité de l'élève ${widget.child.firstName} à l'école ${widget.child.establishment} est dépassé. Si votre compte n'a pas été débité, n'hésitez pas à réessayer le paiement.";
             }
 
-            CartSnackBar.showOverlay(
-              context,
-              productName: 'Vérification en attente',
-              message:
-                  'Le délai de vérification de paiement en ligne est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 4),
+            NotificationHelper.showWarning(
+              'Vérification en attente Le délai de vérification de paiement en ligne est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
             );
 
             NotificationService().showNotification(
@@ -5089,13 +5008,8 @@ class _ChildListScreenState extends State<ChildListScreen>
             t.cancel();
             // Fermer le loader
             Navigator.of(context).pop();
-            CartSnackBar.showOverlay(
-              context,
-              productName: 'Paiement validé',
-              message:
-                  'Le paiement de la scolarité pour ${widget.child.firstName} a été enregistré avec succès !',
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 4),
+            NotificationHelper.showSuccess(
+              'Paiement validé Le paiement de la scolarité pour ${widget.child.firstName} a été enregistré avec succès !',
             );
           }
         } catch (e) {
@@ -8054,12 +7968,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (e.toString().contains('404') ||
           e.toString().contains('Élève non trouvé')) {
         // Afficher une notification snackbar pour l'erreur 404
-        CartSnackBar.show(
-          context,
-          productName: 'Élève non trouvé',
-          message: 'Vérifiez le matricule de l\'élève',
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+        NotificationHelper.showError(
+          'Élève non trouvé Vérifiez le matricule de l\'élève',
         );
       }
 
@@ -8122,12 +8032,8 @@ class _ChildListScreenState extends State<ChildListScreen>
           _isLoadingScolarite = false;
         });
         // Afficher une notification d'erreur au-dessus de la bottom sheet
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Erreur de chargement',
-          message: 'Impossible de charger les échéances de scolarité',
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+        NotificationHelper.showError(
+          'Erreur de chargement Impossible de charger les échéances de scolarité',
         );
       }
     }
@@ -9239,10 +9145,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de l\'ouverture du bulletin: $e'),
-          ),
+        NotificationHelper.showError(
+          'Erreur lors de l\'ouverture du bulletin: $e',
         );
       }
     }
@@ -9251,9 +9155,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   Future<void> _downloadBulletin(Map<String, dynamic> bulletinData) async {
     try {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Téléchargement en cours...')),
-        );
+        NotificationHelper.showInfo('Téléchargement en cours...');
       }
 
       final pdfUrl = _buildBulletinPdfUrl(bulletinData);
@@ -9301,45 +9203,34 @@ class _ChildListScreenState extends State<ChildListScreen>
             await Share.shareXFiles([
               XFile(filePath),
             ], subject: 'Bulletin $periode - $prenoms $nom');
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Option de sauvegarde affichée avec succès'),
-              ),
+            NotificationHelper.showSuccess(
+              'Option de sauvegarde affichée avec succès',
             );
           } else {
             // On Android, save to storage and offer a share/open callback
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Bulletin enregistré avec succès :\n$fileName'),
-                duration: const Duration(seconds: 4),
-                action: SnackBarAction(
-                  label: 'Partager le fichier',
-                  onPressed: () async {
-                    await Share.shareXFiles([
-                      XFile(filePath),
-                    ], subject: 'Bulletin $periode - $prenoms $nom');
-                  },
-                ),
-              ),
+            NotificationHelper.show(
+              message: 'Bulletin enregistré avec succès :\n$fileName',
+              type: NotificationType.success,
+              actionText: 'Partager le fichier',
+              onActionPressed: () async {
+                await Share.shareXFiles([
+                  XFile(filePath),
+                ], subject: 'Bulletin $periode - $prenoms $nom');
+              },
+              duration: const Duration(seconds: 4),
             );
           }
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Erreur lors du téléchargement: ${response.statusCode}',
-              ),
-            ),
+          NotificationHelper.showError(
+            'Erreur lors du téléchargement: ${response.statusCode}',
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors du téléchargement: $e')),
-        );
+        NotificationHelper.showError('Erreur lors du téléchargement: $e');
       }
     }
   }
@@ -9362,9 +9253,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erreur lors du partage: $e')));
+        NotificationHelper.showError('Erreur lors du partage: $e');
       }
     }
   }
@@ -10076,10 +9965,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       print('❌ Erreur lors du chargement des commandes: $e');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors du chargement des commandes: $e'),
-          ),
+        NotificationHelper.showError(
+          'Erreur lors du chargement des commandes: $e',
         );
       }
 
@@ -13305,55 +13192,16 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
         reason: finalReason,
       );
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Commande annulée avec succès',
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.green[500],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
+        NotificationHelper.showSuccess('Commande annulée avec succès');
         widget.onCancelled();
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Échec de l\'annulation de la commande',
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.all(16),
-            ),
-          );
+          NotificationHelper.showError('Échec de l\'annulation de la commande');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Erreur: $e',
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.red[400],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
+        NotificationHelper.showError('Erreur: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

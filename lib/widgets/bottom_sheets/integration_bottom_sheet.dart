@@ -15,7 +15,7 @@ import 'package:parents_responsable/widgets/components/custom_text_input.dart';
 import 'package:parents_responsable/widgets/components/custom_error_state.dart';
 import 'package:parents_responsable/widgets/custom_file_field.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
-import 'package:parents_responsable/widgets/snackbar.dart';
+import 'package:parents_responsable/utils/notification_helper.dart';
 
 import '../components/bottom_spacer.dart';
 
@@ -306,18 +306,11 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    final messenger =
-        widget.scaffoldMessengerKey?.currentState ??
-        ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red[400] : const Color(0xFFF59E0B),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    if (isError) {
+      NotificationHelper.showError(message);
+    } else {
+      NotificationHelper.showWarning(message);
+    }
   }
 
   // ── Navigation methods ───────────────────────────────────────────────────
@@ -347,12 +340,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     switch (_currentStep) {
       case 0:
         if (_selectedEcoleId == null) {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Erreur',
-            message: 'Veuillez sélectionner un établissement',
-            backgroundColor: Colors.red[400],
-          );
+          NotificationHelper.showError('Veuillez sélectionner un établissement');
           return false;
         }
         return true;
@@ -362,22 +350,12 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             _studentFirstNameController.text.isEmpty ||
             _birthDateController.text.isEmpty ||
             _lieuNaissanceController.text.isEmpty) {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Erreur',
-            message: 'Veuillez remplir tous les champs obligatoires',
-            backgroundColor: Colors.red[400],
-          );
+          NotificationHelper.showError('Veuillez remplir tous les champs obligatoires');
           return false;
         }
         final dateRegex = RegExp(r'^\d{2}/\d{2}/\d{4}$');
         if (!dateRegex.hasMatch(_birthDateController.text)) {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Erreur',
-            message: 'Format de date invalide. Utilisez JJ/MM/AAAA',
-            backgroundColor: Colors.red[400],
-          );
+          NotificationHelper.showError('Format de date invalide. Utilisez JJ/MM/AAAA');
           return false;
         }
         return true;
@@ -386,12 +364,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         if (_contact1Controller.text.isEmpty ||
             _nomPereController.text.isEmpty ||
             _nomMereController.text.isEmpty) {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Erreur',
-            message: 'Veuillez remplir tous les champs obligatoires',
-            backgroundColor: Colors.red[400],
-          );
+          NotificationHelper.showError('Veuillez remplir tous les champs obligatoires');
           return false;
         }
         return true;
@@ -566,12 +539,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         final demandeUid = result['data']?['demande_uid'] as String? ?? '';
 
         if (mounted) {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Succès',
-            message: 'Demande d\'intégration envoyée avec succès!',
-            backgroundColor: Colors.green[500],
-          );
+          NotificationHelper.showSuccess('Demande d\'intégration envoyée avec succès!');
         }
 
         widget.onSuccess?.call(demandeUid);
@@ -589,12 +557,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         final errMsg = result['error'] ?? 'Erreur lors de l\'envoi';
         widget.onError?.call(errMsg);
         if (mounted) {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Erreur',
-            message: errMsg,
-            backgroundColor: Colors.red[400],
-          );
+          NotificationHelper.showError(errMsg);
         }
       }
     } catch (e) {
@@ -604,12 +567,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
       final errMsg = e.toString();
       widget.onError?.call(errMsg);
       if (mounted) {
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Erreur',
-          message: 'Erreur: $errMsg',
-          backgroundColor: Colors.red[400],
-        );
+        NotificationHelper.showError('Erreur: $errMsg');
       }
     }
   }
@@ -1437,15 +1395,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   // ── UI helpers ────────────────────────────────────────────────────────────
   void _showFilePickerMessage(String fileType) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Sélection de fichier pour: $fileType'),
-        backgroundColor: AppColors.screenOrange,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    NotificationHelper.showInfo('Sélection de fichier pour: $fileType');
   }
 
   Widget _formSectionCard({

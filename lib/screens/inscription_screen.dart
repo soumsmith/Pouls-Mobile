@@ -13,7 +13,7 @@ import '../services/ecole_eleve_service.dart';
 import '../services/inscription_api_service.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/bottom_sheets/payment_choice_bottom_sheet.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../config/app_dimensions.dart';
@@ -848,26 +848,12 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   void _showError(String msg) {
     if (!mounted) return;
-    CartSnackBar.showOverlay(
-      context,
-      productName: 'Erreur',
-      message: msg,
-      backgroundColor: Colors.red[400],
-      icon: Icons.error_outline_rounded,
-      duration: const Duration(seconds: 4),
-    );
+    NotificationHelper.showError(msg);
   }
 
   void _showSuccess(String msg) {
     if (!mounted) return;
-    CartSnackBar.showOverlay(
-      context,
-      productName: 'Succès',
-      message: msg,
-      backgroundColor: Colors.green[500],
-      icon: Icons.check_circle_outline_rounded,
-      duration: const Duration(seconds: 4),
-    );
+    NotificationHelper.showSuccess(msg);
   }
 
   String _formatDate(String dateStr) {

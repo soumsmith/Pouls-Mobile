@@ -10,6 +10,7 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../utils/auth_guard.dart';
+import '../utils/notification_helper.dart';
 
 /// Écran de gestion des réservations de places
 class PlaceReservationScreen extends StatefulWidget implements MainScreenChild {
@@ -108,12 +109,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
         _isLoadingStats = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(14))),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        NotificationHelper.showError('Erreur: $e');
       }
     }
   }
@@ -194,27 +190,12 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
 
       if (success) {
         _loadData(); // Recharger les données
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Réservation soumise avec succès'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        NotificationHelper.showSuccess('Réservation soumise avec succès');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de la soumission'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        NotificationHelper.showError('Erreur lors de la soumission');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      NotificationHelper.showError('Erreur: $e');
     }
   }
 
@@ -270,27 +251,12 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
 
       if (success) {
         _loadData(); // Recharger les données
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Réservation annulée'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        NotificationHelper.showSuccess('Réservation annulée');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de l\'annulation'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        NotificationHelper.showError('Erreur lors de l\'annulation');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      NotificationHelper.showError('Erreur: $e');
     }
   }
 
@@ -303,24 +269,11 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
       await Clipboard.setData(ClipboardData(text: csvData));
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Données exportées dans le presse-papiers',
-              style: TextStyle(fontSize: _textSizeService.getScaledFontSize(14)),
-            ),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        NotificationHelper.showSuccess('Données exportées dans le presse-papiers');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de l\'export: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        NotificationHelper.showError('Erreur lors de l\'export: $e');
       }
     }
   }
@@ -1504,12 +1457,7 @@ class _PlaceReservationScreenState extends State<PlaceReservationScreen>
                         onAuthenticated: () {
                           // Logique de création simplifiée
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Fonctionnalité de création à implémenter'),
-                              backgroundColor: AppColors.info,
-                            ),
-                          );
+                          NotificationHelper.showInfo('Fonctionnalité de création à implémenter');
                         },
                       );
                     },

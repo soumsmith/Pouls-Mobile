@@ -7,6 +7,7 @@ import 'custom_text_field.dart';
 import 'components/custom_button.dart';
 import '../services/pays_service.dart';
 import 'searchable_dropdown.dart';
+import '../utils/notification_helper.dart';
 
 typedef RecommendationSubmit = Future<void> Function(BuildContext context);
 
@@ -189,12 +190,7 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
       if (_canNavigateToNext()) {
         setState(() => _currentStep++);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez remplir tous les champs requis'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationHelper.showError('Veuillez remplir tous les champs requis');
       }
     } else {
       _submitForm();
@@ -214,12 +210,7 @@ class _RecommendationBottomSheetState extends State<RecommendationBottomSheet> {
         widget.parentNomController.text.isEmpty ||
         widget.parentPrenomController.text.isEmpty ||
         widget.parentTelephoneController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez remplir tous les champs obligatoires'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Veuillez remplir tous les champs obligatoires');
       return;
     }
 

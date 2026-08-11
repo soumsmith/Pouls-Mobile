@@ -5,6 +5,7 @@ import '../../services/avis_service.dart';
 import '../../utils/auth_guard.dart';
 import '../components/custom_error_state.dart';
 import 'reusable_bottom_sheet.dart';
+import '../../utils/notification_helper.dart';
 
 class RatingBottomSheet extends StatefulWidget {
   final String schoolId;
@@ -84,22 +85,12 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
     final comment = _commentController.text;
 
     if (rating.isEmpty || int.tryParse(rating) == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez donner une note'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Veuillez donner une note');
       return;
     }
 
     if (comment.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez laisser un commentaire'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Veuillez laisser un commentaire');
       return;
     }
 
@@ -127,23 +118,13 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
       // Recharger les avis localement
       _loadAvis();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Avis envoyé avec succès!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      NotificationHelper.showSuccess('Avis envoyé avec succès!');
 
       if (widget.popOnSuccess && mounted) {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      NotificationHelper.showError('Erreur: ${e.toString()}');
     }
   }
 

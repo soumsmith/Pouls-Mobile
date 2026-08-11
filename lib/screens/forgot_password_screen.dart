@@ -8,6 +8,7 @@ import '../config/app_dimensions.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/components/custom_text_input.dart';
+import '../utils/notification_helper.dart';
 
 enum ForgotPasswordStep { phone, securityQuestion, resetPassword }
 
@@ -46,22 +47,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    NotificationHelper.showError(message);
   }
 
   void _showSuccess(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
+    NotificationHelper.showSuccess(message);
   }
 
   Future<void> _handlePhoneSubmit() async {

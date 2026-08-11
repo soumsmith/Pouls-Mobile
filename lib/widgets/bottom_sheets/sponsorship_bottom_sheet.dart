@@ -6,7 +6,7 @@ import '../custom_text_field.dart';
 import '../custom_form_button.dart';
 import '../components/custom_button.dart';
 import '../custom_loader.dart';
-import '../snackbar.dart';
+import '../../utils/notification_helper.dart';
 import '../share_button.dart';
 import '../components/bottom_spacer.dart';
 import '../components/capsule_tab_bar.dart';
@@ -101,12 +101,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
           errorMessage = rawMessage.replaceFirst('Exception: ', '').trim();
         }
 
-        CartSnackBar.showOverlay(
-          context,
-          productName: 'Parrainage',
-          message: errorMessage,
-          backgroundColor: Colors.red[500],
-        );
+        NotificationHelper.showError(errorMessage);
       }
     } catch (e) {
       Navigator.of(context).pop(); // ferme le loader
@@ -131,12 +126,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         }
       }
 
-      CartSnackBar.showOverlay(
-        context,
-        productName: 'Erreur',
-        message: errorMessage,
-        backgroundColor: Colors.red[500],
-      );
+      NotificationHelper.showError(errorMessage);
     }
   }
 
@@ -1007,11 +997,8 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
               mode: LaunchMode.externalApplication,
             );
           } else {
-            CartSnackBar.showOverlay(
-              context,
-              productName: 'Erreur',
-              message: 'WhatsApp n\'est pas installé sur cet appareil',
-              backgroundColor: Colors.red[500],
+            NotificationHelper.showError(
+              'WhatsApp n\'est pas installé sur cet appareil',
             );
           }
         },
@@ -1022,11 +1009,8 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         iconColor: const Color(0xFF3B82F6),
         onTap: () {
           Clipboard.setData(ClipboardData(text: codeParrainage));
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Code de parrainage',
-            message: 'copié dans le presse-papiers',
-            backgroundColor: Colors.green[500],
+          NotificationHelper.showSuccess(
+            'Code de parrainage copié dans le presse-papiers',
           );
         },
       ),
@@ -1047,12 +1031,8 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
               mode: LaunchMode.externalApplication,
             );
           } else {
-            CartSnackBar.showOverlay(
-              context,
-              productName: 'Erreur',
-              message:
-                  'L\'application SMS n\'est pas disponible sur cet appareil',
-              backgroundColor: Colors.red[500],
+            NotificationHelper.showError(
+              'L\'application SMS n\'est pas disponible sur cet appareil',
             );
           }
         },
@@ -1077,12 +1057,8 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
               mode: LaunchMode.externalApplication,
             );
           } else {
-            CartSnackBar.showOverlay(
-              context,
-              productName: 'Erreur',
-              message:
-                  'L\'application email n\'est pas disponible sur cet appareil',
-              backgroundColor: Colors.red[500],
+            NotificationHelper.showError(
+              'L\'application email n\'est pas disponible sur cet appareil',
             );
           }
         },

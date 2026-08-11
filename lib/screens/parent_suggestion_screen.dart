@@ -8,6 +8,7 @@ import '../config/app_colors.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../utils/auth_guard.dart';
+import '../utils/notification_helper.dart';
 
 /// Écran de gestion des suggestions parents
 class ParentSuggestionScreen extends StatefulWidget implements MainScreenChild {
@@ -104,12 +105,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
         _isLoadingStats = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e', style: TextStyle(fontSize: _textSizeService.getScaledFontSize(14))),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        NotificationHelper.showError('Erreur: $e');
       }
     }
   }
@@ -178,22 +174,12 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
 
   Future<void> _createSuggestion() async {
     if (_titleController.text.isEmpty || _descriptionController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez remplir tous les champs'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      NotificationHelper.showError('Veuillez remplir tous les champs');
       return;
     }
 
     if (_selectedCategory == null || _selectedType == null || _selectedPriority == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner la catégorie, le type et la priorité'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      NotificationHelper.showError('Veuillez sélectionner la catégorie, le type et la priorité');
       return;
     }
 
@@ -229,14 +215,9 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
       if (success) {
         Navigator.of(context).pop();
         _loadData(); // Recharger les données
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Suggestion créée avec succès'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        
+
+        NotificationHelper.showSuccess('Suggestion créée avec succès');
+
         // Réinitialiser les contrôleurs
         _titleController.clear();
         _descriptionController.clear();
@@ -245,20 +226,10 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
         _selectedPriority = null;
         _isAnonymous = false;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de la création de la suggestion'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        NotificationHelper.showError('Erreur lors de la création de la suggestion');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      NotificationHelper.showError('Erreur: $e');
     }
   }
 
@@ -280,12 +251,7 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
         _loadData(); // Recharger les données
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors du vote: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      NotificationHelper.showError('Erreur lors du vote: $e');
     }
   }
 
@@ -298,24 +264,11 @@ class _ParentSuggestionScreenState extends State<ParentSuggestionScreen>
       await Clipboard.setData(ClipboardData(text: csvData));
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Données exportées dans le presse-papiers',
-              style: TextStyle(fontSize: _textSizeService.getScaledFontSize(14)),
-            ),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        NotificationHelper.showSuccess('Données exportées dans le presse-papiers');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de l\'export: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        NotificationHelper.showError('Erreur lors de l\'export: $e');
       }
     }
   }

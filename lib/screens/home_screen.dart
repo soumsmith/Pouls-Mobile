@@ -35,6 +35,7 @@ import '../services/theme_service.dart';
 import '../services/integration_request_service.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_guard.dart';
+import '../utils/notification_helper.dart';
 import '../services/recommendation_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
@@ -607,12 +608,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
 
             Navigator.of(context).pop();
-            ScaffoldMessenger.of(this.context).showSnackBar(
-              const SnackBar(
-                content: Text('Recommandation envoyée avec succès!'),
-                backgroundColor: Colors.green,
-              ),
-            );
+            NotificationHelper.showSuccess('Recommandation envoyée avec succès!');
 
             _etablissementController.clear();
             _paysRecommendController.clear();
@@ -628,12 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _adresseParentController.clear();
             _recommenderNameController.clear();
           } catch (e) {
-            ScaffoldMessenger.of(this.context).showSnackBar(
-              SnackBar(
-                content: Text('Erreur: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            NotificationHelper.showError('Erreur: $e');
           }
         },
       ),
@@ -1610,12 +1601,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } else {
       // Afficher un message si la vidéo n'est pas trouvée
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Vidéo non trouvée: ${schoolData['title']}'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      NotificationHelper.showInfo('Vidéo non trouvée: ${schoolData['title']}');
     }
   }
 
@@ -3329,9 +3315,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: AppDimensions.getSquareCardHeightSize(context),
                 centerTitle: true,
                 onTap: () {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const CartScreen()));
+                  MainScreenWrapper.of(context).navigateToExtraScreen(const CartScreen());
                 },
               ),
               SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),

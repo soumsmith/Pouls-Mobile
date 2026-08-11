@@ -39,7 +39,7 @@ import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/integration_bottom_sheet.dart';
 import '../widgets/bottom_sheets/rating_bottom_sheet.dart';
 import '../widgets/bottom_fade_gradient.dart';
-import '../widgets/snackbar.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/skeleton_box.dart';
 import 'rating_children_list_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
@@ -1449,12 +1449,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               );
 
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Recommandation envoyée avec succès!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              NotificationHelper.showSuccess('Recommandation envoyée avec succès!');
 
               _etablissementController.clear();
               _paysRecommendController.clear();
@@ -1469,12 +1464,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
               _villeParentController.clear();
               _adresseParentController.clear();
             } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Erreur: $e'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              NotificationHelper.showError('Erreur: $e');
             }
           },
         );
@@ -1714,12 +1704,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
     return GestureDetector(
       onTap: () {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Partage via $label bientôt disponible'),
-            backgroundColor: color,
-          ),
-        );
+        NotificationHelper.showInfo('Partage via $label bientôt disponible');
       },
       child: Column(
         children: [
@@ -1839,19 +1824,11 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                     : _adresseParentController.text,
               );
               Navigator.pop(context);
-              CartSnackBar.showOverlay(
-                context,
-                productName: 'Recommandation',
-                message: 'Votre recommandation a été envoyée avec succès !',
-                backgroundColor: Colors.green,
+              NotificationHelper.showSuccess(
+                'Votre recommandation a été envoyée avec succès !',
               );
             } catch (e) {
-              CartSnackBar.showOverlay(
-                context,
-                productName: 'Erreur',
-                message: e.toString(),
-                backgroundColor: Colors.red,
-              );
+              NotificationHelper.showError(e.toString());
             }
           },
         ),

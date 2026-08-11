@@ -12,7 +12,7 @@ import '../../widgets/components/custom_select_input.dart';
 import '../../widgets/components/custom_text_input.dart';
 import '../../widgets/components/custom_button.dart';
 import '../../widgets/components/custom_error_state.dart';
-import '../../widgets/snackbar.dart';
+import '../../utils/notification_helper.dart';
 import '../../config/app_colors.dart';
 import '../../screens/inscription_screen.dart' as inscription;
 import '../../utils/auth_guard.dart';
@@ -165,11 +165,8 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
 
     if (_selectedParamEcole == null ||
         _matriculeController.text.trim().isEmpty) {
-      CartSnackBar.showOverlay(
-        context,
-        productName: 'Attention',
-        message: 'Veuillez sélectionner une école et entrer un matricule',
-        backgroundColor: Colors.orange,
+      NotificationHelper.showWarning(
+        'Attention Veuillez sélectionner une école et entrer un matricule',
       );
       return;
     }
@@ -187,11 +184,8 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
 
       if (eleveDetail == null) {
         if (mounted) {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Élève non trouvé',
-            message: 'Aucun élève trouvé pour ce matricule dans cette école',
-            backgroundColor: Colors.red,
+          NotificationHelper.showError(
+            'Élève non trouvé Aucun élève trouvé pour ce matricule dans cette école',
           );
         }
         return;
@@ -242,12 +236,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
                                errorString.contains('Network is unreachable') ||
                                errorString.contains('Software caused connection abort');
         if (!isNetworkError) {
-          CartSnackBar.showOverlay(
-            context,
-            productName: 'Erreur',
-            message: 'lors de l\'inscription',
-            backgroundColor: Colors.red,
-          );
+          NotificationHelper.showError('Erreur lors de l\'inscription');
         }
       }
     } finally {

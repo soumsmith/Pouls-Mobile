@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 
-import '../../models/child.dart';
 import '../../models/ecole.dart';
 import '../../config/app_config.dart';
 import '../../services/pouls_scolaire_api_service.dart';
@@ -14,8 +13,7 @@ import '../../widgets/components/custom_button.dart';
 import '../../widgets/components/custom_error_state.dart';
 import '../../utils/notification_helper.dart';
 import '../../config/app_colors.dart';
-import '../../screens/inscription_screen.dart' as inscription;
-import '../../utils/auth_guard.dart';
+import '../../screens/eleve_inscription_detail_screen.dart';
 import 'reusable_bottom_sheet.dart';
 
 class InscriptionBottomSheet extends StatefulWidget {
@@ -159,7 +157,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
   }
 
   // Navigation vers l'écran d'inscription
-  Future<void> _startInscription() async {
+  Future<void> _searchEleve() async {
     // Fermer le clavier
     FocusScope.of(context).unfocus();
 
@@ -191,38 +189,20 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
         return;
       }
 
-      // Créer un objet Child avec les informations
-      final child = Child(
-        id: eleveDetail['id_eleve']?.toString() ?? '',
-        firstName: eleveDetail['prenoms'] ?? '',
-        lastName: eleveDetail['nom'] ?? '',
-        establishment: _selectedEcoleName ?? '',
-        grade: eleveDetail['classe'] ?? '',
-        parentId:
-            eleveDetail['pere']?.toString() ??
-            '', // Utiliser le nom du père comme parent_id
-        matricule: matricule,
-        ecoleCode: _selectedEcoleCode,
-        paramEcole: _selectedParamEcole,
-      );
-
-      // Naviguer vers l'écran d'inscription
+      // Fermer le bottom sheet puis afficher l'écran de confirmation avec
+      // les informations complètes de l'élève trouvé.
       if (mounted) {
-        // Utiliser le root navigator pour naviguer et fermer le bottom sheet
-        await AuthGuard.ensureLoggedIn(
-          context,
-          reason: 'Connectez-vous pour vous inscrire',
-          onAuthenticated: () {
-            Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (context) => inscription.InscriptionWizardScreen(
-                  child: child,
-                  uid: eleveDetail['uid']?.toString(),
-                  eleveDetail: eleveDetail,
-                ),
-              ),
-            );
-          },
+        final rootNavigator = Navigator.of(context, rootNavigator: true);
+        rootNavigator.pop();
+        rootNavigator.push(
+          MaterialPageRoute(
+            builder: (context) => EleveInscriptionDetailScreen(
+              eleveDetail: eleveDetail,
+              ecoleNom: _selectedEcoleName ?? '',
+              ecoleCode: _selectedEcoleCode,
+              paramEcole: _selectedParamEcole,
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -375,14 +355,14 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
         ),
         const SizedBox(height: 32),
 
-        // Bouton d'inscription
+        // Bouton de recherche
         CustomButton(
           text: _isLoadingInscription
-              ? 'Inscription en cours...'
-              : 'Commencer l\'inscription',
-          onPressed: _startInscription,
+              ? 'Recherche en cours...'
+              : 'Rechercher l\'élève',
+          onPressed: _searchEleve,
           color: AppColors.success,
-          icon: Icons.app_registration,
+          icon: Icons.search_rounded,
           isLoading: _isLoadingInscription,
           isLight: true,
           height: 56,

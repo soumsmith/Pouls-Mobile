@@ -17,6 +17,41 @@ class AppShareService {
     return '${uri.scheme}://${uri.host}/deep-link-hosting';
   }
 
+  // ─── Miniature pour les aperçus de lien (WhatsApp, e-mail, etc.) ──────────
+  //
+  // share/index.html et video/index.html sont servis en PHP (via .htaccess)
+  // et lisent ces paramètres pour générer dynamiquement les balises Open
+  // Graph (og:title/og:description/og:image), afin que l'aperçu affiché par
+  // WhatsApp/Messenger/e-mail montre la miniature réelle du contenu partagé
+  // plutôt que le logo générique de l'application.
+  static String _previewParams({
+    required String title,
+    String? desc,
+    String? img,
+  }) {
+    final buffer = StringBuffer();
+    buffer.write('&title=${Uri.encodeQueryComponent(title)}');
+    if (desc != null && desc.trim().isNotEmpty) {
+      final cleaned = _stripHtmlAndFormat(desc);
+      final truncated = cleaned.length > 160
+          ? '${cleaned.substring(0, 160).trim()}…'
+          : cleaned;
+      if (truncated.isNotEmpty) {
+        buffer.write('&desc=${Uri.encodeQueryComponent(truncated)}');
+      }
+    }
+    if (img != null && img.trim().isNotEmpty) {
+      buffer.write('&img=${Uri.encodeQueryComponent(img)}');
+    }
+    return buffer.toString();
+  }
+
+  /// Miniature YouTube pour une vidéo, à partir de son identifiant.
+  static String? _youtubeThumbnail(String videoId) {
+    if (videoId.isEmpty) return null;
+    return 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
+  }
+
   // ─── Génération de liens ──────────────────────────────────────────────────
 
   /// Génère le lien de partage pour une vidéo Coulisse d'Excellence.
@@ -36,6 +71,11 @@ class AppShareService {
         'ecole, la résolution retombera sur la recherche globale.',
       );
     }
+    link += _previewParams(
+      title: video.titre,
+      desc: video.description,
+      img: _youtubeThumbnail(video.youtubeVideoId),
+    );
     print('🔗 [AppShareService] Lien coulisse généré: $link');
     return link;
   }
@@ -79,28 +119,57 @@ class AppShareService {
       }
     }
 
+    link += _previewParams(
+      title: video.title ?? (isAstuce ? 'Astuce & Conseil' : 'Visite Guidée'),
+      desc: video.description,
+      img: _youtubeThumbnail(video.youtubeVideoId),
+    );
     print('🔗 [AppShareService] Lien ${isAstuce ? "astuce/conseil" : "visite guidée"} généré: $link');
     return link;
   }
 
   /// Génère le lien de partage pour un article de blog.
   static String buildArticleLink(Blog article) {
-    return '$_baseUrl/share/index.html?type=article&id=${article.slug}';
+    var link = '$_baseUrl/share/index.html?type=article&id=${article.slug}';
+    link += _previewParams(
+      title: article.title,
+      desc: article.content,
+      img: article.image,
+    );
+    return link;
   }
 
   /// Génère le lien de partage pour un événement.
   static String buildEventLink(Event event) {
-    return '$_baseUrl/share/index.html?type=event&id=${event.slug}';
+    var link = '$_baseUrl/share/index.html?type=event&id=${event.slug}';
+    link += _previewParams(
+      title: event.title,
+      desc: event.content,
+      img: event.image,
+    );
+    return link;
   }
 
   /// Génère le lien de partage pour une astuce/conseil.
   static String buildTipLink(AstuceConseil tip) {
-    return '$_baseUrl/share/index.html?type=tip&id=${tip.id}';
+    var link = '$_baseUrl/share/index.html?type=tip&id=${tip.id}';
+    link += _previewParams(
+      title: tip.title,
+      desc: tip.content,
+      img: _youtubeThumbnail(tip.youtubeVideoId) ?? tip.image,
+    );
+    return link;
   }
 
   /// Génère le lien de partage pour un produit (boutique).
   static String buildProductLink(Product product) {
-    return '$_baseUrl/share/index.html?type=product&id=${product.id}';
+    var link = '$_baseUrl/share/index.html?type=product&id=${product.id}';
+    link += _previewParams(
+      title: product.title,
+      desc: product.description,
+      img: product.imageUrl,
+    );
+    return link;
   }
 
   // ─── Textes de partage ────────────────────────────────────────────────────
@@ -189,7 +258,12 @@ class AppShareService {
     );
   }
 
-  /// Construit le texte de partage formaté.
+  /// Construit le texte de partage formaté, en deux sections distinctes :
+  /// le contenu partagé (titre, description, lien) puis l'invitation à
+  /// télécharger l'application, séparées par une ligne de séparation pour
+  /// que le lecteur distingue clairement "ce qu'on partage" de "l'appel à
+  /// l'action" — évite que les deux se mélangent visuellement dans les
+  /// aperçus WhatsApp/e-mail.
   static String _buildShareText({
     required String title,
     required String description,
@@ -198,20 +272,56 @@ class AppShareService {
     String action = 'Regardez ceci :',
   }) {
     final buffer = StringBuffer();
+
+    // ─── Section 1 : le contenu partagé ───
     buffer.writeln('$action $title');
-    
-    if (description.isNotEmpty) {
+
+    final cleanedDescription = _dedupTitleInDescription(
+      title: title,
+      description: _stripHtmlAndFormat(description),
+    );
+    if (cleanedDescription.isNotEmpty) {
       buffer.writeln();
-      buffer.writeln(_stripHtmlAndFormat(description));
+      buffer.writeln(cleanedDescription);
     }
-    
+
     buffer.writeln();
-    buffer.writeln('👉 Cliquez ici : $link');
+    buffer.writeln('🔗 Accédez-y directement :');
+    buffer.writeln(link);
+
+    // ─── Section 2 : invitation à télécharger l'application ───
     buffer.writeln();
-    buffer.writeln('📲 Téléchargez l\'application ici : ${AppConfig.storeUrl}');
+    buffer.writeln('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+    buffer.writeln();
+    buffer.writeln(
+      '📲 Pour aller plus loin, téléchargez "Parent Responsable" : '
+      'encore plus de contenus pédagogiques comme celui-ci, et le suivi '
+      'complet de la scolarité de votre enfant, en toute sérénité.',
+    );
+    buffer.writeln();
+    buffer.writeln(AppConfig.storeUrl);
+
     buffer.writeln();
     buffer.write(hashtags);
     return buffer.toString();
+  }
+
+  /// Évite de répéter le titre s'il apparaît déjà en tête de la description
+  /// (fréquent quand le contenu a été rédigé avec le titre repris comme
+  /// première ligne), pour ne pas l'afficher deux fois de suite dans le
+  /// message de partage.
+  static String _dedupTitleInDescription({
+    required String title,
+    required String description,
+  }) {
+    final normalizedTitle = title.trim().toLowerCase();
+    final lines = description.split('\n');
+    if (lines.isNotEmpty &&
+        normalizedTitle.isNotEmpty &&
+        lines.first.trim().toLowerCase() == normalizedTitle) {
+      return lines.skip(1).join('\n').trim();
+    }
+    return description;
   }
 
   /// Nettoie les balises HTML et structure le texte en paragraphes.

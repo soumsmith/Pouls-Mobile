@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
@@ -84,6 +85,8 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   TicketCategory? _selectedTicketCategory;
   int _selectedQuantity = 1;
   bool _hasCheckedTickets = false;
+  String? _ticketPurchaseError;
+  Timer? _ticketPurchaseErrorTimer;
 
   bool _isLiked = false;
   late AnimationController _likeController;
@@ -107,7 +110,16 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   @override
   void dispose() {
     _likeController.dispose();
+    _ticketPurchaseErrorTimer?.cancel();
     super.dispose();
+  }
+
+  void _showInlineTicketError(String message) {
+    _ticketPurchaseErrorTimer?.cancel();
+    setState(() => _ticketPurchaseError = message);
+    _ticketPurchaseErrorTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _ticketPurchaseError = null);
+    });
   }
 
   // ── data loaders ───────────────────────────
@@ -411,13 +423,66 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
     return Padding(
       padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
-      child: CustomButton(
-        text: 'Commander un ticket',
-        color: _AppColors.indigo,
-        icon: Icons.confirmation_num_rounded,
-        onPressed: !_hasCheckedTickets ? null : _showTicketBottomSheet,
-        isLoading: !_hasCheckedTickets,
-        height: 50,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CustomButton(
+            text: 'Commander un ticket',
+            color: _AppColors.indigo,
+            icon: Icons.confirmation_num_rounded,
+            onPressed: !_hasCheckedTickets ? null : _showTicketBottomSheet,
+            isLoading: !_hasCheckedTickets,
+            height: 50,
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1,
+                child: child,
+              ),
+            ),
+            child: _ticketPurchaseError == null
+                ? const SizedBox.shrink(key: ValueKey('no-ticket-error'))
+                : Container(
+                    key: const ValueKey('ticket-error'),
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _AppColors.roseLight,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _AppColors.rose.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: _AppColors.rose,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _ticketPurchaseError ?? '',
+                            style: const TextStyle(
+                              color: _AppColors.rose,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -979,7 +1044,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       if (mounted) {
         Navigator.pop(context);
         final msg = e.toString().replaceAll('Exception: ', '');
-        _showSnack('Erreur: $msg', Colors.red);
+        _showInlineTicketError(msg);
       }
     }
   }

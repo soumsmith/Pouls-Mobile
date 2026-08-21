@@ -316,6 +316,31 @@ class DatabaseService {
     final db = await database;
     final now = DateTime.now().millisecondsSinceEpoch;
 
+    // La colonne `phone` est UNIQUE : si un utilisateur existe déjà pour ce
+    // numéro avec un `id` différent (ex: l'API renvoie un id différent lors
+    // d'une reconnexion), le insert ci-dessous avec ConflictAlgorithm.replace
+    // va supprimer l'ancienne ligne et la remplacer — orphelinant au passage
+    // les enfants déjà enregistrés sous l'ancien parentId (ils deviennent
+    // invisibles tant que l'app n'est pas relancée, où l'ancien id est
+    // rechargé depuis la session sauvegardée). On rattache donc d'abord les
+    // enfants existants au nouvel id avant de sauvegarder l'utilisateur.
+    final existing = await db.query(
+      'users',
+      where: 'phone = ?',
+      whereArgs: [user.phone],
+    );
+    if (existing.isNotEmpty) {
+      final oldId = existing.first['id'] as String?;
+      if (oldId != null && oldId != user.id) {
+        await db.update(
+          'children',
+          {'parentId': user.id},
+          where: 'parentId = ?',
+          whereArgs: [oldId],
+        );
+      }
+    }
+
     await db.insert('users', {
       'id': user.id,
       'email': user.email,

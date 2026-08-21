@@ -2028,9 +2028,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 description: 'Accédez à votre profil et paramètres depuis ici.',
                 child: GestureDetector(
                   onTap: () {
-                    MainScreenWrapper.of(
-                      context,
-                    ).navigateToExtraScreen(const ProfileScreen());
+                    if (AuthGuard.isLoggedIn()) {
+                      MainScreenWrapper.of(
+                        context,
+                      ).navigateToExtraScreen(const ProfileScreen());
+                    } else {
+                      // Après connexion depuis ce bouton, on reste sur l'accueil
+                      // plutôt que de naviguer vers le profil.
+                      AuthGuard.ensureLoggedIn(
+                        context,
+                        reason: 'Connectez-vous pour accéder à votre profil',
+                        onAuthenticatedAsync: () async {
+                          // Rafraîchit l'avatar (initiales) et recharge les
+                          // enfants du compte qui vient de se connecter
+                          // (sinon la liste reste vide jusqu'au redémarrage
+                          // de l'app, cet écran n'étant pas recréé après une
+                          // connexion depuis ce bouton).
+                          if (mounted) await _loadChildren();
+                        },
+                      );
+                    }
                   },
                   child: Container(
                     width: 36,
@@ -2044,14 +2061,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     child: Center(
-                      child: Text(
-                        _getUserInitials(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: _textSizeService.getScaledFontSize(13),
-                        ),
-                      ),
+                      child: AuthGuard.isLoggedIn()
+                          ? Text(
+                              _getUserInitials(),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: _textSizeService.getScaledFontSize(13),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person_outline_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                     ),
                   ),
                 ),
@@ -3547,7 +3570,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── HELPER FUNCTIONS ───────────────────────────────────────────────────────
   String _getUserInitials() {
     final currentUser = AuthService.instance.getCurrentUser();
-    if (currentUser == null) return 'AK';
+    if (currentUser == null) return '?';
 
     final firstName = currentUser.firstName?.trim() ?? '';
     final lastName = currentUser.lastName?.trim() ?? '';

@@ -1,0 +1,4 @@
+# Permet à index.html de s'exécuter comme du PHP, pour générer dynamiquement
+# les balises Open Graph (miniature, titre, description) par contenu partagé,
+# tout en conservant l'URL existante (index.html) déjà partagée.
+AddType application/x-httpd-php .html

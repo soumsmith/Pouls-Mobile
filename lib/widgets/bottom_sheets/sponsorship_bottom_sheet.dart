@@ -6,6 +6,7 @@ import '../custom_text_field.dart';
 import '../custom_form_button.dart';
 import '../components/custom_button.dart';
 import '../custom_loader.dart';
+import '../components/custom_error_state.dart';
 import '../../utils/notification_helper.dart';
 import '../share_button.dart';
 import '../components/bottom_spacer.dart';
@@ -13,6 +14,9 @@ import '../components/capsule_tab_bar.dart';
 import 'reusable_bottom_sheet.dart';
 import '../../services/parrainage_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/subscription_service.dart';
+import '../../models/subscription_offer.dart';
+import '../../screens/subscription_screen.dart';
 import '../../utils/auth_guard.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_dimensions.dart';
@@ -35,6 +39,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
   bool _parentTelephoneError = false;
   String? _generatedCode;
   bool _isLoading = false;
+  Future<List<SubscriptionOffer>>? _offersFuture;
 
   @override
   void dispose() {
@@ -828,83 +833,105 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
 
   // ─── ONGLET 4 : TARIFS & SERVICES ──────────────────────────────────────────
   Widget _buildTabTarifs(bool isDark) {
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      children: [
-        Text(
-          'Services éligibles aux commissions',
-          style: TextStyle(
-            fontSize: _textSizeService.getScaledFontSize(15),
-            fontWeight: FontWeight.w800,
-            color: isDark ? Colors.white : const Color(0xFF1F2937),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Chaque souscription de vos filleuls à ces services génère une commission de 10% créditée directement sur votre compte.',
-          style: TextStyle(
-            fontSize: _textSizeService.getScaledFontSize(11),
-            color: isDark ? Colors.white70 : const Color(0xFF6B7280),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildServiceItem(
-          name: 'Absences & Retards',
-          description: 'Suivi en temps réel des présences de l\'élève',
-          price: '100 F / mois',
-          icon: Icons.door_sliding_rounded,
-          iconColor: Colors.red[400]!,
-          isDark: isDark,
-        ),
-        const SizedBox(height: 8),
-        _buildServiceItem(
-          name: 'Bulletins & Notes',
-          description: 'Accès numérique aux relevés scolaires',
-          price: '150 F / mois',
-          icon: Icons.receipt_long_rounded,
-          iconColor: Colors.blue[400]!,
-          isDark: isDark,
-        ),
-        const SizedBox(height: 8),
-        _buildServiceItem(
-          name: 'Performance Scolaire',
-          description: 'Analyses statistiques et graphiques des résultats',
-          price: '150 F / mois',
-          icon: Icons.analytics_rounded,
-          iconColor: Colors.green[400]!,
-          isDark: isDark,
-        ),
-        const SizedBox(height: 8),
-        _buildServiceItem(
-          name: 'Notifications WhatsApp & SMS',
-          description: 'Alertes instantanées directes sur le mobile',
-          price: '200 F / mois',
-          icon: Icons.forum_rounded,
-          iconColor: const Color(0xFF25D366),
-          isDark: isDark,
-        ),
-        const SizedBox(height: 8),
-        _buildServiceItem(
-          name: 'Cantine & Restauration',
-          description: 'Réservation et paiements des repas scolaires',
-          price: 'Tarif Étab.',
-          icon: Icons.restaurant_rounded,
-          iconColor: Colors.amber[600]!,
-          isDark: isDark,
-        ),
-        const SizedBox(height: 8),
-        _buildServiceItem(
-          name: 'Transport Scolaire',
-          description: 'Abonnement et suivi de la navette de l\'école',
-          price: 'Tarif Étab.',
-          icon: Icons.directions_bus_rounded,
-          iconColor: Colors.indigo[400]!,
-          isDark: isDark,
-        ),
-        const SizedBox(height: 8),
-        const BottomSpacer(),
-      ],
+    _offersFuture ??= SubscriptionService.instance.getOffers();
+
+    return FutureBuilder<List<SubscriptionOffer>>(
+      future: _offersFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CustomLoader(
+                message: 'Chargement des offres...',
+                loaderColor: AppColors.screenOrange,
+                showBackground: false,
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || snapshot.data == null) {
+          return CustomErrorState(
+            message: 'Impossible de charger les offres. Veuillez réessayer.',
+            iconColor: AppColors.screenOrange,
+            buttonColor: AppColors.screenOrange,
+            onRetry: () {
+              setState(() {
+                _offersFuture = SubscriptionService.instance.getOffers();
+              });
+            },
+          );
+        }
+
+        final offers = snapshot.data!;
+
+        return ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          children: [
+            Text(
+              'Services éligibles aux commissions',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(15),
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : const Color(0xFF1F2937),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Chaque souscription de vos filleuls à ces services génère une commission de 10% créditée directement sur votre compte.',
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(11),
+                color: isDark ? Colors.white70 : const Color(0xFF6B7280),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (offers.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: Text(
+                    'Aucune offre disponible pour le moment.',
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(13),
+                      color: isDark ? Colors.white70 : const Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+              )
+            else
+              ...offers.map(
+                (offer) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildServiceItem(
+                    name: offer.title,
+                    description: offer.description,
+                    price: offer.isTrial
+                        ? 'Essai gratuit'
+                        : '${offer.activePrice.toStringAsFixed(0)} ${offer.currency} / ${offer.duration}',
+                    icon: offer.isPopular
+                        ? Icons.workspace_premium_rounded
+                        : Icons.card_membership_rounded,
+                    iconColor: offer.isPopular
+                        ? AppColors.screenOrange
+                        : Colors.indigo[400]!,
+                    isDark: isDark,
+                    onSubscribe: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SubscriptionScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            const BottomSpacer(),
+          ],
+        );
+      },
     );
   }
 
@@ -915,6 +942,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
     required IconData icon,
     required Color iconColor,
     required bool isDark,
+    VoidCallback? onSubscribe,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -960,13 +988,45 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            price,
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(11),
-              fontWeight: FontWeight.w800,
-              color: AppColors.screenOrange,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                price,
+                style: TextStyle(
+                  fontSize: _textSizeService.getScaledFontSize(11),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.screenOrange,
+                ),
+              ),
+              if (onSubscribe != null) ...[
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: onSubscribe,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.08)
+                          : const Color(0xFFF2F4F7),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Souscrire',
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(10),
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),

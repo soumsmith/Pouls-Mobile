@@ -19,11 +19,16 @@ class AppShareService {
 
   // ─── Miniature pour les aperçus de lien (WhatsApp, e-mail, etc.) ──────────
   //
-  // share/index.html et video/index.html sont servis en PHP (via .htaccess)
-  // et lisent ces paramètres pour générer dynamiquement les balises Open
-  // Graph (og:title/og:description/og:image), afin que l'aperçu affiché par
-  // WhatsApp/Messenger/e-mail montre la miniature réelle du contenu partagé
-  // plutôt que le logo générique de l'application.
+  // share/index.php et video/index.php sont exécutés en PHP nativement
+  // (extension .php, sans dépendre d'un .htaccess AddType/AddHandler qui
+  // s'est révélé non pris en compte sur l'hébergement — le serveur servait
+  // le code PHP brut au lieu de l'exécuter) et lisent ces paramètres pour
+  // générer dynamiquement les balises Open Graph (og:title/og:description/
+  // og:image), afin que l'aperçu affiché par WhatsApp/Messenger/e-mail
+  // montre la miniature réelle du contenu partagé plutôt que le logo
+  // générique de l'application. Les anciens index.html restent en place en
+  // simple redirection statique vers index.php, pour ne pas casser les
+  // liens déjà partagés avant ce changement.
   static String _previewParams({
     required String title,
     String? desc,
@@ -61,7 +66,7 @@ class AppShareService {
   /// que la navigation classique (bien plus fiable qu'une recherche dans
   /// tout le catalogue toutes écoles confondues).
   static String buildCoulisseLink(CoulisseExcellence video) {
-    var link = '$_baseUrl/share/index.html?type=coulisse&id=${video.id}';
+    var link = '$_baseUrl/share/index.php?type=coulisse&id=${video.id}';
     if (video.code.isNotEmpty) {
       link += '&ecole=${Uri.encodeQueryComponent(video.code)}';
     } else {
@@ -102,7 +107,7 @@ class AppShareService {
 
     final isAstuce = video.typeVideo == 'astuce';
     final type = isAstuce ? 'tip' : 'visite';
-    var link = '$_baseUrl/share/index.html?type=$type&id=${video.id}';
+    var link = '$_baseUrl/share/index.php?type=$type&id=${video.id}';
 
     // Le paramètre ecole n'est utile que pour la résolution "visite guidée"
     // scopée par école (_loadVisiteGuideeVideo) — les astuces sont résolues
@@ -130,7 +135,7 @@ class AppShareService {
 
   /// Génère le lien de partage pour un article de blog.
   static String buildArticleLink(Blog article) {
-    var link = '$_baseUrl/share/index.html?type=article&id=${article.slug}';
+    var link = '$_baseUrl/share/index.php?type=article&id=${article.slug}';
     link += _previewParams(
       title: article.title,
       desc: article.content,
@@ -141,7 +146,7 @@ class AppShareService {
 
   /// Génère le lien de partage pour un événement.
   static String buildEventLink(Event event) {
-    var link = '$_baseUrl/share/index.html?type=event&id=${event.slug}';
+    var link = '$_baseUrl/share/index.php?type=event&id=${event.slug}';
     link += _previewParams(
       title: event.title,
       desc: event.content,
@@ -152,7 +157,7 @@ class AppShareService {
 
   /// Génère le lien de partage pour une astuce/conseil.
   static String buildTipLink(AstuceConseil tip) {
-    var link = '$_baseUrl/share/index.html?type=tip&id=${tip.id}';
+    var link = '$_baseUrl/share/index.php?type=tip&id=${tip.id}';
     link += _previewParams(
       title: tip.title,
       desc: tip.content,
@@ -163,7 +168,7 @@ class AppShareService {
 
   /// Génère le lien de partage pour un produit (boutique).
   static String buildProductLink(Product product) {
-    var link = '$_baseUrl/share/index.html?type=product&id=${product.id}';
+    var link = '$_baseUrl/share/index.php?type=product&id=${product.id}';
     link += _previewParams(
       title: product.title,
       desc: product.description,

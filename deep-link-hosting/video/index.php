@@ -1,0 +1,110 @@
+<?php
+function prd_h($s) {
+    return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+}
+
+$prdDefaultImage = 'https://api2.vie-ecoles.com/deep-link-hosting/video/logo.png';
+$prdTitle = (isset($_GET['title']) && $_GET['title'] !== '') ? $_GET['title'] : 'Parent Responsable';
+$prdDesc  = (isset($_GET['desc'])  && $_GET['desc']  !== '') ? $_GET['desc']  : "Découvrez ce contenu dans l'application Parent Responsable.";
+$prdImg   = (isset($_GET['img'])   && $_GET['img']   !== '') ? $_GET['img']   : $prdDefaultImage;
+?>
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo prd_h($prdTitle); ?></title>
+    <meta property="og:title" content="<?php echo prd_h($prdTitle); ?>">
+    <meta property="og:description" content="<?php echo prd_h($prdDesc); ?>">
+    <meta property="og:image" content="<?php echo prd_h($prdImg); ?>">
+    <meta property="og:type" content="video.other">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?php echo prd_h($prdTitle); ?>">
+    <meta name="twitter:description" content="<?php echo prd_h($prdDesc); ?>">
+    <meta name="twitter:image" content="<?php echo prd_h($prdImg); ?>">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background-color: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loader"></div>
+    <h2>Ouverture du contenu...</h2>
+    <p>Si l'application ne s'ouvre pas automatiquement, cliquez ci-dessous :</p>
+
+    <a id="store-link" href="https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable"
+        class="btn">Télécharger l'application</a>
+
+    <script>
+        // Extraction du type et de l'id depuis l'URL (ex: ?type=visite&id=92)
+        const urlParams = new URLSearchParams(window.location.search);
+        const type = urlParams.get('type');
+        const id = urlParams.get('id');
+
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        if (isIOS) {
+            document.getElementById('store-link').href = 'https://apps.apple.com/app/parent-responsable/id6763526336';
+        }
+
+        if (type && id) {
+            // Tenter d'ouvrir l'application si l'OS ne l'a pas fait automatiquement
+            window.location.href = `pouls://share/${type}/${id}`;
+        }
+
+        // Redirection vers le store après un court délai si l'app ne s'ouvre pas
+        setTimeout(function () {
+            if (isIOS) {
+                window.location.href = 'https://apps.apple.com/app/parent-responsable/id6763526336';
+            } else {
+                window.location.href = 'https://play.google.com/store/apps/details?id=com.groupegain.parents_responsable';
+            }
+        }, 2500);
+    </script>
+</body>
+
+</html>

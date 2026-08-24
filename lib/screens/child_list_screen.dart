@@ -3819,7 +3819,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             child: ImageMenuCardExternalTitle(
               index: 0,
               cardKey: 'premium_offers',
-              imagePath: 'assets/images/icons/services_scolaires.png',
+              imagePath: 'assets/images/icons/banner-offre.png',
               width: cardWidth,
               height: null,
               imageHeight: cardHeight,

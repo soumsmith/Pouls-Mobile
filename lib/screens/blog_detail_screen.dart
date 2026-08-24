@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/blog.dart';
 import '../models/ecole.dart';
@@ -411,6 +412,8 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
           _buildMetaCards(typeColor, uiData),
           const SizedBox(height: 24),
           _buildContent(),
+          const SizedBox(height: 16),
+          _buildSource(),
           const SizedBox(height: 28),
           _buildOtherBlogs(),
           const SizedBox(height: 28),
@@ -535,6 +538,94 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
         ],
       ),
     );
+  }
+
+  // ── Source ───────────────────────────────────
+  Widget _buildSource() {
+    final source = widget.blog.source?.trim();
+    final link = widget.blog.liendetailblog?.trim();
+    final hasSource = source != null && source.isNotEmpty;
+    final hasLink = link != null && link.isNotEmpty && link != '---';
+
+    if (!hasSource && !hasLink) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.screenCardThemed(context),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: _C.indigoLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.link_rounded,
+                color: _C.indigo,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Source',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.screenTextSecondaryThemed(context),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    hasSource ? source : 'Article externe',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.screenTextPrimaryThemed(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (hasLink)
+              TextButton.icon(
+                onPressed: () => _openSourceLink(link),
+                icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                label: const Text('Consulter'),
+                style: TextButton.styleFrom(foregroundColor: _C.indigo),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSourceLink(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      NotificationHelper.showError('Lien de la source invalide');
+      return;
+    }
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        NotificationHelper.showError('Impossible d\'ouvrir le lien de la source');
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationHelper.showError('Impossible d\'ouvrir le lien de la source');
+      }
+    }
   }
 
   // ── Other Blogs ─────────────────────────────

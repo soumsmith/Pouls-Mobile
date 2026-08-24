@@ -3204,7 +3204,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildCard(
                 index: 0,
                 cardKey: 'inscription',
-                title: 'Inscription \n en ligne',
+                title: 'Inscription /\nPréinscription',
                 imagePath: 'assets/images/icons/inscription_en_ligne.png',
                 color: AppColors.cardLightGrey,
                 backgroundColor: const Color(0xFFF8FCFF),

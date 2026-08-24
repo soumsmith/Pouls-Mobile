@@ -16,6 +16,8 @@ import '../widgets/components/bottom_spacer.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
+import '../widgets/custom_loader.dart';
+import '../config/app_colors.dart';
 import '../models/child.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -129,7 +131,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      barrierColor: Colors.transparent,
+      builder: (context) => const CustomLoader(
+        message: 'Chargement...',
+        loaderColor: AppColors.screenOrange,
+      ),
     );
 
     List<Child> children = [];
@@ -537,7 +543,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        barrierColor: Colors.transparent,
+        builder: (context) => const CustomLoader(
+          message: 'Activation en cours...',
+          loaderColor: AppColors.screenOrange,
+        ),
       );
       final success = await SubscriptionService.instance.subscribeToOffer(
         offer,
@@ -554,7 +564,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      barrierColor: Colors.transparent,
+      builder: (context) => const CustomLoader(
+        message: 'Initialisation du paiement...',
+        loaderColor: AppColors.screenOrange,
+      ),
     );
 
     try {
@@ -656,10 +670,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
 
           if (_isLoading)
-            SliverFillRemaining(
+            const SliverFillRemaining(
               child: Center(
-                child: CircularProgressIndicator(
-                  color: isDark ? Colors.white : Colors.black,
+                child: CustomLoader(
+                  message: 'Chargement des offres...',
+                  loaderColor: AppColors.screenOrange,
+                  showBackground: false,
                 ),
               ),
             )

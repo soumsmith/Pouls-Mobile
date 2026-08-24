@@ -11,6 +11,7 @@ class Blog {
   final String? image;
   final String? auteur;
   final String? liendetailblog;
+  final String? source;
 
   Blog({
     required this.slug,
@@ -23,6 +24,7 @@ class Blog {
     this.image,
     this.auteur,
     this.liendetailblog,
+    this.source,
   });
 
   factory Blog.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,7 @@ class Blog {
       image: json['image']?.toString(),
       auteur: json['auteur']?.toString(),
       liendetailblog: json['liendetailblog']?.toString(),
+      source: json['source']?.toString(),
     );
   }
 
@@ -52,6 +55,7 @@ class Blog {
       'image': image,
       'auteur': auteur,
       'liendetailblog': liendetailblog,
+      'source': source,
     };
   }
 
@@ -80,6 +84,7 @@ class Blog {
       'auteur': auteur ?? 'Administration',
       'categories': categories,
       'liendetailblog': liendetailblog,
+      'source': source,
     };
   }
 

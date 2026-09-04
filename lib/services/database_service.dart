@@ -27,7 +27,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -65,6 +65,8 @@ class DatabaseService {
         paramEcole TEXT,
         classeId INTEGER,
         classeName TEXT,
+        schoolId TEXT,
+        classeRef TEXT,
         createdAt INTEGER NOT NULL,
         updatedAt INTEGER NOT NULL,
         FOREIGN KEY (parentId) REFERENCES users(id) ON DELETE CASCADE
@@ -271,6 +273,36 @@ class DatabaseService {
         )
       ''');
     }
+    if (oldVersion < 8) {
+      // schoolId : référence opaque de l'API de consultation
+      // (api-pedagogie.pouls-scolaire.net), enregistrée directement à
+      // l'ajout de l'enfant pour les établissements qui n'existent que dans
+      // cette API (pas de ecoleId legacy correspondant). classeRef : idem
+      // pour la classe, utile côté "élève inscrit dans deux classes".
+      //
+      // _addColumnIfNotExists (pas un ALTER direct) : si cette migration est
+      // interrompue après avoir ajouté une colonne mais avant que SQLite
+      // n'enregistre la nouvelle version, elle est rejouée intégralement au
+      // prochain lancement — un ALTER direct plante alors sur "duplicate
+      // column name" et bloque l'utilisateur en boucle.
+      await _addColumnIfNotExists(db, 'children', 'schoolId', 'TEXT');
+      await _addColumnIfNotExists(db, 'children', 'classeRef', 'TEXT');
+    }
+  }
+
+  /// Ajoute [column] à [table] seulement si elle n'existe pas déjà — rend les
+  /// migrations sûres à rejouer après une interruption (voir oldVersion < 8).
+  Future<void> _addColumnIfNotExists(
+    Database db,
+    String table,
+    String column,
+    String sqlType,
+  ) async {
+    final info = await db.rawQuery('PRAGMA table_info($table)');
+    final exists = info.any((row) => row['name'] == column);
+    if (!exists) {
+      await db.execute('ALTER TABLE $table ADD COLUMN $column $sqlType');
+    }
   }
 
   /// Sauvegarde (ou met à jour) une école dans le cache local
@@ -399,6 +431,8 @@ class DatabaseService {
     String? paramEcole,
     int? classeId,
     String? classeName,
+    String? schoolId,
+    String? classeRef,
   }) async {
     final db = await database;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -417,9 +451,24 @@ class DatabaseService {
       'paramEcole': paramEcole,
       'classeId': classeId,
       'classeName': classeName,
+      'schoolId': schoolId,
+      'classeRef': classeRef,
       'createdAt': now,
       'updatedAt': now,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Corrige le `paramEcole` d'un enfant déjà enregistré (voir
+  /// PoulsScolaireApiService.findLegacyParamEcoleByCodeAndName) sans toucher
+  /// au reste de la fiche.
+  Future<void> updateChildParamEcole(String childId, String paramEcole) async {
+    final db = await database;
+    await db.update(
+      'children',
+      {'paramEcole': paramEcole, 'updatedAt': DateTime.now().millisecondsSinceEpoch},
+      where: 'id = ?',
+      whereArgs: [childId],
+    );
   }
 
   /// Récupère tous les enfants d'un parent

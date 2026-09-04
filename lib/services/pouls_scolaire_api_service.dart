@@ -96,6 +96,44 @@ class PoulsScolaireApiService {
     print('');
   }
 
+  /// Retrouve le `paramecole` legacy (ex. "hinneh") d'un établissement à
+  /// partir de son `code` et de son nom sur l'API de consultation (ex.
+  /// "057955" / "Collège Privé Hînneh Biabou").
+  ///
+  /// `paramecole` est un code DIFFÉRENT du code de l'API de consultation :
+  /// c'est celui qu'attendent les intégrations tierces historiques
+  /// (inscription en ligne via api2.vie-ecoles.com, galeries/vidéos...).
+  /// Les confondre casse ces flux avec un 404 "Ecole not found" — vérifié en
+  /// conditions réelles. Retourne `null` si aucun établissement legacy ne
+  /// correspond (établissement propre à l'API de consultation, sans
+  /// équivalent legacy) ou si le code est ambigu (partagé par plusieurs
+  /// écoles sans rapport, ex. "12345678") et qu'aucun nom ne correspond.
+  Future<String?> findLegacyParamEcoleByCodeAndName(
+    String code,
+    String nom,
+  ) async {
+    try {
+      final ecoles = await getAllEcoles();
+      final candidates = ecoles.where((e) => e.ecolecode == code).toList();
+      if (candidates.isEmpty) return null;
+
+      String normalize(String s) =>
+          s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+      final expected = normalize(nom);
+      for (final c in candidates) {
+        if (normalize(c.ecoleclibelle) == expected) {
+          return (c.paramecole != null && c.paramecole!.isNotEmpty)
+              ? c.paramecole
+              : c.ecolecode;
+        }
+      }
+      return null;
+    } catch (e) {
+      print('⚠️ findLegacyParamEcoleByCodeAndName: $e');
+      return null;
+    }
+  }
+
   /// Récupère toutes les écoles disponibles
   ///
   /// Endpoint: GET /connecte/ecole

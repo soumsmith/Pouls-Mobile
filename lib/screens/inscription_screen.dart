@@ -219,6 +219,18 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   // ── État de chargement initial ───────────────────────────────────────────────
   bool _isInitialLoading = true;
   bool _studentDataReady = false;
+  // Garde-fou : _initializeStudentData ne doit s'exécuter qu'une seule fois.
+  // didChangeDependencies() se redéclenche à chaque changement de dépendance
+  // (ex. MediaQuery au retour d'arrière-plan après un paiement en ligne dans
+  // le navigateur externe) — sans ce garde-fou, tout le flux d'initialisation
+  // se rejoue en plein milieu de l'assistant et recharge _echeancesScolarite
+  // depuis zéro, réinitialisant les sélections de l'utilisateur (ex. total à
+  // payer qui retombe à 0 au récapitulatif).
+  bool _hasInitializedStudentData = false;
+
+  // ── Bannière d'alerte paiement (fixe, plus visible qu'un toast) ─────────────
+  String? _paymentAlertMessage;
+  Timer? _paymentAlertTimer;
 
   // ─── LISTE DYNAMIQUE DES ÉTAPES ───────────────────────────────────────────
   //
@@ -348,6 +360,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_hasInitializedStudentData) return;
+    _hasInitializedStudentData = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _initializeStudentData();
@@ -480,10 +494,102 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     _serviceSearchController.dispose();
     _zoneSearchController.dispose();
     _mainScrollController.dispose();
+    _paymentAlertTimer?.cancel();
     for (var controller in _stepControllers.values) {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  /// Affiche une bannière fixe en haut de l'écran (plus visible qu'un toast
+  /// qui peut passer inaperçu) — disparaît automatiquement après [duration].
+  void _showPaymentAlertBanner(
+    String message, {
+    Duration duration = const Duration(seconds: 8),
+  }) {
+    if (!mounted) return;
+    _paymentAlertTimer?.cancel();
+    setState(() => _paymentAlertMessage = message);
+    _paymentAlertTimer = Timer(duration, () {
+      if (mounted) setState(() => _paymentAlertMessage = null);
+    });
+  }
+
+  void _dismissPaymentAlertBanner() {
+    _paymentAlertTimer?.cancel();
+    if (mounted) setState(() => _paymentAlertMessage = null);
+  }
+
+  Widget _buildPaymentAlertBanner() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 8,
+      left: 16,
+      right: 16,
+      child: IgnorePointer(
+        ignoring: _paymentAlertMessage == null,
+        child: AnimatedOpacity(
+          opacity: _paymentAlertMessage != null ? 1 : 0,
+          duration: const Duration(milliseconds: 250),
+          child: AnimatedSlide(
+            offset: _paymentAlertMessage != null
+                ? Offset.zero
+                : const Offset(0, -0.3),
+            duration: const Duration(milliseconds: 250),
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _paymentAlertMessage ?? '',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _dismissPaymentAlertBanner,
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                        size: 18,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // ─── CHARGEMENT PARAMÈTRES ÉCOLE ──────────────────────────────────────────
@@ -2493,8 +2599,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           t.cancel();
           if (mounted) {
             Navigator.of(context).pop(); // Fermer uniquement le loader
-            _showError(
-              'Le délai de vérification est dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas été débité.',
+            _showPaymentAlertBanner(
+              'Le paiement n\'a pas abouti : le délai de vérification est '
+              'dépassé. N\'hésitez pas à réessayer si votre compte n\'a pas '
+              'été débité.',
             );
 
             NotificationService().showNotification(
@@ -3035,6 +3143,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             bottom: MediaQuery.of(context).padding.bottom,
             child: _buildNavigationButtons(),
           ),
+          _buildPaymentAlertBanner(),
         ],
       ),
     );

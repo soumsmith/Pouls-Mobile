@@ -41,6 +41,15 @@ class AppConfig {
   // Pour Chrome/Windows Desktop, décommentez cette ligne et commentez celle du dessus :
   //static const String POULS_SCOLAIRE_API_URL = 'http://localhost:8889/api';
 
+  /// URL de base pour l'API de consultation (notes/bulletins), voir
+  /// API-CONSULTATION-MOBILE.pdf. Authentification par compte de service
+  /// unique (PedagogieAuthService), pas de login par parent.
+  static const String PEDAGOGIE_API_BASE_URL =
+      'https://api-pedagogie.pouls-scolaire.net/api';
+  static const String PEDAGOGIE_AUTH_EMAIL =
+      'admin-koffi@pedagogie.pouls-scolaire.net';
+  static const String PEDAGOGIE_AUTH_PASSWORD = 'admin!Pedago!2026';
+
   /// URL de base pour l'API Vie-Ecoles (api2.vie-ecoles.com)
   /// Utilise la variable d'environnement VIE_ECOLES_API_BASE_URL si disponible,
   /// sinon utilise l'URL par défaut
@@ -66,7 +75,7 @@ class AppConfig {
 
   // ─── Configuration de Vérification de Paiement ───────────────────────────
   static const int PAYMENT_VERIFICATION_INTERVAL_SECONDS = 5;
-  static const int PAYMENT_VERIFICATION_MAX_ATTEMPTS = 10;
+  static const int PAYMENT_VERIFICATION_MAX_ATTEMPTS = 14; // 5s × 14 = 70s (1min10)
 
   // ─── External URLs ───────────────────────────────────────────────────────
   static const String TUTEUR_ADOM_URL =

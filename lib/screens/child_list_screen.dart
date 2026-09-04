@@ -54,7 +54,6 @@ import '../widgets/bottom_sheets/child_kits_bottom_sheet.dart';
 import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/components/custom_error_state.dart';
-import '../services/notes_api_service.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../services/school_supply_service.dart';
 import '../services/paiement_service.dart';
@@ -97,7 +96,12 @@ import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../widgets/subtle_retry_button.dart';
 import '../widgets/bottom_sheets/integration_request_bottom_sheet.dart';
 import '../widgets/custom_text_field.dart';
-import '../services/bulletin_api_service.dart';
+import '../services/consultation_api_service.dart';
+import '../models/annee_consultation.dart';
+import '../models/bulletin_consultation.dart';
+import '../models/devoir_consultation.dart';
+import '../models/progression_consultation.dart';
+import '../models/etablissement_consultation.dart';
 import 'pdf_viewer_screen.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
@@ -401,9 +405,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   bool _isLoadingSuggestions = false;
 
   // Variables pour les statistiques de notes
-  final NotesApiService _notesApiService = NotesApiService();
   String? _appreciation;
-  double? _moyFr;
   double? _moyGeneral;
   double? _moyenneAnnuelleProjettee;
   bool _isLoadingNotes = false;
@@ -461,7 +463,6 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Variables pour les données de notes globales
   GlobalAverage? _globalAverage;
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
-  final BulletinApiService _bulletinApiService = BulletinApiService();
 
   // Informations de l'enfant pour l'API
   int? _ecoleId;
@@ -476,17 +477,42 @@ class _ChildListScreenState extends State<ChildListScreen>
   // Détails complets de l'élève
   Map<String, dynamic>? _eleveDetail;
 
-  // Données des bulletins
+  // Données des bulletins (API de consultation, voir API-CONSULTATION-MOBILE.pdf)
+  // Chaque bulletin est adapté en Map via _bulletinToMap pour rester
+  // compatible avec le rendu existant (_buildBulletinCard, PDF, etc.)
   List<dynamic>? _bulletins;
   bool _isLoadingBulletins = false;
+  final ConsultationApiService _consultationApi = ConsultationApiService();
+  String? _consultationSchoolId;
+  // Enregistrés à l'ajout de l'enfant (add_child_screen) pour les
+  // établissements sans ecoleId legacy correspondant.
+  String? _persistedSchoolId;
+  String? _persistedClasseRef;
+  // paramEcole corrigé en mémoire par _healLegacyParamEcoleIfNeeded, pour
+  // que l'inscription en ligne utilise la bonne valeur sans attendre la
+  // prochaine ouverture de l'écran (widget.child reste figé entre-temps).
+  String? _correctedParamEcole;
 
   // Filtres pour Bulletins
+  List<AnneeConsultation> _bulletinsAnnees = [];
+  AnneeConsultation? _bulletinsSelectedAnnee;
   List<dynamic> _bulletinsSchoolYears = [];
   List<String> _bulletinsAvailableYears = [];
   bool _isLoadingBulletinsYears = false;
   bool _isBulletinsFilterExpanded = false;
   String? _expandedBulletinId;
   StateSetter? _bulletinsModalSetState;
+
+  // Devoirs (API de consultation, §4.11)
+  List<DevoirConsultation>? _devoirs;
+  bool _isLoadingHomework = false;
+  StateSetter? _homeworkModalSetState;
+
+  // Progression du programme (API de consultation, §4.10)
+  List<ProgressionConsultation>? _progressions;
+  bool _isLoadingProgressions = false;
+  StateSetter? _progressionsModalSetState;
+  String? _expandedProgressionMatiereCode;
 
   @override
   void initState() {
@@ -973,10 +999,35 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (childInfo != null) {
         setState(() {
           _ecoleId = childInfo['ecoleId'] as int?;
-          _ecoleCode = childInfo['ecoleCode'] as String?;
+          // La colonne 'ecoleCode' n'existe pas en base (toujours null) : le
+          // vrai code attendu par les API vie-ecoles.com (getEleveDetail,
+          // etc.) est stocké dans 'paramEcole' — repli sur widget.child en
+          // dernier recours si la fiche locale n'a pas encore été relue.
+          _ecoleCode =
+              (childInfo['ecoleCode'] as String?) ??
+              (childInfo['paramEcole'] as String?) ??
+              widget.child.paramEcole ??
+              widget.child.ecoleCode;
           _classeId = childInfo['classeId'] as int?;
           _matricule = childInfo['matricule'] as String?;
+          // Enregistré directement à l'ajout de l'enfant (add_child_screen,
+          // API de consultation) : évite de repasser par la résolution par
+          // code legacy, utile notamment pour les établissements qui
+          // n'existent que dans l'API de consultation (pas de ecoleId).
+          _persistedSchoolId = childInfo['schoolId'] as String?;
+          _persistedClasseRef = childInfo['classeRef'] as String?;
+          if (_persistedSchoolId != null) {
+            _consultationSchoolId = _persistedSchoolId;
+          }
         });
+
+        // Best-effort, non bloquant : corrige en arrière-plan un paramEcole
+        // enregistré à tort avec le code de l'API de consultation au lieu du
+        // code legacy attendu par les intégrations tierces (inscription en
+        // ligne, etc.) — voir PoulsScolaireApiService.findLegacyParamEcoleByCodeAndName.
+        if (_persistedSchoolId != null) {
+          _healLegacyParamEcoleIfNeeded(childInfo['paramEcole'] as String?);
+        }
 
         print(' Informations de l\'enfant récupérées:');
         print('   École ID: $_ecoleId');
@@ -1229,56 +1280,54 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // ─── NAVIGATION OPTIMISÉE ────────────────────────────────────
 
+  /// L'écran de notes (API de consultation) n'a besoin que du matricule et du
+  /// `schoolId` : il charge lui-même années/périodes/bulletins (voir
+  /// NotesScreenJson). Seul le `schoolId` reste à résoudre ici.
   Future<void> _navigateToNotes() async {
-    if (_matricule != null && _anneeId != null && _classeId != null) {
-      _doNavigateToNotes();
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) {
+      NotificationHelper.showInfo('Informations élève non disponibles');
       return;
     }
 
-    // Tenter de récupérer l'année scolaire et la classe si possible
-    if (_ecoleId != null && (_anneeId == null || _classeId == null)) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-      );
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
 
-      try {
-        if (_anneeId == null) {
-          final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(
-            _ecoleId!,
-          );
-          setState(() {
-            _anneeId = anneeScolaire.anneeOuverteCentraleId;
-          });
-        }
-        if (_anneeId != null && _classeId == null) {
-          await _loadStudentClassInfo();
-        }
-      } catch (e) {
-        print("Erreur de récupération à la volée: $e");
-      }
-
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+    String? schoolId;
+    try {
+      schoolId = await _resolveConsultationSchoolId();
+    } catch (e) {
+      print('Erreur de résolution du schoolId pour les notes: $e');
     }
 
-    _doNavigateToNotes();
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+
+    if (schoolId == null) {
+      if (mounted) {
+        NotificationHelper.showError(
+          'Impossible de récupérer l\'établissement pour les notes',
+        );
+      }
+      return;
+    }
+
+    _doNavigateToNotes(matricule, schoolId);
   }
 
-  void _doNavigateToNotes() {
+  void _doNavigateToNotes(String matricule, String schoolId) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => NotesScreenJson(
-          matricule: _matricule,
-          anneeId: _anneeId?.toString(),
-          classeId: _classeId?.toString(),
-          anneeLibelle:
-              'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
-          ecoleId: _ecoleId?.toString(),
+          matricule: matricule,
+          schoolId: schoolId,
+          classeRef: _persistedClasseRef,
         ),
       ),
     );
@@ -1426,6 +1475,10 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showHomeworkBottomSheet() {
+    _devoirs = null;
+    _isLoadingHomework = false;
+    bool hasAttemptedLoad = false;
+
     ReusableBottomSheet.show(
       context: context,
       title: 'Devoirs',
@@ -1437,11 +1490,80 @@ class _ChildListScreenState extends State<ChildListScreen>
       minChildSize: 0.5,
       maxChildSize: 0.95,
       contentPadding: const EdgeInsets.all(16),
-      content: _buildHomeworkContent(),
-    );
+      content: StatefulBuilder(
+        builder: (context, setModalState) {
+          _homeworkModalSetState = setModalState;
+          if (!hasAttemptedLoad) {
+            hasAttemptedLoad = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadDevoirs(setModalState);
+            });
+          }
+          return _buildHomeworkContent();
+        },
+      ),
+    ).whenComplete(() {
+      _homeworkModalSetState = null;
+    });
+  }
+
+  Future<void> _loadDevoirs([StateSetter? setModalState]) async {
+    if (_isLoadingHomework) return;
+
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) return;
+
+    final effectiveModalSetState = setModalState ?? _homeworkModalSetState;
+    void updateState(VoidCallback fn) {
+      if (effectiveModalSetState != null) effectiveModalSetState(fn);
+      if (mounted) setState(fn);
+    }
+
+    updateState(() => _isLoadingHomework = true);
+
+    try {
+      final schoolId = await _resolveConsultationSchoolId();
+      if (schoolId == null) {
+        throw Exception('Établissement introuvable dans l\'API de consultation');
+      }
+
+      final annees = await _consultationApi.getAnnees(schoolId);
+      if (annees.isEmpty) {
+        throw Exception('Aucune année scolaire disponible');
+      }
+      // Le cahier de textes n'existe que sur les années de la nouvelle
+      // plateforme (P:) — les années archivées (H:) répondent 400 (doc §4.11).
+      final annee = annees.firstWhere(
+        (a) => a.courante,
+        orElse: () => annees.first,
+      );
+
+      final devoirs = await _consultationApi.getDevoirs(
+        schoolId,
+        matricule,
+        anneeRef: annee.ref,
+        classeRef: _persistedClasseRef,
+      );
+
+      updateState(() {
+        _devoirs = devoirs;
+        _isLoadingHomework = false;
+      });
+    } catch (e) {
+      updateState(() {
+        _devoirs = [];
+        _isLoadingHomework = false;
+      });
+      print('❌ Erreur lors du chargement des devoirs: $e');
+    }
   }
 
   void _showProgressionBottomSheet() {
+    _progressions = null;
+    _isLoadingProgressions = false;
+    _expandedProgressionMatiereCode = null;
+    bool hasAttemptedLoad = false;
+
     ReusableBottomSheet.show(
       context: context,
       title: 'Progression',
@@ -1453,8 +1575,21 @@ class _ChildListScreenState extends State<ChildListScreen>
       minChildSize: 0.5,
       maxChildSize: 0.95,
       contentPadding: const EdgeInsets.all(16),
-      content: _buildComingSoonContent(),
-    );
+      content: StatefulBuilder(
+        builder: (context, setModalState) {
+          _progressionsModalSetState = setModalState;
+          if (!hasAttemptedLoad) {
+            hasAttemptedLoad = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadProgressions(setModalState);
+            });
+          }
+          return _buildProgressionContent(setModalState);
+        },
+      ),
+    ).whenComplete(() {
+      _progressionsModalSetState = null;
+    });
   }
 
   void _showHomeworkProgramBottomSheet() {
@@ -1471,6 +1606,65 @@ class _ChildListScreenState extends State<ChildListScreen>
       contentPadding: const EdgeInsets.all(16),
       content: _buildComingSoonContent(),
     );
+  }
+
+  Future<void> _loadProgressions([StateSetter? setModalState]) async {
+    if (_isLoadingProgressions) return;
+
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) return;
+
+    final effectiveModalSetState = setModalState ?? _progressionsModalSetState;
+    void updateState(VoidCallback fn) {
+      if (effectiveModalSetState != null) effectiveModalSetState(fn);
+      if (mounted) setState(fn);
+    }
+
+    updateState(() => _isLoadingProgressions = true);
+
+    try {
+      final schoolId = await _resolveConsultationSchoolId();
+      if (schoolId == null) {
+        throw Exception('Établissement introuvable dans l\'API de consultation');
+      }
+
+      final annees = await _consultationApi.getAnnees(schoolId);
+      if (annees.isEmpty) {
+        throw Exception('Aucune année scolaire disponible');
+      }
+      // La progression n'existe que sur les années de la nouvelle plateforme
+      // (P:) — les années archivées (H:) répondent 400 (doc §4.10).
+      final annee = annees.firstWhere(
+        (a) => a.courante,
+        orElse: () => annees.first,
+      );
+
+      // La classe de l'élève pour CETTE année (doc §4.7) : plus fiable que
+      // la classe capturée à l'ajout de l'enfant, qui change chaque année.
+      final classes = await _consultationApi.getClasses(
+        schoolId,
+        matricule,
+        anneeRef: annee.ref,
+      );
+      final classeRef = classes.isNotEmpty ? classes.first.classeRef : null;
+
+      final progressions = await _consultationApi.getProgressions(
+        schoolId,
+        anneeRef: annee.ref,
+        classeRef: classeRef,
+      );
+
+      updateState(() {
+        _progressions = progressions;
+        _isLoadingProgressions = false;
+      });
+    } catch (e) {
+      updateState(() {
+        _progressions = [];
+        _isLoadingProgressions = false;
+      });
+      print('❌ Erreur lors du chargement de la progression: $e');
+    }
   }
 
   void _showAttendanceBottomSheet() {
@@ -3991,10 +4185,15 @@ class _ChildListScreenState extends State<ChildListScreen>
                       centerTitle: true,
                       moduleIdentifiant: 'inscription-reinscription',
                       onTap: () {
-                        final updatedChild =
+                        var updatedChild =
                             _ecoleCode != null && _ecoleCode!.isNotEmpty
                             ? widget.child.copyWith(ecoleCode: _ecoleCode)
                             : widget.child;
+                        if (_correctedParamEcole != null) {
+                          updatedChild = updatedChild.copyWith(
+                            paramEcole: _correctedParamEcole,
+                          );
+                        }
 
                         AuthGuard.ensureLoggedIn(
                           context,
@@ -4212,26 +4411,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 buttonText: item['buttonText'] as String,
                 onTap: () {
                   if (item['key'] == 'notes') {
-                    if (_matricule != null &&
-                        _anneeId != null &&
-                        _classeId != null) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => NotesScreenJson(
-                            matricule: _matricule!,
-                            anneeId: _anneeId!.toString(),
-                            classeId: _classeId!.toString(),
-                            anneeLibelle:
-                                'Année scolaire ${DateTime.now().year}-${DateTime.now().year + 1}',
-                            ecoleId: _ecoleId?.toString(),
-                          ),
-                        ),
-                      );
-                    } else {
-                      NotificationHelper.showInfo(
-                        'Informations élève non disponibles',
-                      );
-                    }
+                    _navigateToNotes();
                   } else if (item['key'] == 'timetable') {
                     _showTimetableBottomSheet();
                   } else {
@@ -5096,6 +5276,45 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   List<Widget> _buildAvailableSummaryCards() {
     List<Widget> cards = [];
+
+    // Carte Préinscription
+    if (_eleveDetail != null && _eleveDetail!['preinscrit'] != null) {
+      final isPreinscrit = _eleveDetail!['preinscrit'] == 1;
+      final datePreinsc = _eleveDetail!['date_preinsc']?.toString();
+      cards.add(
+        _buildEnhancedSummaryCard(
+          'Préinscription',
+          isPreinscrit ? 'Faite' : 'À faire',
+          isPreinscrit ? AppColors.success : Colors.orange,
+          isPreinscrit ? Icons.check_circle : Icons.warning_amber_rounded,
+          subtitle: isPreinscrit && datePreinsc != null && datePreinsc.isNotEmpty
+              ? 'Le ${_formatDate(datePreinsc)}'
+              : 'Non effectuée',
+          gradient: _getGradientForColor(
+            isPreinscrit ? AppColors.success : Colors.orange,
+          ),
+        ),
+      );
+    }
+
+    // Carte Inscription (élève affecté à une classe)
+    if (_eleveDetail != null && _eleveDetail!['status'] != null) {
+      final isInscrit = _eleveDetail!['status'] == 1;
+      cards.add(
+        _buildEnhancedSummaryCard(
+          'Inscription',
+          isInscrit ? 'Inscrit' : 'Non inscrit',
+          isInscrit ? AppColors.success : Colors.red,
+          isInscrit ? Icons.school : Icons.error_outline,
+          subtitle: isInscrit
+              ? (_eleveDetail!['nom_classe']?.toString() ?? 'Classe attribuée')
+              : 'Statut',
+          gradient: _getGradientForColor(
+            isInscrit ? AppColors.success : Colors.red,
+          ),
+        ),
+      );
+    }
 
     // Carte Moyenne
     if (_moyenneAnnuelleProjettee != null) {
@@ -8193,19 +8412,16 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
+  /// Résumé "à chaud" (appréciation / moyenne) affiché sur la fiche enfant.
+  /// Même repli que Bulletins/Notes : l'année courante n'a souvent encore
+  /// aucun bulletin en tout début d'année scolaire, on essaie alors les
+  /// années précédentes jusqu'à en trouver une qui a des données.
   Future<void> _loadNotesStatistics() async {
     if (_isLoadingNotes) return;
 
     final matricule = _matricule ?? widget.child.matricule;
     if (matricule == null || matricule.isEmpty) {
       print(' Matricule non disponible pour les statistiques de notes');
-      return;
-    }
-
-    if (_anneeId == null || _classeId == null) {
-      print(
-        ' Informations année/classe non disponibles pour les statistiques de notes',
-      );
       return;
     }
 
@@ -8218,48 +8434,60 @@ class _ChildListScreenState extends State<ChildListScreen>
     try {
       print(' Chargement des statistiques de notes pour: $matricule');
 
-      // Utiliser la période 1 par défaut
-      final periode = '1';
+      final schoolId = await _resolveConsultationSchoolId();
+      if (schoolId == null) {
+        if (mounted) setState(() => _isLoadingNotes = false);
+        return;
+      }
 
-      final apiData = await _notesApiService.getNotesForStudent(
-        matricule: matricule,
-        anneeId: _anneeId!.toString(),
-        classeId: _classeId!.toString(),
-        periode: periode,
+      final annees = await _consultationApi.getAnnees(schoolId);
+      if (annees.isEmpty) {
+        if (mounted) setState(() => _isLoadingNotes = false);
+        return;
+      }
+      final courante = annees.firstWhere(
+        (a) => a.courante,
+        orElse: () => annees.first,
       );
+      final orderedAnnees = [
+        courante,
+        ...annees.where((a) => a.ref != courante.ref),
+      ];
 
-      if (apiData != null) {
-        print(' Données de statistiques de notes reçues');
-
-        // Extraire les données de la réponse API
-        final appreciation = apiData['appreciation'] as String?;
-        final moyFr = (apiData['moyFr'] as num?)?.toDouble();
-        final moyGeneral = (apiData['moyGeneral'] as num?)?.toDouble();
-        final moyenneAnnuelleProjettee =
-            (apiData['moyenneAnnuelleProjettee'] as num?)?.toDouble();
-
-        if (mounted) {
-          setState(() {
-            _appreciation = appreciation;
-            _moyFr = moyFr;
-            _moyGeneral = moyGeneral;
-            _moyenneAnnuelleProjettee = moyenneAnnuelleProjettee;
-            _isLoadingNotes = false;
-          });
+      // getBulletins (liste) plutôt que getBulletin+periode : ne renvoie que
+      // les périodes ayant réellement des notes (doc §4.8), donc pas de 404
+      // à gérer pour une année/période encore vide.
+      BulletinConsultation? bulletin;
+      for (final annee in orderedAnnees) {
+        final bulletins = await _consultationApi.getBulletins(
+          schoolId,
+          matricule,
+          anneeRef: annee.ref,
+          classeRef: _persistedClasseRef,
+        );
+        if (bulletins.isNotEmpty) {
+          bulletin = bulletins.last;
+          break;
         }
+      }
 
-        print(' Statistiques mises à jour:');
-        print('   - Appreciation: $appreciation');
-        print('   - Moyenne Français: $moyFr');
-        print('   - Moyenne Générale: $moyGeneral');
-        print('   - Moyenne Annuelle Projetée: $moyenneAnnuelleProjettee');
-      } else {
-        print(' Erreur lors du chargement des statistiques de notes');
-        if (mounted) {
-          setState(() {
-            _isLoadingNotes = false;
-          });
-        }
+      if (bulletin == null) {
+        if (mounted) setState(() => _isLoadingNotes = false);
+        return;
+      }
+
+      print(' Statistiques mises à jour:');
+      print('   - Appreciation: ${bulletin.appreciation}');
+      print('   - Moyenne: ${bulletin.moyenne}');
+      print('   - Moyenne Annuelle: ${bulletin.moyenneAnnuelle}');
+
+      if (mounted) {
+        setState(() {
+          _appreciation = bulletin!.appreciation;
+          _moyGeneral = bulletin!.moyenne;
+          _moyenneAnnuelleProjettee = bulletin!.moyenneAnnuelle;
+          _isLoadingNotes = false;
+        });
       }
     } catch (e) {
       print(' Exception lors du chargement des statistiques de notes: $e');
@@ -8560,25 +8788,150 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
+  /// Retrouve le `schoolId` (référence opaque) de l'API de consultation pour
+  /// l'établissement de l'enfant courant, à partir de `_ecoleId` (int,
+  /// legacy) : on relit l'ancienne liste `/connecte/ecole` pour obtenir le
+  /// code de l'établissement, puis on le fait correspondre au `code` de
+  /// `GET /consultation/etablissements`. Mis en cache pour la durée de
+  /// l'écran.
+  Future<String?> _resolveConsultationSchoolId() async {
+    if (_consultationSchoolId != null) return _consultationSchoolId;
+    final ecoleId = _ecoleId;
+    if (ecoleId == null) return null;
+    try {
+      final ecoles = await _poulsApiService.getAllEcoles();
+      Ecole? ecole;
+      for (final e in ecoles) {
+        if (e.ecoleid == ecoleId) {
+          ecole = e;
+          break;
+        }
+      }
+      if (ecole == null) {
+        print('❌ Résolution schoolId: école introuvable pour ecoleId=$ecoleId');
+        return null;
+      }
+      print(
+        '🔎 Résolution schoolId: ecoleId=$ecoleId → "${ecole.ecoleclibelle}" '
+        '(ecolecode="${ecole.ecolecode}", parametreCode="${ecole.parametreCode}", '
+        'paramecole="${ecole.paramecole}")',
+      );
+      final schoolId = await _consultationApi.findSchoolIdByCode(
+        ecole.ecolecode,
+        expectedName: ecole.ecoleclibelle,
+      );
+      if (schoolId == null) {
+        print(
+          '❌ Résolution schoolId: aucun établissement de l\'API de consultation '
+          'ne correspond au code "${ecole.ecolecode}" et au nom '
+          '"${ecole.ecoleclibelle}" (code potentiellement partagé par plusieurs '
+          'établissements sans code assigné)',
+        );
+      } else {
+        print('✅ Résolution schoolId: code "${ecole.ecolecode}" → schoolId=$schoolId');
+      }
+      _consultationSchoolId = schoolId;
+      return schoolId;
+    } catch (e) {
+      print('❌ Erreur résolution schoolId consultation: $e');
+      return null;
+    }
+  }
+
+  /// Corrige en arrière-plan un `paramEcole` enregistré à tort avec le code
+  /// de l'API de consultation (bug de l'ajout d'enfant corrigé depuis) au
+  /// lieu du code legacy attendu par les intégrations tierces (inscription
+  /// en ligne via api2.vie-ecoles.com, etc.) — sans quoi ces flux échouent
+  /// avec un 404 "Ecole not found". Ne fait rien si déjà correct ou si
+  /// l'établissement n'a pas d'équivalent legacy.
+  Future<void> _healLegacyParamEcoleIfNeeded(String? currentParamEcole) async {
+    try {
+      final schoolId = _persistedSchoolId;
+      if (schoolId == null) return;
+
+      final etablissements = await _consultationApi.getEtablissements();
+      EtablissementConsultation? etab;
+      for (final e in etablissements) {
+        if (e.schoolId == schoolId) {
+          etab = e;
+          break;
+        }
+      }
+      if (etab == null) return;
+
+      final legacyParamEcole = await _poulsApiService
+          .findLegacyParamEcoleByCodeAndName(etab.code, etab.nom);
+      if (legacyParamEcole != null && legacyParamEcole != currentParamEcole) {
+        await DatabaseService.instance.updateChildParamEcole(
+          widget.child.id,
+          legacyParamEcole,
+        );
+        print(
+          '✅ paramEcole corrigé pour ${widget.child.id}: '
+          '"$currentParamEcole" → "$legacyParamEcole"',
+        );
+        // _ecoleCode était resté null tant que ce paramEcole n'était pas
+        // encore résolu : le renseigner ici évite d'attendre une prochaine
+        // ouverture de l'écran pour charger getEleveDetail (préinscription,
+        // inscription, solde, etc.) et les paramètres de l'établissement.
+        final needsEcoleCode = _ecoleCode == null || _ecoleCode!.isEmpty;
+        if (mounted) {
+          setState(() {
+            _correctedParamEcole = legacyParamEcole;
+            if (needsEcoleCode) _ecoleCode = legacyParamEcole;
+          });
+        }
+        if (needsEcoleCode && _matricule != null) {
+          await _loadEleveDetail();
+        }
+      }
+    } catch (e) {
+      print('⚠️ Correction paramEcole ignorée: $e');
+    }
+  }
+
+  /// Adapte un [BulletinConsultation] en Map pour rester compatible avec le
+  /// rendu existant (_buildBulletinCard) et porter les références opaques
+  /// nécessaires au téléchargement du PDF (_fetchBulletinPdfBytes).
+  Map<String, dynamic> _bulletinToMap(
+    BulletinConsultation b, {
+    required String schoolId,
+    required String anneeRef,
+  }) {
+    return {
+      'id': b.periodeRef,
+      'matricule': b.matricule,
+      'nom': b.nom,
+      'prenoms': b.prenoms,
+      'anneeLibelle': b.anneeLibelle,
+      'libellePeriode': b.periodeLibelle,
+      'periodeRef': b.periodeRef,
+      'anneeRef': anneeRef,
+      'schoolId': schoolId,
+      // Vide (pas nul) par défaut dans BulletinConsultation : normaliser en
+      // null, l'API refuse un format vide/non conforme pour `classe`.
+      'classeRef': b.classeRef.isEmpty ? null : b.classeRef,
+      'moyGeneral': b.moyenne ?? 0.0,
+      'moyenneAnnuelle': b.moyenneAnnuelle,
+      'statut': b.statut,
+      'decisionFinAnnee': b.decisionFinAnnee,
+      'dateCreation': '', // non fourni par l'API de consultation
+    };
+  }
+
   Future<void> _loadBulletins([StateSetter? setModalState]) async {
     if (_isLoadingBulletins) return;
 
     final matricule = _matricule ?? widget.child.matricule;
     if (matricule == null || matricule.isEmpty) return;
-    if (_anneeId == null || _classeId == null) return;
 
     final effectiveModalSetState = setModalState ?? _bulletinsModalSetState;
 
     void updateState(VoidCallback fn) {
-      print(
-        '🔧 DEBUG: updateState appelé - setModalState: ${effectiveModalSetState != null}, mounted: $mounted',
-      );
       if (effectiveModalSetState != null) {
-        print('🔧 DEBUG: Appel de setModalState');
         effectiveModalSetState(fn);
       }
       if (mounted) {
-        print('🔧 DEBUG: Appel de setState');
         setState(fn);
       }
     }
@@ -8586,19 +8939,68 @@ class _ChildListScreenState extends State<ChildListScreen>
     updateState(() => _isLoadingBulletins = true);
 
     try {
-      final bulletins = await _bulletinApiService.getBulletinsForStudent(
-        annee: _anneeId.toString(),
-        classe: _classeId.toString(),
-        matricule: matricule,
+      final schoolId = await _resolveConsultationSchoolId();
+      if (schoolId == null) {
+        throw Exception(
+          'Établissement introuvable dans l\'API de consultation',
+        );
+      }
+
+      if (_bulletinsAnnees.isEmpty) {
+        await _loadBulletinsSchoolYears(setModalState);
+      }
+      final annee = _bulletinsSelectedAnnee;
+      if (annee == null) {
+        throw Exception('Aucune année scolaire disponible');
+      }
+
+      var bulletins = await _consultationApi.getBulletins(
+        schoolId,
+        matricule,
+        anneeRef: annee.ref,
+        classeRef: _persistedClasseRef,
       );
-      print('🔧 DEBUG: Mise à jour de l état après réception des données');
+      var effectiveAnnee = annee;
+
+      // L'année courante n'a souvent encore aucun bulletin en tout début
+      // d'année scolaire : plutôt que de laisser l'écran vide, on retombe
+      // sur la première année précédente qui porte réellement des données.
+      // On ne fait ce repli que pour la sélection par défaut (année
+      // courante) — si l'utilisateur choisit lui-même une année vide via le
+      // filtre, on respecte son choix et on affiche l'état vide.
+      if (bulletins.isEmpty && annee.courante) {
+        for (final candidate in _bulletinsAnnees) {
+          if (candidate.ref == annee.ref) continue;
+          final result = await _consultationApi.getBulletins(
+            schoolId,
+            matricule,
+            anneeRef: candidate.ref,
+            classeRef: _persistedClasseRef,
+          );
+          if (result.isNotEmpty) {
+            bulletins = result;
+            effectiveAnnee = candidate;
+            break;
+          }
+        }
+      }
+
+      // Plus récent en premier, comme avant.
+      final mapped = bulletins.reversed
+          .map(
+            (b) => _bulletinToMap(
+              b,
+              schoolId: schoolId,
+              anneeRef: effectiveAnnee.ref,
+            ),
+          )
+          .toList();
+
       updateState(() {
-        _bulletins = bulletins;
+        _bulletins = mapped;
+        _bulletinsSelectedAnnee = effectiveAnnee;
         _isLoadingBulletins = false;
       });
-      print(
-        '🔧 DEBUG: État mis à jour - _isLoadingBulletins: $_isLoadingBulletins, _bulletins: ${_bulletins?.length}',
-      );
     } catch (e) {
       updateState(() {
         _bulletins = []; // Set to empty to avoid infinite loop
@@ -8609,9 +9011,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   Future<void> _loadBulletinsSchoolYears([StateSetter? setModalState]) async {
-    if (_bulletinsSchoolYears.isNotEmpty) return;
-
-    final ecole = _ecoleId?.toString() ?? '38';
+    if (_bulletinsAnnees.isNotEmpty) return;
 
     void updateState(VoidCallback fn) {
       if (setModalState != null) setModalState(fn);
@@ -8621,17 +9021,27 @@ class _ChildListScreenState extends State<ChildListScreen>
     updateState(() => _isLoadingBulletinsYears = true);
 
     try {
-      final years = await _notesApiService.getSchoolYears(ecoleId: ecole);
+      final schoolId = await _resolveConsultationSchoolId();
+      if (schoolId == null) {
+        updateState(() => _isLoadingBulletinsYears = false);
+        return;
+      }
+      final annees = await _consultationApi.getAnnees(schoolId);
       updateState(() {
-        if (years != null && years.isNotEmpty) {
-          _bulletinsSchoolYears = years;
-          _bulletinsAvailableYears = years
-              .map<String>(
-                (y) =>
-                    (y['customLibelle'] ?? y['libelle'] ?? 'Année').toString(),
-              )
-              .toList();
-        }
+        _bulletinsAnnees = annees;
+        // .map<dynamic> (pas .map<Map<String,String>> implicite) : la liste
+        // doit rester List<dynamic> à l'exécution pour que firstWhere(...,
+        // orElse: () => null) reste valide (comme avant, quand cette liste
+        // provenait telle quelle de json.decode).
+        _bulletinsSchoolYears = annees
+            .map<dynamic>((a) => {'id': a.ref, 'libelle': a.libelle})
+            .toList();
+        _bulletinsAvailableYears = _dedupeYearLabels(
+          annees.map((a) => a.libelle).toList(),
+        );
+        _bulletinsSelectedAnnee = annees.isEmpty
+            ? null
+            : annees.firstWhere((a) => a.courante, orElse: () => annees.first);
         _isLoadingBulletinsYears = false;
       });
     } catch (e) {
@@ -8640,19 +9050,37 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
+  /// Désambiguïse des libellés identiques (ex. deux années archivées
+  /// distinctes — refs différentes — toutes deux libellées « Année 2024 -
+  /// 2025 ») : sans ça, le dropdown les coche toutes les deux à la fois
+  /// (comparaison par texte affiché) et il devient impossible de choisir
+  /// la bonne.
+  List<String> _dedupeYearLabels(List<String> labels) {
+    final counts = <String, int>{};
+    for (final l in labels) {
+      counts[l] = (counts[l] ?? 0) + 1;
+    }
+    final seen = <String, int>{};
+    return labels.map((l) {
+      if ((counts[l] ?? 0) <= 1) return l;
+      seen[l] = (seen[l] ?? 0) + 1;
+      return '$l (${seen[l]})';
+    }).toList();
+  }
+
   void _onBulletinYearChanged(String label, [StateSetter? setModalState]) {
-    final year = _bulletinsSchoolYears.firstWhere(
-      (y) => (y['customLibelle'] ?? y['libelle']) == label,
-      orElse: () => null,
-    );
-    if (year != null && _anneeId.toString() != year['id'].toString()) {
+    final idx = _bulletinsAvailableYears.indexOf(label);
+    final annee = (idx >= 0 && idx < _bulletinsAnnees.length)
+        ? _bulletinsAnnees[idx]
+        : _bulletinsSelectedAnnee!;
+    if (annee.ref != _bulletinsSelectedAnnee?.ref) {
       void updateState(VoidCallback fn) {
         if (setModalState != null) setModalState(fn);
         if (mounted) setState(fn);
       }
 
       updateState(() {
-        _anneeId = int.tryParse(year['id'].toString());
+        _bulletinsSelectedAnnee = annee;
         // Collapse the filter automatically when a year is selected
         _isBulletinsFilterExpanded = false;
       });
@@ -8665,15 +9093,13 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const SizedBox.shrink();
 
     String currentYearLabel = 'Année scolaire';
-    final currentYear = _bulletinsSchoolYears.firstWhere(
-      (y) => y['id'].toString() == _anneeId?.toString(),
-      orElse: () => null,
+    final selectedIdx = _bulletinsAnnees.indexWhere(
+      (a) => a.ref == _bulletinsSelectedAnnee?.ref,
     );
-    if (currentYear != null) {
-      currentYearLabel =
-          currentYear['customLibelle'] ??
-          currentYear['libelle'] ??
-          'Année scolaire';
+    if (selectedIdx >= 0 && selectedIdx < _bulletinsAvailableYears.length) {
+      // Libellé désambiguïsé (voir _dedupeYearLabels), cohérent avec les
+      // options du dropdown ci-dessous.
+      currentYearLabel = _bulletinsAvailableYears[selectedIdx];
     }
 
     return Container(
@@ -8803,9 +9229,13 @@ class _ChildListScreenState extends State<ChildListScreen>
       onRetry: () {
         setState(() {
           _bulletins = null;
+          _bulletinsAnnees = [];
+          _bulletinsSchoolYears = [];
+          _bulletinsAvailableYears = [];
+          _bulletinsSelectedAnnee = null;
         });
-        _loadBulletins();
         _loadBulletinsSchoolYears();
+        _loadBulletins();
       },
     );
   }
@@ -8815,10 +9245,10 @@ class _ChildListScreenState extends State<ChildListScreen>
       return const SizedBox.shrink();
     }
 
-    // Trier les bulletins par période (du plus récent au plus ancien)
+    // Déjà triés du plus récent au plus ancien par _loadBulletins.
     final sortedBulletins = List<Map<String, dynamic>>.from(
       _bulletins!.map((item) => item as Map<String, dynamic>),
-    )..sort((a, b) => (b['periodeId'] as int).compareTo(a['periodeId'] as int));
+    );
 
     return Column(
       children: sortedBulletins.map((bulletin) {
@@ -9129,18 +9559,92 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // ─── BULLETIN ACTIONS ───────────────────────────────────────────────────────
 
+  /// Télécharge les octets authentifiés du PDF via l'API de consultation
+  /// (doc §4.9) : l'ancienne URL brute non authentifiée n'a plus d'équivalent,
+  /// il faut désormais un jeton Bearer, d'où le passage par
+  /// ConsultationApiService.getBulletinPdf plutôt qu'une URL repassée telle
+  /// quelle à un lecteur/partage.
+  Future<List<int>> _fetchBulletinPdfBytes(
+    Map<String, dynamic> bulletinData,
+  ) async {
+    final schoolId =
+        bulletinData['schoolId'] as String? ??
+        await _resolveConsultationSchoolId();
+    final matricule =
+        bulletinData['matricule'] as String? ??
+        _matricule ??
+        widget.child.matricule ??
+        '';
+    final anneeRef = bulletinData['anneeRef'] as String?;
+    final periodeRef = bulletinData['periodeRef'] as String?;
+    final classeRef = bulletinData['classeRef'] as String?;
+
+    if (schoolId == null || anneeRef == null || periodeRef == null) {
+      throw Exception('Informations du bulletin incomplètes pour le PDF');
+    }
+
+    return _consultationApi.getBulletinPdf(
+      schoolId,
+      matricule,
+      anneeRef: anneeRef,
+      periodeRef: periodeRef,
+      classeRef: classeRef,
+    );
+  }
+
+  /// Enregistre les octets du PDF dans un fichier local et retourne son
+  /// chemin (utilisé pour l'affichage via PDFViewerScreen et le partage).
+  Future<String> _saveBulletinPdfLocally(
+    List<int> bytes,
+    Map<String, dynamic> bulletinData,
+  ) async {
+    Directory? directory;
+    try {
+      if (Platform.isAndroid) {
+        directory =
+            await getExternalStorageDirectory() ??
+            await getApplicationDocumentsDirectory();
+      } else {
+        directory = await getApplicationDocumentsDirectory();
+      }
+    } catch (e) {
+      directory = await getApplicationDocumentsDirectory();
+    }
+
+    final periode = (bulletinData['libellePeriode'] as String? ?? 'Bulletin')
+        .trim()
+        .replaceAll(' ', '_');
+    final annee = (bulletinData['anneeLibelle'] as String? ?? 'Annee')
+        .trim()
+        .replaceAll('/', '-');
+    final nom = (bulletinData['nom'] as String? ?? '').trim().replaceAll(
+      ' ',
+      '_',
+    );
+    final prenoms = (bulletinData['prenoms'] as String? ?? '')
+        .trim()
+        .replaceAll(' ', '_');
+
+    final fileName = 'Bulletin_${periode}_${prenoms}_${nom}_$annee.pdf';
+    final filePath = '${directory.path}/$fileName';
+
+    final file = File(filePath);
+    await file.writeAsBytes(bytes);
+    return filePath;
+  }
+
   Future<void> _viewBulletin(Map<String, dynamic> bulletinData) async {
     try {
-      final pdfUrl = _buildBulletinPdfUrl(bulletinData);
+      if (mounted) NotificationHelper.showInfo('Ouverture du bulletin...');
+      final bytes = await _fetchBulletinPdfBytes(bulletinData);
+      final filePath = await _saveBulletinPdfLocally(bytes, bulletinData);
       final periode = bulletinData['libellePeriode'] as String? ?? 'Bulletin';
 
-      print('🌐 Ouverture du PDF: $pdfUrl');
-
-      // Navigate to PDF viewer screen
+      if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) =>
-              PDFViewerScreen(pdfUrl: pdfUrl, title: 'Bulletin $periode'),
+              PDFViewerScreen(pdfUrl: filePath, title: 'Bulletin $periode'),
         ),
       );
     } catch (e) {
@@ -9158,73 +9662,34 @@ class _ChildListScreenState extends State<ChildListScreen>
         NotificationHelper.showInfo('Téléchargement en cours...');
       }
 
-      final pdfUrl = _buildBulletinPdfUrl(bulletinData);
+      final bytes = await _fetchBulletinPdfBytes(bulletinData);
+      final filePath = await _saveBulletinPdfLocally(bytes, bulletinData);
       final periode = bulletinData['libellePeriode'] as String? ?? 'Bulletin';
-      final annee = bulletinData['anneeLibelle'] as String? ?? 'Annee';
       final nom = bulletinData['nom'] as String? ?? '';
       final prenoms = bulletinData['prenoms'] as String? ?? '';
+      final fileName = filePath.split('/').last;
 
-      // Download PDF
-      final uri = Uri.parse(pdfUrl);
-      final response = await http.get(uri);
-
-      if (response.statusCode == 200) {
-        // Get directory for saving depending on platform
-        Directory? directory;
-        try {
-          if (Platform.isAndroid) {
-            directory =
-                await getExternalStorageDirectory() ??
-                await getApplicationDocumentsDirectory();
-          } else {
-            directory = await getApplicationDocumentsDirectory();
-          }
-        } catch (e) {
-          directory = await getApplicationDocumentsDirectory();
-        }
-
-        final documentsPath = directory.path;
-        final cleanNom = nom.trim().replaceAll(' ', '_');
-        final cleanPrenoms = prenoms.trim().replaceAll(' ', '_');
-        final cleanPeriode = periode.trim().replaceAll(' ', '_');
-        final cleanAnnee = annee.trim().replaceAll('/', '-');
-
-        final fileName =
-            'Bulletin_${cleanPeriode}_${cleanPrenoms}_${cleanNom}_$cleanAnnee.pdf';
-        final filePath = '$documentsPath/$fileName';
-
-        // Save file locally
-        final file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
-
-        if (mounted) {
-          // On iOS, open native share/save sheet to allow user to "Save to Files" (Enregistrer dans Fichiers)
-          if (Platform.isIOS) {
-            await Share.shareXFiles([
-              XFile(filePath),
-            ], subject: 'Bulletin $periode - $prenoms $nom');
-            NotificationHelper.showSuccess(
-              'Option de sauvegarde affichée avec succès',
-            );
-          } else {
-            // On Android, save to storage and offer a share/open callback
-            NotificationHelper.show(
-              message: 'Bulletin enregistré avec succès :\n$fileName',
-              type: NotificationType.success,
-              actionText: 'Partager le fichier',
-              onActionPressed: () async {
-                await Share.shareXFiles([
-                  XFile(filePath),
-                ], subject: 'Bulletin $periode - $prenoms $nom');
-              },
-              duration: const Duration(seconds: 4),
-            );
-          }
-        }
-      } else {
-        if (mounted) {
-          NotificationHelper.showError(
-            'Erreur lors du téléchargement: ${response.statusCode}',
+      if (mounted) {
+        // On iOS, open native share/save sheet to allow user to "Save to Files" (Enregistrer dans Fichiers)
+        if (Platform.isIOS) {
+          await Share.shareXFiles([
+            XFile(filePath),
+          ], subject: 'Bulletin $periode - $prenoms $nom');
+          NotificationHelper.showSuccess(
+            'Option de sauvegarde affichée avec succès',
+          );
+        } else {
+          // On Android, save to storage and offer a share/open callback
+          NotificationHelper.show(
+            message: 'Bulletin enregistré avec succès :\n$fileName',
+            type: NotificationType.success,
+            actionText: 'Partager le fichier',
+            onActionPressed: () async {
+              await Share.shareXFiles([
+                XFile(filePath),
+              ], subject: 'Bulletin $periode - $prenoms $nom');
+            },
+            duration: const Duration(seconds: 4),
           );
         }
       }
@@ -9237,39 +9702,22 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Future<void> _shareBulletin(Map<String, dynamic> bulletinData) async {
     try {
-      final pdfUrl = _buildBulletinPdfUrl(bulletinData);
+      // Le PDF exige désormais un jeton Bearer : impossible de partager une
+      // URL brute comme avant, on partage donc le fichier téléchargé.
+      final bytes = await _fetchBulletinPdfBytes(bulletinData);
+      final filePath = await _saveBulletinPdfLocally(bytes, bulletinData);
       final periode = bulletinData['libellePeriode'] as String? ?? 'Bulletin';
-      final annee = bulletinData['anneeLibelle'] as String? ?? 'Année';
       final nom = bulletinData['nom'] as String? ?? '';
       final prenoms = bulletinData['prenoms'] as String? ?? '';
 
-      // Share PDF URL
-      final shareText =
-          'Bulletin $periode de $prenoms $nom - $annee\n$pdfUrl\n\nTéléchargez l\'application ici : ${AppConfig.storeUrl}';
-
-      await Share.share(
-        shareText,
-        subject: 'Bulletin $periode - $prenoms $nom',
-      );
+      await Share.shareXFiles([
+        XFile(filePath),
+      ], subject: 'Bulletin $periode - $prenoms $nom');
     } catch (e) {
       if (mounted) {
         NotificationHelper.showError('Erreur lors du partage: $e');
       }
     }
-  }
-
-  String _buildBulletinPdfUrl(Map<String, dynamic> bulletinData) {
-    final ecoleId = _ecoleId?.toString() ?? '';
-    final periode = bulletinData['libellePeriode'] as String? ?? '';
-    final anneeLibelle = bulletinData['anneeLibelle'] as String? ?? '';
-    final classeId = bulletinData['classeId']?.toString() ?? '';
-    final matricule = bulletinData['matricule'] as String? ?? '';
-
-    // Encode URL components
-    final encodedPeriode = Uri.encodeComponent(periode);
-    final encodedAnneeLibelle = Uri.encodeComponent(anneeLibelle);
-
-    return '${AppConfig.POULS_SCOLAIRE_API_URL}/imprimer-bulletin-list/spider-bulletin-matricule-mobile/$ecoleId/$encodedPeriode/$encodedAnneeLibelle/$classeId/$matricule/false/2/false/true/true/false/false/true/false/false/false/false';
   }
 
   Widget _buildDifficultiesTab() {
@@ -10525,27 +10973,96 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  Widget _buildHomeworkTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [_buildHomeworkContent()],
-      ),
+  static const Color _homeworkColor = Color(0xFF7B1FA2);
+
+  Widget _buildHomeworkContent() {
+    if (_isLoadingHomework) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            CustomLoader(
+              message: 'Chargement des devoirs...',
+              loaderColor: _homeworkColor,
+              backgroundColor: Colors.transparent,
+              showBackground: false,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_devoirs == null || _devoirs!.isEmpty) {
+      return CustomErrorState(
+        title: 'Aucun devoir enregistré',
+        message:
+            'Aucun devoir n\'a été enregistré récemment dans le cahier de '
+            'textes de cet élève.',
+        icon: Icons.menu_book_outlined,
+        iconColor: _homeworkColor,
+        retryText: 'Réessayer',
+        onRetry: () {
+          setState(() => _devoirs = null);
+          _loadDevoirs();
+        },
+      );
+    }
+
+    // Déjà triés par matière puis du plus récent au plus ancien (doc §4.11) :
+    // on ajoute juste un en-tête de section à chaque changement de matière.
+    final widgets = <Widget>[];
+    String? lastMatiereCode;
+    for (final devoir in _devoirs!) {
+      if (devoir.matiereCode != lastMatiereCode) {
+        if (lastMatiereCode != null) widgets.add(const SizedBox(height: 18));
+        widgets.add(_buildMatiereSectionHeader(devoir.matiere));
+        widgets.add(const SizedBox(height: 10));
+        lastMatiereCode = devoir.matiereCode;
+      } else {
+        widgets.add(const SizedBox(height: 10));
+      }
+      widgets.add(_buildDevoirCard(devoir));
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: widgets);
+  }
+
+  Widget _buildMatiereSectionHeader(String matiere) {
+    final isDarkMode = _themeService.isDarkMode;
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 16,
+          decoration: BoxDecoration(
+            color: _homeworkColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          matiere,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: isDarkMode ? Colors.white70 : Colors.grey[700],
+            letterSpacing: 0.2,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildHomeworkContent() {
-    return _buildComingSoonContent();
+  String _formatDevoirDate(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      return '${date.day} ${_getMonthName(date.month)}';
+    } catch (_) {
+      return isoDate;
+    }
   }
 
-  Widget _buildHomeworkItem(
-    String subject,
-    String task,
-    String deadline,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildDevoirCard(DevoirConsultation devoir) {
     final isDarkMode = _themeService.isDarkMode;
 
     return Container(
@@ -10563,57 +11080,326 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  subject,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _homeworkColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  color: _homeworkColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (devoir.seance.isNotEmpty)
+                      Text(
+                        devoir.seance,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                        ),
+                      ),
+                    if (devoir.professeur.isNotEmpty)
+                      Text(
+                        devoir.professeur,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (devoir.donneLe.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _homeworkColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _formatDevoirDate(devoir.donneLe),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _homeworkColor,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  task,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDarkMode
-                        ? Colors.grey[300]
-                        : const Color(0xFF6B7280),
+            ],
+          ),
+          if (devoir.consigne.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              devoir.consigne,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDarkMode ? Colors.grey[300] : const Color(0xFF374151),
+              ),
+            ),
+          ],
+          if (devoir.prochaineSeance != null && devoir.prochaineSeance!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.event_outlined, size: 14, color: _homeworkColor),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Pour la séance du ${_formatDevoirDate(devoir.prochaineSeance!)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _homeworkColor,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static const Color _progressionColor = Color(0xFF2E7D32);
+
+  Widget _buildProgressionContent(StateSetter setModalState) {
+    if (_isLoadingProgressions) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            CustomLoader(
+              message: 'Chargement de la progression...',
+              loaderColor: _progressionColor,
+              backgroundColor: Colors.transparent,
+              showBackground: false,
             ),
+          ],
+        ),
+      );
+    }
+
+    if (_progressions == null || _progressions!.isEmpty) {
+      return CustomErrorState(
+        title: 'Aucune progression renseignée',
+        message:
+            'Aucune matière n\'a encore de progression affectée pour cette '
+            'classe cette année.',
+        icon: Icons.assignment_outlined,
+        iconColor: _progressionColor,
+        retryText: 'Réessayer',
+        onRetry: () {
+          setState(() => _progressions = null);
+          _loadProgressions();
+        },
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: _progressions!.asMap().entries.map((entry) {
+        final isLast = entry.key == _progressions!.length - 1;
+        return Padding(
+          padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+          child: _buildProgressionCard(entry.value, setModalState),
+        );
+      }).toList(),
+    );
+  }
+
+  Color _getProgressionColor(double taux) {
+    if (taux >= 75) return const Color(0xFF10B981);
+    if (taux >= 40) return const Color(0xFFF59E0B);
+    return const Color(0xFFEF4444);
+  }
+
+  IconData _getChapitreStatusIcon(String statut) {
+    switch (statut) {
+      case 'FAIT':
+        return Icons.check_circle;
+      case 'EN_COURS':
+        return Icons.hourglass_top_rounded;
+      default:
+        return Icons.radio_button_unchecked;
+    }
+  }
+
+  Widget _buildProgressionCard(
+    ProgressionConsultation progression,
+    StateSetter setModalState,
+  ) {
+    final isDarkMode = _themeService.isDarkMode;
+    final color = _getProgressionColor(progression.taux);
+    final isExpanded = _expandedProgressionMatiereCode == progression.matiereCode;
+    final hasChapitresDetail = progression.chapitres != null;
+
+    void toggleExpanded() {
+      if (!hasChapitresDetail) return;
+      final nextCode = isExpanded ? null : progression.matiereCode;
+      setModalState(() => _expandedProgressionMatiereCode = nextCode);
+      if (mounted) setState(() => _expandedProgressionMatiereCode = nextCode);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: hasChapitresDetail ? toggleExpanded : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        progression.matiere,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: color.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        '${progression.taux.toStringAsFixed(0)}%',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color),
+                      ),
+                    ),
+                    if (hasChapitresDetail) ...[
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        turns: isExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 250),
+                        child: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (progression.taux / 100).clamp(0.0, 1.0),
+                    minHeight: 6,
+                    backgroundColor: color.withOpacity(0.1),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${progression.chapitresFaits}/${progression.chapitresPrevus} chapitres faits'
+                  '${progression.seancesFaites > 0 ? ' · ${progression.seancesFaites} séances' : ''}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+                if (progression.chapitreEnCours != null &&
+                    progression.chapitreEnCours!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'En cours : ${progression.chapitreEnCours}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.grey[300] : const Color(0xFF374151),
+                    ),
+                  ),
+                ],
+                if (isExpanded && hasChapitresDetail) ...[
+                  const SizedBox(height: 14),
+                  Divider(color: isDarkMode ? Colors.white12 : Colors.black12, height: 1),
+                  const SizedBox(height: 10),
+                  ...progression.chapitres!.map(
+                    (chapitre) => _buildChapitreRow(chapitre, isDarkMode),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChapitreRow(ChapitreProgression chapitre, bool isDarkMode) {
+    final Color statusColor;
+    switch (chapitre.statut) {
+      case 'FAIT':
+        statusColor = const Color(0xFF10B981);
+        break;
+      case 'EN_COURS':
+        statusColor = const Color(0xFFF59E0B);
+        break;
+      default:
+        statusColor = isDarkMode ? Colors.grey[600]! : Colors.grey[400]!;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(_getChapitreStatusIcon(chapitre.statut), size: 18, color: statusColor),
+          const SizedBox(width: 10),
+          Expanded(
             child: Text(
-              deadline,
+              chapitre.libelle,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color,
+                fontSize: 13,
+                color: isDarkMode ? Colors.grey[200] : const Color(0xFF374151),
               ),
             ),
           ),
+          if (chapitre.date != null && chapitre.date!.isNotEmpty)
+            Text(
+              _formatDevoirDate(chapitre.date!),
+              style: TextStyle(
+                fontSize: 11,
+                color: isDarkMode ? Colors.grey[500] : Colors.grey[500],
+              ),
+            ),
         ],
       ),
     );

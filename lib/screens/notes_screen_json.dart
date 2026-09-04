@@ -3,32 +3,35 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import '../config/app_colors.dart';
-import '../services/notes_api_service.dart';
+import '../models/annee_consultation.dart';
+import '../models/bulletin_consultation.dart';
+import '../services/consultation_api_service.dart';
 import '../utils/notification_helper.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/custom_loader.dart';
-import '../widgets/subtle_retry_button.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
-import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../widgets/scroll_to_top_fab.dart';
 
+/// Écran "Mes Notes", branché sur l'API de consultation
+/// (api-pedagogie.pouls-scolaire.net, voir API-CONSULTATION-MOBILE.pdf §4).
+///
+/// `schoolId` est la référence opaque de l'établissement (résolue par
+/// l'appelant via [ConsultationApiService.findSchoolIdByCode]) ; `classeRef`
+/// est facultatif et ne joue que sur l'année courante (élève inscrit dans
+/// deux classes, doc §4.5).
 class NotesScreenJson extends StatefulWidget {
-  final String? matricule;
-  final String? anneeId;
-  final String? classeId;
-  final String? anneeLibelle;
-  final String? ecoleId;
+  final String matricule;
+  final String schoolId;
+  final String? classeRef;
 
   const NotesScreenJson({
     super.key,
-    this.matricule,
-    this.anneeId,
-    this.classeId,
-    this.anneeLibelle,
-    this.ecoleId,
+    required this.matricule,
+    required this.schoolId,
+    this.classeRef,
   });
 
   @override
@@ -37,36 +40,31 @@ class NotesScreenJson extends StatefulWidget {
 
 class _NotesScreenJsonState extends State<NotesScreenJson>
     with SingleTickerProviderStateMixin {
-  Map<String, dynamic>? _bulletinData;
+  final ConsultationApiService _consultationApi = ConsultationApiService();
+
+  List<AnneeConsultation> _annees = [];
+  AnneeConsultation? _selectedAnnee;
+  bool _isLoadingYears = false;
+
+  // Un bulletin par période ayant des notes pour l'année sélectionnée
+  // (doc §4.8) : changer de période n'a donc pas besoin d'un nouvel appel.
+  List<BulletinConsultation> _bulletinsAnnee = [];
+  BulletinConsultation? _selectedBulletin;
   bool _isLoading = true;
-  String? _expandedSubjectId;
-  final NotesApiService _notesApiService = NotesApiService();
 
   String? _selectedSubject;
-  String? _selectedTrimester;
-  String? _selectedYear;
-
-  String? _studentMatricule;
-  String? _anneeId;
-  String? _classeId;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
-  // Variables pour le carrousel auto-play
+  // Carrousel auto-play
   late PageController _pageController;
   Timer? _autoPlayTimer;
   int _currentPage = 0;
 
-  // Liste des années scolaires fetched depuis l'API
-  List<dynamic> _schoolYears = [];
-  List<String> _availableYears = [];
-  bool _isLoadingYears = false;
-
-  // Cache pour conserver les informations de l'élève même si un filtre ne retourne rien
+  // Cache d'affichage pour éviter un flash pendant un rechargement
   String _cachedNom = '';
   String _cachedPrenoms = '';
-  String? _cachedPhotoUrl;
 
   late ScrollController _scrollController;
 
@@ -82,80 +80,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-
-    // Initialiser le PageController pour le carrousel
     _pageController = PageController(viewportFraction: 1.0);
 
-    _studentMatricule = widget.matricule;
-    _anneeId = widget.anneeId;
-    _classeId = widget.classeId;
-    _selectedYear = widget.anneeLibelle;
-
-    _loadSchoolYears();
-  }
-
-  Future<void> _loadSchoolYears() async {
-    final ecole = widget.ecoleId ?? '38';
-    setState(() => _isLoadingYears = true);
-    try {
-      final years = await _notesApiService.getSchoolYears(ecoleId: ecole);
-      if (!mounted) return;
-      if (years != null && years.isNotEmpty) {
-        setState(() {
-          _schoolYears = years;
-          _availableYears = years
-              .map<String>(
-                (y) =>
-                    (y['customLibelle'] ?? y['libelle'] ?? 'Année').toString(),
-              )
-              .toList();
-          _isLoadingYears = false;
-        });
-
-        // Tenter de matcher l'année courante pour avoir son libellé exact
-        if (_anneeId != null) {
-          final currentYear = years.firstWhere(
-            (y) => y['id'].toString() == _anneeId,
-            orElse: () => null,
-          );
-          if (currentYear != null) {
-            setState(() {
-              _selectedYear =
-                  currentYear['customLibelle'] ??
-                  currentYear['libelle'] ??
-                  _selectedYear;
-            });
-          }
-        }
-      } else {
-        setState(() => _isLoadingYears = false);
-      }
-    } catch (e) {
-      print('❌ Erreur _loadSchoolYears: $e');
-      if (!mounted) return;
-      setState(() => _isLoadingYears = false);
-    }
-  }
-
-  void _onYearChanged(String label) {
-    final year = _schoolYears.firstWhere(
-      (y) => (y['customLibelle'] ?? y['libelle']) == label,
-      orElse: () => null,
-    );
-    if (year != null && _anneeId != year['id'].toString()) {
-      setState(() {
-        _anneeId = year['id'].toString();
-        _selectedYear = label;
-        _isLoading = true;
-      });
-      _loadApiData();
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_isLoading) _loadApiData();
+    _loadYears();
   }
 
   @override
@@ -167,13 +94,111 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     super.dispose();
   }
 
+  // ─── CHARGEMENT ───────────────────────────────────────────────────────────
+
+  Future<void> _loadYears() async {
+    setState(() => _isLoadingYears = true);
+    try {
+      final annees = await _consultationApi.getAnnees(widget.schoolId);
+      if (!mounted) return;
+      AnneeConsultation? current;
+      if (annees.isNotEmpty) {
+        current = annees.firstWhere(
+          (a) => a.courante,
+          orElse: () => annees.first,
+        );
+      }
+      setState(() {
+        _annees = annees;
+        _selectedAnnee = current;
+        _isLoadingYears = false;
+      });
+      if (current != null) {
+        await _loadBulletinsForSelectedYear();
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingYears = false;
+        _isLoading = false;
+      });
+      _showError('lors du chargement des années scolaires: $e');
+    }
+  }
+
+  Future<void> _loadBulletinsForSelectedYear() async {
+    if (_selectedAnnee == null) return;
+    setState(() {
+      _isLoading = true;
+      _selectedSubject = null;
+    });
+    try {
+      final annee = _selectedAnnee!;
+      var bulletins = await _consultationApi.getBulletins(
+        widget.schoolId,
+        widget.matricule,
+        anneeRef: annee.ref,
+        classeRef: widget.classeRef,
+      );
+      var effectiveAnnee = annee;
+
+      // Repli sur la dernière année ayant des bulletins si l'année courante
+      // (sélection par défaut, pas un choix explicite de l'utilisateur) n'en
+      // a pas encore — cas fréquent en tout début d'année scolaire.
+      if (bulletins.isEmpty && annee.courante) {
+        for (final candidate in _annees) {
+          if (candidate.ref == annee.ref) continue;
+          final result = await _consultationApi.getBulletins(
+            widget.schoolId,
+            widget.matricule,
+            anneeRef: candidate.ref,
+            classeRef: widget.classeRef,
+          );
+          if (result.isNotEmpty) {
+            bulletins = result;
+            effectiveAnnee = candidate;
+            break;
+          }
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _bulletinsAnnee = bulletins;
+        _selectedAnnee = effectiveAnnee;
+        _selectedBulletin = bulletins.isEmpty ? null : bulletins.last;
+        _isLoading = false;
+        if (_selectedBulletin != null) {
+          if (_selectedBulletin!.nom.isNotEmpty) _cachedNom = _selectedBulletin!.nom;
+          if (_selectedBulletin!.prenoms.isNotEmpty) {
+            _cachedPrenoms = _selectedBulletin!.prenoms;
+          }
+        }
+      });
+      if (_selectedBulletin != null) {
+        _fadeController.forward(from: 0);
+        _startAutoPlay();
+      } else {
+        _showInfo('Aucune note disponible pour cette année scolaire');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _bulletinsAnnee = [];
+        _selectedBulletin = null;
+        _isLoading = false;
+      });
+      _showError('lors du chargement des bulletins: $e');
+    }
+  }
+
   void _startAutoPlay() {
     _autoPlayTimer?.cancel();
     _autoPlayTimer = Timer.periodic(const Duration(seconds: 7), (timer) {
-      if (_bulletinData != null) {
-        setState(() {
-          _currentPage = (_currentPage + 1) % 2;
-        });
+      if (_selectedBulletin != null) {
+        setState(() => _currentPage = (_currentPage + 1) % 2);
         _pageController.animateToPage(
           _currentPage,
           duration: const Duration(milliseconds: 500),
@@ -183,117 +208,19 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     });
   }
 
-  void _stopAutoPlay() {
-    _autoPlayTimer?.cancel();
-  }
-
-  Future<void> _loadApiData() async {
-    if (_studentMatricule == null || _anneeId == null || _classeId == null) {
-      if (mounted) {
-        setState(() {
-          _bulletinData = null;
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-    try {
-      final periode = _getPeriodeNumberFromString(_selectedTrimester);
-      final apiData = await _notesApiService.getNotesForStudent(
-        matricule: _studentMatricule!,
-        anneeId: _anneeId!,
-        classeId: _classeId!,
-        periode: periode,
-      );
-
-      if (!mounted) return;
-
-      if (apiData != null) {
-        setState(() {
-          _bulletinData = apiData;
-          _selectedSubject = null;
-          _isLoading = false;
-
-          // Mettre à jour le cache si les données sont présentes
-          if (apiData['nom'] != null && apiData['nom'].toString().isNotEmpty) {
-            _cachedNom = apiData['nom'];
-          }
-          if (apiData['prenoms'] != null &&
-              apiData['prenoms'].toString().isNotEmpty) {
-            _cachedPrenoms = apiData['prenoms'];
-          }
-          final newPhoto =
-              apiData['photo']?.toString() ?? apiData['photoEleve']?.toString();
-          if (newPhoto != null && newPhoto.isNotEmpty) {
-            _cachedPhotoUrl = newPhoto;
-          }
-        });
-        _fadeController.forward(from: 0);
-
-        // Démarrer l'auto-play du carrousel
-        _startAutoPlay();
-
-        // Notification de succès supprimée à la demande de l'utilisateur
-      } else {
-        setState(() {
-          _bulletinData = null;
-          _isLoading = false;
-        });
-        _showError('Aucune note trouvée pour cette période');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _bulletinData = null;
-        _isLoading = false;
-      });
-
-      // Gestion spécifique des erreurs 400
-      if (e.toString().contains('No result found for query')) {
-        _showInfo('Aucune note disponible pour cette période scolaire');
-      } else if (e.toString().contains('400')) {
-        _showError('Requête invalide : vérifiez les paramètres');
-      } else {
-        _showError('Erreur lors du chargement: ${e.toString()}');
-      }
-    }
-  }
+  void _stopAutoPlay() => _autoPlayTimer?.cancel();
 
   void _showError(String msg) {
     if (!mounted) return;
     NotificationHelper.showError('Erreur $msg');
   }
 
-  void _showSuccess(String msg) {
-    if (!mounted) return;
-    NotificationHelper.showSuccess('Succès $msg');
-  }
-
   void _showInfo(String msg) {
     if (!mounted) return;
-    NotificationHelper.showInfo('Information $msg');
+    NotificationHelper.showInfo(msg);
   }
 
   // ─── HELPERS ──────────────────────────────────────────────────────────────
-  String _getPeriodeNumberFromString(String? trimestre) {
-    if (trimestre == null || trimestre == 'Tous') return '1';
-    if (trimestre.toLowerCase().contains('deux')) return '2';
-    if (trimestre.toLowerCase().contains('trois')) return '3';
-    return '1';
-  }
-
-  double _calculateAverage(List<dynamic> notes) {
-    if (notes.isEmpty) return 0.0;
-    double total = 0, totalSur = 0;
-    for (var n in notes) {
-      final note = double.tryParse(n['note']?.toString() ?? '0') ?? 0.0;
-      final sur = double.tryParse(n['noteSur']?.toString() ?? '20') ?? 20.0;
-      total += note;
-      totalSur += sur;
-    }
-    return totalSur > 0 ? (total / totalSur) * 20.0 : 0.0;
-  }
-
   Color _getAverageColor(double avg) {
     if (avg >= 12) return const Color(0xFF10B981); // Vert (Bien/Excellent)
     if (avg >= 10) return const Color(0xFFF59E0B); // Orange (Passable)
@@ -315,47 +242,58 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     return Icons.school_outlined;
   }
 
-  List<dynamic> _getFilteredMatieres() {
-    if (_bulletinData == null || _bulletinData!['details'] == null) return [];
-    List<dynamic> matieres = List.from(
-      _bulletinData!['details'] as List<dynamic>,
-    );
+  List<MatiereBulletin> _getFilteredMatieres() {
+    final matieres = _selectedBulletin?.matieres ?? [];
     if (_selectedSubject != null && _selectedSubject!.isNotEmpty) {
-      matieres = matieres
-          .where((m) => m['matiereLibelle'] == _selectedSubject)
-          .toList();
+      return matieres.where((m) => m.libelle == _selectedSubject).toList();
     }
     return matieres;
   }
 
   List<String> get _availableSubjects {
-    if (_bulletinData == null || _bulletinData!['details'] == null)
-      return ['Toutes'];
-    final matieres = _bulletinData!['details'] as List<dynamic>;
-    return ['Toutes', ...matieres.map((m) => m['matiereLibelle'] as String)];
+    final matieres = _selectedBulletin?.matieres ?? [];
+    if (matieres.isEmpty) return ['Toutes'];
+    return ['Toutes', ...matieres.map((m) => m.libelle)];
   }
 
-  List<String> get _availableTrimesters => [
-    'Tous',
-    'Premier Trimestre',
-    'Deuxième Trimestre',
-    'Troisième Trimestre',
-  ];
-
-  void _onSubjectChanged(String value) =>
-      setState(() => _selectedSubject = value == 'Toutes' ? null : value);
-
-  void _onTrimesterChanged(String value) {
-    setState(() => _selectedTrimester = value == 'Tous' ? null : value);
-    _loadApiData();
+  /// Désambiguïse des libellés identiques (ex. deux années archivées
+  /// distinctes — refs différentes, ex. H:297/H:226 — toutes deux libellées
+  /// « Année 2024 - 2025 ») : sans ça, le dropdown les coche toutes les
+  /// deux à la fois (comparaison par texte affiché) et il devient
+  /// impossible de choisir la bonne.
+  List<String> _dedupeLabels(List<String> labels) {
+    final counts = <String, int>{};
+    for (final l in labels) {
+      counts[l] = (counts[l] ?? 0) + 1;
+    }
+    final seen = <String, int>{};
+    return labels.map((l) {
+      if ((counts[l] ?? 0) <= 1) return l;
+      seen[l] = (seen[l] ?? 0) + 1;
+      return '$l (${seen[l]})';
+    }).toList();
   }
+
+  List<String> get _availableYears =>
+      _dedupeLabels(_annees.map((a) => a.libelle).toList());
+
+  /// Libellé affiché pour [annee], cohérent avec [_availableYears] même en
+  /// cas de doublon (même index dans les deux listes, qui partagent le
+  /// même ordre).
+  String _yearDisplayLabel(AnneeConsultation? annee) {
+    if (annee == null) return 'Chargement...';
+    final idx = _annees.indexWhere((a) => a.ref == annee.ref);
+    if (idx < 0) return annee.libelle;
+    return _availableYears[idx];
+  }
+
+  List<String> get _availablePeriods =>
+      _bulletinsAnnee.map((b) => b.periodeLibelle).toList();
 
   void _showFiltersBottomSheet() {
-    // Variables temporaires pour retenir les choix avant de les valider
-    String? tempSelectedYear = _selectedYear;
-    String? tempAnneeId = _anneeId;
+    AnneeConsultation? tempAnnee = _selectedAnnee;
     String? tempSelectedSubject = _selectedSubject;
-    String? tempSelectedTrimester = _selectedTrimester;
+    BulletinConsultation? tempBulletin = _selectedBulletin;
 
     showModalBottomSheet(
       context: context,
@@ -373,29 +311,23 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 title: 'Filtres',
                 icon: Icons.tune,
                 iconColor: AppColors.primary,
-                initialChildSize: 0.55,
-                minChildSize: 0.55,
-                maxChildSize: 0.9,
+                initialChildSize: 0.75,
+                minChildSize: 0.6,
+                maxChildSize: 0.95,
                 content: Column(
                   children: [
                     const SizedBox(height: 16),
                     SearchableDropdown(
                       label: 'Année scolaire',
-                      value: tempSelectedYear ?? 'Chargement...',
+                      value: _yearDisplayLabel(tempAnnee),
                       items: _availableYears,
                       onChanged: (val) {
                         setSheetState(() {
-                          final year = _schoolYears.firstWhere(
-                            (y) => (y['customLibelle'] ?? y['libelle']) == val,
-                            orElse: () => null,
-                          );
-                          if (year != null) {
-                            tempAnneeId = year['id'].toString();
-                            tempSelectedYear = val;
-                            // Optionnel: Réinitialiser la matière et le trimestre si l'année change
-                            tempSelectedSubject = null;
-                            tempSelectedTrimester = null;
-                          }
+                          final idx = _availableYears.indexOf(val);
+                          final annee = idx >= 0 ? _annees[idx] : tempAnnee!;
+                          tempAnnee = annee;
+                          tempSelectedSubject = null;
+                          tempBulletin = null;
                         });
                       },
                       isDarkMode: isDark,
@@ -421,14 +353,18 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         const SizedBox(width: 16),
                         Expanded(
                           child: SearchableDropdown(
-                            label: 'Trimestre',
-                            value: tempSelectedTrimester ?? 'Tous',
-                            items: _availableTrimesters,
+                            label: 'Période',
+                            value:
+                                (tempBulletin ?? _selectedBulletin)
+                                    ?.periodeLibelle ??
+                                'Période',
+                            items: _availablePeriods,
                             onChanged: (val) {
                               setSheetState(() {
-                                tempSelectedTrimester = val == 'Tous'
-                                    ? null
-                                    : val;
+                                tempBulletin = _bulletinsAnnee.firstWhere(
+                                  (b) => b.periodeLibelle == val,
+                                  orElse: () => _selectedBulletin!,
+                                );
                               });
                             },
                             isDarkMode: isDark,
@@ -455,38 +391,30 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     top: false,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pop(context); // Ferme le bottom sheet
+                        Navigator.pop(context);
 
-                        // On vérifie si un filtre a changé
-                        bool needApiCall = false;
-                        bool needStateUpdate = false;
+                        final yearChanged =
+                            tempAnnee?.ref != _selectedAnnee?.ref;
+                        final subjectChanged =
+                            tempSelectedSubject != _selectedSubject;
+                        final periodChanged =
+                            tempBulletin != null &&
+                            tempBulletin!.periodeRef !=
+                                _selectedBulletin?.periodeRef;
 
-                        // L'année ou le trimestre nécessitent de recharger l'API
-                        if (_anneeId != tempAnneeId ||
-                            _selectedTrimester != tempSelectedTrimester) {
-                          needApiCall = true;
-                        }
-                        // N'importe quel changement nécessite de mettre à jour l'état
-                        if (_anneeId != tempAnneeId ||
-                            _selectedYear != tempSelectedYear ||
-                            _selectedSubject != tempSelectedSubject ||
-                            _selectedTrimester != tempSelectedTrimester) {
-                          needStateUpdate = true;
-                        }
-
-                        if (needStateUpdate) {
+                        if (yearChanged) {
+                          setState(() => _selectedAnnee = tempAnnee);
+                          _loadBulletinsForSelectedYear();
+                        } else if (periodChanged) {
                           setState(() {
-                            _anneeId = tempAnneeId;
-                            _selectedYear = tempSelectedYear;
+                            _selectedBulletin = tempBulletin;
                             _selectedSubject = tempSelectedSubject;
-                            _selectedTrimester = tempSelectedTrimester;
-                            if (needApiCall) _isLoading = true;
                           });
-
-                          // On déclenche l'API seulement maintenant !
-                          if (needApiCall) {
-                            _loadApiData();
-                          }
+                          _fadeController.forward(from: 0);
+                        } else if (subjectChanged) {
+                          setState(
+                            () => _selectedSubject = tempSelectedSubject,
+                          );
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -527,10 +455,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       ),
       child: Scaffold(
         backgroundColor: AppColors.screenBg(context),
-        floatingActionButton: ScrollToTopFab(
-          scrollController: _scrollController,
-          // bottomSpacerHeight: 70,
-        ),
+        floatingActionButton: ScrollToTopFab(scrollController: _scrollController),
         body: CustomScrollView(
           controller: _scrollController,
           slivers: [
@@ -569,9 +494,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 ),
                 GestureDetector(
                   onTap: () {
-                    setState(() => _isLoading = true);
-                    _loadApiData();
                     _showInfo('Actualisation des notes en cours...');
+                    _loadBulletinsForSelectedYear();
                   },
                   child: Container(
                     width: 40,
@@ -600,7 +524,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 ),
               ],
             ),
-            if (_isLoading)
+            if (_isLoading || _isLoadingYears)
               SliverFillRemaining(child: _buildLoadingState())
             else
               ..._buildContentSlivers(),
@@ -610,7 +534,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     );
   }
 
-  // ─── LOADING ──────────────────────────────────────────────────────────────
   Widget _buildLoadingState() {
     return CustomLoader(
       message: 'Chargement des notes...',
@@ -620,80 +543,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     );
   }
 
-  // ─── APP BAR ──────────────────────────────────────────────────────────────
-  Widget _buildAppBar() {
-    final matieres = _getFilteredMatieres();
-    return Container(
-      color: AppColors.screenBg(context),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              // Back button
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.screenCardThemed(context),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 16,
-                    color: AppColors.screenTextPrimaryThemed(context),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Title
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Mes Notes',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.screenTextPrimaryThemed(context),
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    if (_bulletinData != null)
-                      Text(
-                        '${matieres.length} matière${matieres.length > 1 ? 's' : ''}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.screenTextSecondaryThemed(context),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              // Refresh button
-              SubtleRetryButton(
-                onTap: () {
-                  setState(() => _isLoading = true);
-                  _loadApiData();
-                  _showInfo('Actualisation des notes en cours...');
-                },
-                color: AppColors.screenOrange,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // ─── CONTENT SLIVERS ────────────────────────────────────────────────────────
   List<Widget> _buildContentSlivers() {
-    if (_bulletinData == null) {
+    if (_selectedBulletin == null) {
       return [
         SliverFillRemaining(
           hasScrollBody: false,
@@ -715,11 +567,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           opacity: _fadeAnimation,
           child: Column(
             children: [
-              // Student info banner
-              //_buildStudentBanner(),
-              // Average cards
+              if (_selectedBulletin!.estProvisoire) _buildProvisoireBanner(),
               _buildAverageCards(),
-              // Content
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 child: Column(
@@ -740,88 +589,27 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     ];
   }
 
-  // ─── STUDENT BANNER ───────────────────────────────────────────────────────
-  Widget _buildStudentBanner() {
-    final prenoms = _bulletinData?['prenoms'] ?? '';
-    final nom = _bulletinData?['nom'] ?? '';
-    final matricule = _bulletinData?['matricule'] ?? '';
-
+  Widget _buildProvisoireBanner() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFFFF7A3C), AppColors.screenOrange],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.screenOrange.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: AppColors.screenOrange.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.screenOrange.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
+          Icon(Icons.info_outline, color: AppColors.screenOrange, size: 18),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$prenoms $nom',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Matricule : $matricule',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.85),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
             child: Text(
-              _bulletinData?['anneeLibelle'] ?? _selectedYear ?? '',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
+              'Bulletin provisoire : le calcul officiel n\'a pas encore été '
+              'lancé, ces moyennes peuvent encore changer.',
+              style: TextStyle(
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
+                color: AppColors.screenOrange,
               ),
             ),
           ),
@@ -832,10 +620,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   // ─── AVERAGE CARDS SECTION ───────────────────────────────────────────────────
   Widget _buildAverageCards() {
-    if (_bulletinData == null) return const SizedBox.shrink();
+    if (_selectedBulletin == null) return const SizedBox.shrink();
 
     return Container(
-      height: 220, // Reduced height for slide cards
+      height: 220,
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         children: [
@@ -843,15 +631,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             child: PageView(
               controller: _pageController,
               onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                });
-                // Redémarrer l'auto-play quand l'utilisateur change manuellement
+                setState(() => _currentPage = index);
                 _stopAutoPlay();
                 Future.delayed(const Duration(seconds: 5), () {
-                  if (mounted) {
-                    _startAutoPlay();
-                  }
+                  if (mounted) _startAutoPlay();
                 });
               },
               children: [_buildStudentInfoPage(), _buildChartPage()],
@@ -883,106 +666,41 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   Widget _buildStudentInfoPage() {
-    // Utiliser les données du bulletin, sinon utiliser le cache, sinon utiliser les valeurs passées au widget
-    final nom = (_bulletinData != null && _bulletinData!['nom'] != null)
-        ? _bulletinData!['nom']
-        : _cachedNom;
-    final prenoms = (_bulletinData != null && _bulletinData!['prenoms'] != null)
-        ? _bulletinData!['prenoms']
+    final bulletin = _selectedBulletin;
+    final nom = bulletin?.nom.isNotEmpty == true ? bulletin!.nom : _cachedNom;
+    final prenoms = bulletin?.prenoms.isNotEmpty == true
+        ? bulletin!.prenoms
         : _cachedPrenoms;
-    final matricule =
-        (_bulletinData != null && _bulletinData!['matricule'] != null)
-        ? _bulletinData!['matricule']
-        : widget.matricule;
-    final anneeLibelle =
-        (_bulletinData != null && _bulletinData!['anneeLibelle'] != null)
-        ? _bulletinData!['anneeLibelle']
-        : (_selectedYear ?? widget.anneeLibelle);
-    final photoUrl = (_bulletinData != null)
-        ? (_bulletinData!['photo']?.toString() ??
-                  _bulletinData!['photoEleve']?.toString()) ??
-              _cachedPhotoUrl
-        : _cachedPhotoUrl;
+    final matricule = widget.matricule;
+    final anneeLibelle = bulletin?.anneeLibelle ?? _selectedAnnee?.libelle ?? '';
+    final moyenneAnnuelle = bulletin?.moyenneAnnuelle;
 
-    final moyGeneral = _bulletinData?['moyGeneral'] ?? 0.0;
-    final libellePeriode = _bulletinData?['libellePeriode'] ?? '';
-    final periodesMoyenne =
-        _bulletinData?['periodesMoyenne'] as List<dynamic>? ?? [];
-    final moyenneAnnuelleProjettee = _bulletinData?['moyenneAnnuelleProjettee'];
-
-    // Regrouper toutes les moyennes et les trier
-    List<Map<String, dynamic>> allPeriods = [];
-    allPeriods.add({
-      'libelle': libellePeriode.toString(),
-      'moyenne': moyGeneral,
-      'isCurrent': true,
-    });
-
-    for (var periode in periodesMoyenne) {
-      allPeriods.add({
-        'libelle': periode['periodeLibelle']?.toString() ?? '',
-        'moyenne': periode['moyenne'],
-        'isCurrent': false,
-      });
-    }
-
-    int getSortKey(String libelle) {
-      final lower = libelle.toLowerCase();
-      if (lower.contains('premier') || lower.contains('1er')) return 1;
-      if (lower.contains('deuxième') ||
-          lower.contains('deuxieme') ||
-          lower.contains('2ème') ||
-          lower.contains('2nd'))
-        return 2;
-      if (lower.contains('troisième') ||
-          lower.contains('troisieme') ||
-          lower.contains('3ème'))
-        return 3;
-      if (lower.contains('quatrième') ||
-          lower.contains('quatrieme') ||
-          lower.contains('4ème'))
-        return 4;
-      return 99;
-    }
-
-    allPeriods.sort(
-      (a, b) => getSortKey(a['libelle']).compareTo(getSortKey(b['libelle'])),
-    );
-
-    List<Widget> averageCards = [];
-    for (var p in allPeriods) {
-      final moy = p['moyenne'] ?? 0.0;
-      final double parsedMoy = (moy is num)
-          ? moy.toDouble()
-          : (double.tryParse(moy.toString()) ?? 0.0);
-      averageCards.add(
-        Container(
-          width: 140,
-          margin: const EdgeInsets.only(right: 12),
-          child: _buildCompactAverageCard(
-            p['libelle'],
-            parsedMoy.toStringAsFixed(1),
-            p['isCurrent']
-                ? Icons.analytics_outlined
-                : Icons.menu_book_outlined,
-            _getAverageColor(parsedMoy),
-          ),
+    // Une carte par période disposant de notes (doc §4.8), triées telles que
+    // renvoyées par l'API (ordre des périodes).
+    List<Widget> averageCards = _bulletinsAnnee.map((b) {
+      final isCurrent = b.periodeRef == bulletin?.periodeRef;
+      final moy = b.moyenne ?? 0.0;
+      return Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        child: _buildCompactAverageCard(
+          b.periodeLibelle,
+          moy.toStringAsFixed(1),
+          isCurrent ? Icons.analytics_outlined : Icons.menu_book_outlined,
+          _getAverageColor(moy),
         ),
       );
-    }
+    }).toList();
 
-    if (moyenneAnnuelleProjettee != null) {
-      final double parsedAnnuelle = (moyenneAnnuelleProjettee is num)
-          ? moyenneAnnuelleProjettee.toDouble()
-          : (double.tryParse(moyenneAnnuelleProjettee.toString()) ?? 0.0);
+    if (moyenneAnnuelle != null) {
       averageCards.insert(
         0,
         Container(
           width: 140,
           margin: const EdgeInsets.only(right: 12),
           child: _buildCompactAverageCardLight(
-            'Moy. Annuelle Proj.',
-            parsedAnnuelle.toStringAsFixed(2),
+            'Moy. Annuelle',
+            moyenneAnnuelle.toStringAsFixed(2),
             Icons.auto_graph_outlined,
           ),
         ),
@@ -1018,51 +736,23 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (photoUrl != null && photoUrl.isNotEmpty)
-                ClipRRect(
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    photoUrl,
-                    width: 56,
-                    height: 56,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  prenoms.isNotEmpty ? prenoms[0].toUpperCase() : 'E',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -1072,13 +762,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                       '$prenoms $nom',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),
-                    // const SizedBox(height: 12),
                     Wrap(
                       spacing: 16,
                       runSpacing: 8,
@@ -1086,7 +775,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.badge, color: Colors.white, size: 14),
+                            const Icon(Icons.badge, color: Colors.white, size: 14),
                             const SizedBox(width: 6),
                             Text(
                               'Matricule: $matricule',
@@ -1101,12 +790,11 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.calendar_today,
                               color: Colors.white,
                               size: 14,
                             ),
-                            // const SizedBox(width: 6),
                             Text(
                               anneeLibelle,
                               style: TextStyle(
@@ -1125,10 +813,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             ],
           ),
           const SizedBox(height: 8),
-          // Séparateur
           Container(height: 1, color: Colors.white.withOpacity(0.3)),
           const SizedBox(height: 16),
-          // Section des moyennes
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(children: averageCards),
@@ -1168,7 +854,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               const SizedBox(width: 8),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
@@ -1271,7 +957,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   Widget _buildChartPage() {
-    final details = _bulletinData!['details'] as List<dynamic>? ?? [];
+    final matieres = _selectedBulletin?.matieres ?? [];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1307,7 +993,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.bar_chart, color: Colors.white, size: 16),
+                child: const Icon(Icons.bar_chart, color: Colors.white, size: 16),
               ),
               const SizedBox(width: 12),
               Text(
@@ -1322,8 +1008,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: details.isNotEmpty
-                ? _buildNotesChart(details)
+            child: matieres.isNotEmpty
+                ? _buildNotesChart(matieres)
                 : Center(
                     child: Text(
                       'Aucune donnée disponible',
@@ -1339,38 +1025,27 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     );
   }
 
-  Widget _buildNotesChart(List<dynamic> details) {
-    // Trier les matières par moyenne pour un meilleur affichage
-    final sortedDetails =
-        List<Map<String, dynamic>>.from(
-          details.map((item) => item as Map<String, dynamic>),
-        )..sort(
-          (a, b) => (b['moyenne'] as double).compareTo(a['moyenne'] as double),
-        );
-
-    // Prendre TOUTES les matières pour un affichage complet
-    final allSubjects = sortedDetails;
+  Widget _buildNotesChart(List<MatiereBulletin> matieres) {
+    final sortedMatieres = List<MatiereBulletin>.from(matieres)
+      ..sort((a, b) => (b.moyenne ?? 0.0).compareTo(a.moyenne ?? 0.0));
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Container(
-        width: (allSubjects.length * 35.0).clamp(
-          300.0,
-          double.infinity,
-        ), // Largeur dynamique ajustée
+        width: (sortedMatieres.length * 35.0).clamp(300.0, double.infinity),
         height: 180,
         child: BarChart(
           BarChartData(
-            alignment: BarChartAlignment.spaceBetween, // Alignement plus serré
+            alignment: BarChartAlignment.spaceBetween,
             maxY: 20,
             barTouchData: BarTouchData(
               touchTooltipData: BarTouchTooltipData(
                 getTooltipColor: (_) =>
                     Theme.of(context).scaffoldBackgroundColor,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                  final subject = allSubjects[group.x.toInt()];
+                  final matiere = sortedMatieres[group.x.toInt()];
                   return BarTooltipItem(
-                    '${subject['matiereLibelle']}\n',
+                    '${matiere.libelle}\n',
                     TextStyle(
                       color: AppColors.screenTextPrimaryThemed(context),
                       fontWeight: FontWeight.bold,
@@ -1378,7 +1053,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     ),
                     children: [
                       TextSpan(
-                        text: '${subject['moyenne'].toStringAsFixed(2)}/20',
+                        text: '${(matiere.moyenne ?? 0.0).toStringAsFixed(2)}/20',
                         style: TextStyle(
                           color: AppColors.screenTextSecondaryThemed(context),
                           fontSize: 11,
@@ -1395,11 +1070,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 &&
-                        value.toInt() < allSubjects.length) {
-                      final subject = allSubjects[value.toInt()];
-                      final name = subject['matiereLibelle'] as String;
-                      // Abréger les noms longs
+                    if (value.toInt() >= 0 && value.toInt() < sortedMatieres.length) {
+                      final name = sortedMatieres[value.toInt()].libelle;
                       final displayName = name.length > 6
                           ? '${name.substring(0, 4)}...'
                           : name;
@@ -1410,9 +1082,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           child: Text(
                             displayName,
                             style: TextStyle(
-                              color: AppColors.screenTextSecondaryThemed(
-                                context,
-                              ),
+                              color: AppColors.screenTextSecondaryThemed(context),
                               fontSize: 8,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1441,20 +1111,14 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   },
                 ),
               ),
-              topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
-            barGroups: allSubjects.asMap().entries.map((entry) {
+            barGroups: sortedMatieres.asMap().entries.map((entry) {
               final index = entry.key;
-              final subject = entry.value;
-              final average = (subject['moyenne'] as double);
+              final average = entry.value.moyenne ?? 0.0;
 
-              // Déterminer la couleur selon la moyenne
               Color barColor;
               if (average >= 16) {
                 barColor = Colors.green;
@@ -1474,10 +1138,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   BarChartRodData(
                     toY: average,
                     color: barColor,
-                    width: 15, // Largeur augmentée pour réduire l'espacement
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(4),
-                    ),
+                    width: 15,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                   ),
                 ],
               );
@@ -1488,106 +1150,16 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     );
   }
 
-  Widget _buildAverageCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color, {
-    bool isFirst = false,
-    bool isLast = false,
-  }) {
-    return Container(
-      width: 160, // Increased width for better content fit
-      margin: EdgeInsets.only(left: isFirst ? 0 : 0, right: isLast ? 0 : 0),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16), // Simplified border radius
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 16),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '/20',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: color.withOpacity(0.8),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12), // Increased spacing
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22, // Slightly smaller font
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 4), // Increased spacing
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color.withOpacity(0.8),
-              letterSpacing: 0.1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ─── NOTES SECTION ────────────────────────────────────────────────────────
-  Widget _buildNotesSection(List<dynamic> matieres) {
+  Widget _buildNotesSection(List<MatiereBulletin> matieres) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Header de section
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [
-                AppColors.customLightBlue,
-                AppColors.customLightBlueDark,
-              ],
+              colors: [AppColors.customLightBlue, AppColors.customLightBlueDark],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -1620,10 +1192,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -1640,21 +1209,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             ],
           ),
         ),
-
-        // Cards matières
         Container(
           decoration: BoxDecoration(
             color: AppColors.screenCardThemed(context),
-            borderRadius: const BorderRadius.vertical(
-              bottom: Radius.circular(20),
-            ),
-            // boxShadow: [
-            //   BoxShadow(
-            //     color: AppColors.screenShadow,
-            //     blurRadius: 12,
-            //     offset: Offset(0, 4),
-            //   ),
-            // ],
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
           ),
           child: Column(
             children: matieres.asMap().entries.map((entry) {
@@ -1680,11 +1238,9 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   // ─── SUBJECT CARD ─────────────────────────────────────────────────────────
-  Widget _buildSubjectCard(Map<String, dynamic> matiere, int index) {
-    final subjectName = matiere['matiereLibelle'] as String;
-    final notes = matiere['notes'] as List<dynamic>;
-    final avg = matiere['moyenne'] ?? _calculateAverage(notes);
-    final isExpanded = _expandedSubjectId == subjectName;
+  Widget _buildSubjectCard(MatiereBulletin matiere, int index) {
+    final avg = matiere.moyenne ?? 0.0;
+    final isExpanded = _expandedSubjectId == matiere.libelle;
     final color = _getAverageColor(avg);
 
     return TweenAnimationBuilder<double>(
@@ -1693,16 +1249,13 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       curve: Curves.easeOutCubic,
       builder: (context, value, child) => Opacity(
         opacity: value,
-        child: Transform.translate(
-          offset: Offset(0, 12 * (1 - value)),
-          child: child,
-        ),
+        child: Transform.translate(offset: Offset(0, 12 * (1 - value)), child: child),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => setState(
-            () => _expandedSubjectId = isExpanded ? null : subjectName,
+            () => _expandedSubjectId = isExpanded ? null : matiere.libelle,
           ),
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
@@ -1713,10 +1266,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header de la matière
                 Row(
                   children: [
-                    // Icône matière
                     Container(
                       width: 44,
                       height: 44,
@@ -1725,19 +1276,18 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        _getSubjectIcon(subjectName),
+                        _getSubjectIcon(matiere.libelle),
                         color: Colors.grey[600],
                         size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Nom + nb évaluations
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            subjectName,
+                            matiere.libelle,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -1747,24 +1297,20 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${notes.length} évaluation${notes.length > 1 ? 's' : ''}',
+                            matiere.professeur?.isNotEmpty == true
+                                ? matiere.professeur!
+                                : 'Coef. ${matiere.coefficient?.toStringAsFixed(1) ?? '1.0'}',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.screenTextSecondaryThemed(
-                                context,
-                              ),
+                              color: AppColors.screenTextSecondaryThemed(context),
                               fontWeight: FontWeight.w400,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    // Badge moyenne
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -1791,8 +1337,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     ),
                   ],
                 ),
-
-                // Expanded detail
                 AnimatedCrossFade(
                   duration: const Duration(milliseconds: 250),
                   crossFadeState: isExpanded
@@ -1803,39 +1347,8 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 14),
-                      Divider(
-                        color: AppColors.screenDividerThemed(context),
-                        height: 1,
-                      ),
+                      Divider(color: AppColors.screenDividerThemed(context), height: 1),
                       const SizedBox(height: 14),
-
-                      // Titre détail
-                      Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Colors.grey,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Détail des notes',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.grey[700],
-                              letterSpacing: 0.1,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      _buildNotesList(notes),
-
-                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Container(
@@ -1864,15 +1377,15 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           Expanded(
                             child: _buildStatBadge(
                               'Coef',
-                              '${matiere['coef'] ?? '1.0'}',
+                              matiere.coefficient?.toStringAsFixed(1) ?? '1.0',
                               Colors.grey[600]!,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: _buildStatBadge(
-                              'Appréciation',
-                              '${matiere['appreciation'] ?? 'N/A'}',
+                              'Rang',
+                              matiere.rang != null ? '${matiere.rang}e' : 'N/A',
                               Colors.grey[600]!,
                             ),
                           ),
@@ -1880,44 +1393,20 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           Expanded(
                             child: _buildStatBadge(
                               'Moyenne',
-                              '${matiere['moyenne']?.toStringAsFixed(1) ?? avg.toStringAsFixed(1)}',
+                              avg.toStringAsFixed(1),
                               AppColors.screenOrange,
                             ),
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 14),
-                      // Bouton marquer consulté
-                      // GestureDetector(
-                      //   onTap: () {},
-                      //   child: Container(
-                      //     padding: const EdgeInsets.symmetric(
-                      //         horizontal: 12, vertical: 8),
-                      //     decoration: BoxDecoration(
-                      //       color: AppColors.screenOrangeLight,
-                      //       borderRadius: BorderRadius.circular(10),
-                      //       border: Border.all(
-                      //           color: AppColors.screenOrange.withOpacity(0.2)),
-                      //     ),
-                      //     child: const Row(
-                      //       mainAxisSize: MainAxisSize.min,
-                      //       children: [
-                      //         Icon(Icons.visibility_outlined,
-                      //             color: AppColors.screenOrange, size: 15),
-                      //         SizedBox(width: 6),
-                      //         Text(
-                      //           'Marquer consulté',
-                      //           style: TextStyle(
-                      //             color: AppColors.screenOrange,
-                      //             fontSize: 12,
-                      //             fontWeight: FontWeight.w600,
-                      //           ),
-                      //         ),
-                      //       ],
-                      //     ),
-                      //   ),
-                      // ),
+                      const SizedBox(height: 8),
+                      _buildStatBadge(
+                        'Appréciation',
+                        matiere.appreciation?.isNotEmpty == true
+                            ? matiere.appreciation!
+                            : 'N/A',
+                        Colors.grey[600]!,
+                      ),
                     ],
                   ),
                 ),
@@ -1929,64 +1418,12 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     );
   }
 
-  // ─── NOTES LIST ───────────────────────────────────────────────────────────
-  Widget _buildNotesList(List<dynamic> notes) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: notes.asMap().entries.map((entry) {
-        final i = entry.key;
-        final note = entry.value;
-        final val = double.tryParse(note['note']?.toString() ?? '0') ?? 0.0;
-        final sur =
-            double.tryParse(note['noteSur']?.toString() ?? '20') ?? 20.0;
-        final color = _getAverageColor((val / sur) * 20);
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.screenCardThemed(context),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.screenDividerThemed(context)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'N°${i + 1}',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.screenTextSecondaryThemed(context),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${val.toStringAsFixed(1)}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.screenTextPrimaryThemed(context),
-                ),
-              ),
-              Text(
-                '/${sur.toInt()}',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.screenTextSecondaryThemed(context),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
+  String? _expandedSubjectId;
 
   // ─── STAT BADGE ───────────────────────────────────────────────────────────
   Widget _buildStatBadge(String label, String value, Color color) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
@@ -1997,20 +1434,13 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         children: [
           Text(
             value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color.withOpacity(0.7),
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(fontSize: 11, color: color.withOpacity(0.7), fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -2019,20 +1449,14 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   // ─── EMPTY STATE ──────────────────────────────────────────────────────────
   Widget _buildEmptyState() {
-    if (_studentMatricule == null || _anneeId == null || _classeId == null) {
+    if (_annees.isEmpty) {
       return CustomErrorState(
         title: 'Informations indisponibles',
         message:
             'Les informations scolaires de cet élève ne sont pas complètes pour consulter ses notes.',
         icon: Icons.error_outline_rounded,
         iconColor: AppColors.screenOrange,
-        onRetry: () async {
-          setState(() {
-            _isLoading = true;
-          });
-          await _loadSchoolYears();
-          await _loadApiData();
-        },
+        onRetry: _loadYears,
         retryText: 'Actualiser',
         buttonIsLight: true,
         buttonWidth: 200,
@@ -2043,53 +1467,6 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       message: 'Modifiez les filtres pour afficher des résultats',
       icon: Icons.assignment_outlined,
       iconColor: AppColors.screenOrange,
-    );
-  }
-
-  Widget _buildOrangeButton({
-    required String label,
-    VoidCallback? onTap,
-    bool isLoading = false,
-    Widget? trailing,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF7A3C), AppColors.screenOrange],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.screenOrange.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              if (trailing != null) ...[const SizedBox(width: 8), trailing],
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

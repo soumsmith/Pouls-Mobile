@@ -2,9 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/child.dart';
-import '../models/eleve.dart';
-import '../models/ecole.dart';
+import '../models/etablissement_consultation.dart';
+import '../models/eleve_consultation.dart';
 import '../models/user.dart';
+import '../services/consultation_api_service.dart';
 import '../services/pouls_scolaire_api_service.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
@@ -39,7 +40,7 @@ class _AddChildScreenState extends State<AddChildScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _matriculeController = TextEditingController();
-  final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
+  final ConsultationApiService _consultationApi = ConsultationApiService();
   final TextSizeService _textSizeService = TextSizeService();
 
   final TextEditingController _recommenderNameController =
@@ -70,12 +71,12 @@ class _AddChildScreenState extends State<AddChildScreen>
   bool _isSearching = false;
   bool _isLoadingEcoles = false;
   bool _hasAttemptedLoad = false;
-  Eleve? _foundEleve;
-  Ecole? _foundEcole;
+  EleveConsultation? _foundEleve;
+  EtablissementConsultation? _foundEcole;
   String? _errorMessage;
 
-  List<Ecole> _ecoles = [];
-  int? _selectedEcoleId;
+  List<EtablissementConsultation> _ecoles = [];
+  String? _selectedSchoolId;
   String? _selectedEcoleName;
 
   late AnimationController _animationController;
@@ -221,7 +222,9 @@ class _AddChildScreenState extends State<AddChildScreen>
       _errorMessage = null;
     });
     try {
-      final ecoles = await _poulsApiService.getAllEcoles();
+      final ecoles = await _consultationApi.getEtablissements(
+        forceRefresh: true,
+      );
       setState(() {
         _ecoles = ecoles;
         _isLoadingEcoles = false;
@@ -256,7 +259,7 @@ class _AddChildScreenState extends State<AddChildScreen>
       setState(() => _errorMessage = 'Veuillez entrer un matricule');
       return;
     }
-    if (_selectedEcoleId == null) {
+    if (_selectedSchoolId == null) {
       setState(() => _errorMessage = 'Veuillez sélectionner une école');
       return;
     }
@@ -268,25 +271,38 @@ class _AddChildScreenState extends State<AddChildScreen>
     });
     try {
       final matricule = _matriculeController.text.trim();
-      final anneeScolaire = await _poulsApiService.getAnneeScolaireOuverte(
-        _selectedEcoleId!,
-      );
-      final idAnnee = anneeScolaire.anneeOuverteCentraleId;
-      if (idAnnee == 0 || anneeScolaire.anneeEcoleList.isEmpty) {
+      final schoolId = _selectedSchoolId!;
+
+      final annees = await _consultationApi.getAnnees(schoolId);
+      if (annees.isEmpty) {
         setState(() {
-          _errorMessage = 'Aucune année scolaire ouverte pour cette école';
+          _errorMessage = 'Aucune année scolaire disponible pour cette école';
           _isSearching = false;
         });
         return;
       }
-      final eleve = await _poulsApiService.findEleveByMatricule(
-        _selectedEcoleId!,
-        idAnnee,
-        matricule,
+      final anneeCourante = annees.firstWhere(
+        (a) => a.courante,
+        orElse: () => annees.first,
       );
+
+      // L'API de consultation n'a pas de recherche directe par matricule
+      // (doc §4.4) : on charge la liste des élèves de l'année et on filtre.
+      final eleves = await _consultationApi.getEleves(
+        schoolId,
+        anneeCourante.ref,
+      );
+      EleveConsultation? eleve;
+      for (final e in eleves) {
+        if (e.matricule.toLowerCase() == matricule.toLowerCase()) {
+          eleve = e;
+          break;
+        }
+      }
+
       if (eleve != null) {
         final ecole = _ecoles.firstWhere(
-          (e) => e.ecoleid == _selectedEcoleId,
+          (e) => e.schoolId == schoolId,
           orElse: () => _ecoles.first,
         );
         setState(() {
@@ -326,9 +342,9 @@ class _AddChildScreenState extends State<AddChildScreen>
     print('🔘 BUTTON CLICKED: _handleAddChild called');
     print('🔘 DEBUG: _isLoading = $_isLoading');
     print(
-      '🔘 DEBUG: _foundEleve = ${_foundEleve?.prenomEleve} ${_foundEleve?.nomEleve}',
+      '🔘 DEBUG: _foundEleve = ${_foundEleve?.prenoms} ${_foundEleve?.nom}',
     );
-    print('🔘 DEBUG: _foundEcole = ${_foundEcole?.ecoleclibelle}');
+    print('🔘 DEBUG: _foundEcole = ${_foundEcole?.nom}');
 
     // Garde-fou anti double-tap : le bouton du bottom sheet n'est pas
     // reconstruit quand _isLoading change (showModalBottomSheet ne rebuild
@@ -351,7 +367,7 @@ class _AddChildScreenState extends State<AddChildScreen>
     final eleve = _foundEleve!;
     final ecole = _foundEcole!;
     print(
-      '✅ DEBUG: Starting add child process for ${eleve.prenomEleve} ${eleve.nomEleve}',
+      '✅ DEBUG: Starting add child process for ${eleve.prenoms} ${eleve.nom}',
     );
     setState(() => _isLoading = true);
     if (_isFoundStudentSheetOpen) setModalState(() {});
@@ -374,16 +390,18 @@ class _AddChildScreenState extends State<AddChildScreen>
 
   Future<void> _performAddChild(
     User currentUser,
-    Eleve eleve,
-    Ecole ecole,
+    EleveConsultation eleve,
+    EtablissementConsultation ecole,
     StateSetter setModalState,
   ) async {
     try {
       final parentId = currentUser.id;
-      if (eleve.prenomEleve.isEmpty || eleve.nomEleve.isEmpty)
+      if (eleve.prenoms.isEmpty || eleve.nom.isEmpty)
         throw Exception('Informations élève incomplètes');
 
-      final childId = eleve.inscriptionsidEleve.toString();
+      // Pas d'identifiant d'inscription (int) côté API de consultation : le
+      // matricule est la seule clé stable disponible.
+      final childId = eleve.matricule;
       print('🔍 Vérification si l\'élève existe déjà...');
       print('👶 Child ID: $childId');
       print('👤 Parent ID: $parentId');
@@ -406,42 +424,47 @@ class _AddChildScreenState extends State<AddChildScreen>
 
       print('✅ Élève non trouvé, procédons à l\'ajout...');
 
+      // paramEcole doit être le code LEGACY ("hinneh"), pas le code de l'API
+      // de consultation ("057955") : ce sont des intégrations tierces
+      // différentes (inscription en ligne api2.vie-ecoles.com, galeries...)
+      // qui attendent ce code-là — les confondre casse ces flux (404 "Ecole
+      // not found"). Peut être `null` si l'établissement n'a pas d'équivalent
+      // legacy (propre à l'API de consultation).
+      final legacyParamEcole = await PoulsScolaireApiService()
+          .findLegacyParamEcoleByCodeAndName(ecole.code, ecole.nom);
+
       final newChild = Child(
         id: childId,
-        firstName: eleve.prenomEleve,
-        lastName: eleve.nomEleve,
-        establishment: ecole.ecoleclibelle.isNotEmpty
-            ? ecole.ecoleclibelle
+        firstName: eleve.prenoms,
+        lastName: eleve.nom,
+        establishment: ecole.nom.isNotEmpty
+            ? ecole.nom
             : 'École non spécifiée',
-        grade: eleve.classe.isNotEmpty ? eleve.classe : 'Classe non spécifiée',
-        photoUrl: eleve.urlPhoto,
+        grade: eleve.classeLibelle.isNotEmpty
+            ? eleve.classeLibelle
+            : 'Classe non spécifiée',
+        // Pas de champ photo dans l'API de consultation (doc §4.4).
+        photoUrl: null,
         parentId: parentId,
-        paramEcole: ecole.paramecole?.isNotEmpty == true
-            ? ecole.paramecole
-            : ecole.ecolecode,
+        paramEcole: legacyParamEcole,
       );
 
       print('💾 Sauvegarde locale de l\'élève...');
       await DatabaseService.instance.saveChild(
         newChild,
-        matricule: eleve.matriculeEleve,
-        ecoleId: ecole.ecoleid,
-        ecoleName: ecole.ecoleclibelle,
-        paramEcole: ecole.paramecole?.isNotEmpty == true
-            ? ecole.paramecole
-            : ecole.ecolecode,
-        classeId: eleve.classeid,
-        classeName: eleve.classe,
+        matricule: eleve.matricule,
+        ecoleName: ecole.nom,
+        paramEcole: legacyParamEcole,
+        classeName: eleve.classeLibelle,
+        schoolId: ecole.schoolId,
+        classeRef: eleve.classeRef.isNotEmpty ? eleve.classeRef : null,
       );
       print('✅ Sauvegarde locale terminée');
       // Ne pas bloquer la confirmation/navigation sur cet appel réseau
       // best-effort (l'élève est déjà sauvegardé localement à ce stade) :
       // un appel lent ou qui ne répond pas ne doit pas donner l'impression
       // que le tap sur "Ajouter" n'a rien fait.
-      _updateNotificationTokenWithNewMatricule(
-        parentId,
-        eleve.matriculeEleve,
-      );
+      _updateNotificationTokenWithNewMatricule(parentId, eleve.matricule);
 
       print('✅ Élève ajouté localement avec succès');
       setState(() => _isLoading = false);
@@ -962,14 +985,12 @@ class _AddChildScreenState extends State<AddChildScreen>
         SearchableDropdown(
           label: 'École',
           value: _selectedEcoleName ?? 'Sélectionner une école...',
-          items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+          items: _ecoles.map((e) => e.nom).toList(),
           isDarkMode: Theme.of(context).brightness == Brightness.dark,
           onChanged: (String selected) {
-            final ecole = _ecoles.firstWhere(
-              (e) => e.ecoleclibelle == selected,
-            );
+            final ecole = _ecoles.firstWhere((e) => e.nom == selected);
             setState(() {
-              _selectedEcoleId = ecole.ecoleid;
+              _selectedSchoolId = ecole.schoolId;
               _selectedEcoleName = selected;
               _foundEleve = null;
               _foundEcole = null;
@@ -1208,37 +1229,19 @@ class _AddChildScreenState extends State<AddChildScreen>
         Row(
           children: [
             Hero(
-              tag: 'student_photo_${eleve.matriculeEleve}',
+              tag: 'student_photo_${eleve.matricule}',
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18),
                 child: Container(
                   width: 56,
                   height: 56,
                   color: AppColors.screenSurface,
-                  child: eleve.urlPhoto != null && eleve.urlPhoto!.isNotEmpty
-                      ? Image.network(
-                          eleve.urlPhoto!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.person,
-                            color: AppColors.screenTextSecondary,
-                            size: 28,
-                          ),
-                          loadingBuilder: (_, child, progress) =>
-                              progress == null
-                              ? child
-                              : const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.screenOrange,
-                                  ),
-                                ),
-                        )
-                      : const Icon(
-                          Icons.person,
-                          color: AppColors.screenTextSecondary,
-                          size: 28,
-                        ),
+                  // Pas de champ photo dans l'API de consultation (doc §4.4).
+                  child: const Icon(
+                    Icons.person,
+                    color: AppColors.screenTextSecondary,
+                    size: 28,
+                  ),
                 ),
               ),
             ),
@@ -1248,7 +1251,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    eleve.nomEleve ?? 'Nom inconnu',
+                    eleve.nom.isNotEmpty ? eleve.nom : 'Nom inconnu',
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(16),
                       fontWeight: FontWeight.w800,
@@ -1258,7 +1261,9 @@ class _AddChildScreenState extends State<AddChildScreen>
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    eleve.prenomEleve ?? 'Prénom inconnu',
+                    eleve.prenoms.isNotEmpty
+                        ? eleve.prenoms
+                        : 'Prénom inconnu',
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(13),
                       color: AppColors.screenTextSecondary,
@@ -1281,8 +1286,8 @@ class _AddChildScreenState extends State<AddChildScreen>
                           ),
                         ),
                         child: Text(
-                          eleve.classe.isNotEmpty
-                              ? eleve.classe
+                          eleve.classeLibelle.isNotEmpty
+                              ? eleve.classeLibelle
                               : 'Classe inconnue',
                           style: TextStyle(
                             fontSize: _textSizeService.getScaledFontSize(11),
@@ -1330,9 +1335,9 @@ class _AddChildScreenState extends State<AddChildScreen>
         const SizedBox(height: 12),
         const Divider(color: AppColors.screenDivider, height: 1),
         const SizedBox(height: 12),
-        _infoRow(Icons.school_outlined, 'École', ecole.ecoleclibelle),
+        _infoRow(Icons.school_outlined, 'École', ecole.nom),
         const SizedBox(height: 10),
-        _infoRow(Icons.badge_outlined, 'Matricule', eleve.matriculeEleve),
+        _infoRow(Icons.badge_outlined, 'Matricule', eleve.matricule),
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,

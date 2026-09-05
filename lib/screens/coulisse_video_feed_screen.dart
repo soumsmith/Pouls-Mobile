@@ -16,6 +16,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../utils/notification_helper.dart';
+import '../utils/html_helper.dart';
 import '../config/app_dimensions.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
@@ -300,7 +301,7 @@ class _CoulisseVideoFeedScreenState extends State<CoulisseVideoFeedScreen> {
       ),
       builder: (context) => ShareBottomSheet(
         title: 'Partager la vidéo',
-        itemTitle: item.titre,
+        itemTitle: HtmlHelper.stripHtmlTags(item.titre),
         shareText: AppShareService.buildCoulisseShareText(item),
       ),
     );
@@ -871,7 +872,7 @@ class _VideoPageState extends State<_VideoPage>
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        widget.video.description ?? '',
+                        HtmlHelper.stripHtmlTags(widget.video.description ?? ''),
                         style: const TextStyle(
                           fontSize: 15,
                           height: 1.5,
@@ -1052,7 +1053,7 @@ class _VideoPageState extends State<_VideoPage>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          widget.video.titre,
+                          HtmlHelper.stripHtmlTags(widget.video.titre),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -1068,17 +1069,29 @@ class _VideoPageState extends State<_VideoPage>
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${widget.video.fullName} · ${widget.video.classe}',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                        if ([
+                          widget.video.fullName,
+                          if (widget.video.classe != null &&
+                              widget.video.classe!.isNotEmpty)
+                            widget.video.classe!,
+                        ].where((s) => s.isNotEmpty).isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            [
+                              widget.video.fullName,
+                              if (widget.video.classe != null &&
+                                  widget.video.classe!.isNotEmpty)
+                                widget.video.classe!,
+                            ].where((s) => s.isNotEmpty).join(' · '),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        ],
                         const SizedBox(height: 6),
                         const Text(
                           'Voir plus',
@@ -1854,7 +1867,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.video.titre,
+                          HtmlHelper.stripHtmlTags(widget.video.titre),
                           style: TextStyle(
                             color: textColor,
                             fontWeight: FontWeight.bold,

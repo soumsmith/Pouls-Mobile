@@ -5,6 +5,7 @@ import '../models/event.dart';
 import '../models/astuce_conseil.dart';
 import '../models/product.dart';
 import '../config/app_config.dart';
+import '../utils/unicode_style_normalizer.dart';
 
 /// Service de génération de liens de partage pour l'application.
 ///
@@ -35,9 +36,21 @@ class AppShareService {
     String? img,
   }) {
     final buffer = StringBuffer();
-    buffer.write('&title=${Uri.encodeQueryComponent(title)}');
+
+    // normalizeStylizedText : un titre en "texte stylé" (généré par les
+    // outils de gras/italique Unicode des réseaux sociaux) pèse jusqu'à 4
+    // octets par lettre — 12 caractères une fois encodés dans l'URL — et
+    // peut à lui seul générer un lien de plusieurs centaines de caractères.
+    // On ne touche qu'à ce qui part dans l'URL : le texte affiché ailleurs
+    // dans l'app garde son style.
+    final normalizedTitle = normalizeStylizedText(title);
+    final truncatedTitle = normalizedTitle.length > 100
+        ? '${normalizedTitle.substring(0, 100).trim()}…'
+        : normalizedTitle;
+    buffer.write('&title=${Uri.encodeQueryComponent(truncatedTitle)}');
+
     if (desc != null && desc.trim().isNotEmpty) {
-      final cleaned = _stripHtmlAndFormat(desc);
+      final cleaned = normalizeStylizedText(_stripHtmlAndFormat(desc));
       final truncated = cleaned.length > 160
           ? '${cleaned.substring(0, 160).trim()}…'
           : cleaned;

@@ -918,9 +918,14 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
                         : Colors.indigo[400]!,
                     isDark: isDark,
                     onSubscribe: () {
+                      // autoSubscribeOffer : démarre directement le
+                      // processus de souscription (sélection des enfants
+                      // puis paiement) pour CETTE offre, sans faire
+                      // parcourir la liste complète des offres à l'utilisateur.
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const SubscriptionScreen(),
+                          builder: (_) =>
+                              SubscriptionScreen(autoSubscribeOffer: offer),
                         ),
                       );
                     },

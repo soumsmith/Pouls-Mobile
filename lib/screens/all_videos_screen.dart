@@ -20,6 +20,7 @@ import '../models/ad_model.dart';
 import '../utils/ad_injector.dart';
 import '../widgets/ad_banner_card.dart';
 import '../utils/notification_helper.dart';
+import '../utils/html_helper.dart';
 
 class AllVideosScreen extends StatefulWidget {
   final String ecoleCode;
@@ -365,7 +366,7 @@ class _AllVideosScreenState extends State<AllVideosScreen> {
     return ImageMenuCardExternalTitle(
       index: _filteredVideos.indexOf(video),
       cardKey: video.id.toString(),
-      title: video.titre,
+      title: HtmlHelper.stripHtmlTags(video.titre),
       subtitle: (video.classe != null && video.classe!.isNotEmpty) ? video.classe : null,
       imagePath: video.videoYoutube.isNotEmpty 
           ? 'https://img.youtube.com/vi/${video.youtubeVideoId}/mqdefault.jpg'
@@ -410,7 +411,7 @@ class VideoPlayerScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFFFFF),
         title: Text(
-          video.titre,
+          HtmlHelper.stripHtmlTags(video.titre),
           style: const TextStyle(color: Colors.white),
         ),
         leading: IconButton(
@@ -438,7 +439,7 @@ class VideoPlayerScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              video.titre,
+              HtmlHelper.stripHtmlTags(video.titre),
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 14,

@@ -22,7 +22,14 @@ import '../models/child.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class SubscriptionScreen extends StatefulWidget {
-  const SubscriptionScreen({super.key});
+  /// Quand fourni, le processus de souscription pour cette offre démarre
+  /// immédiatement à l'ouverture de l'écran (sélection des enfants, puis
+  /// paiement), sans obliger l'utilisateur à parcourir/retrouver l'offre
+  /// dans la liste — utile quand on arrive ici depuis un bouton "Souscrire"
+  /// déjà spécifique à une offre (ex. le bottom sheet de parrainage).
+  final SubscriptionOffer? autoSubscribeOffer;
+
+  const SubscriptionScreen({super.key, this.autoSubscribeOffer});
 
   @override
   State<SubscriptionScreen> createState() => _SubscriptionScreenState();
@@ -41,6 +48,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   void initState() {
     super.initState();
     _loadOffers();
+    final autoOffer = widget.autoSubscribeOffer;
+    if (autoOffer != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _subscribe(autoOffer);
+      });
+    }
   }
 
   @override

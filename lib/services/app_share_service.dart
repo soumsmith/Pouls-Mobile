@@ -5,7 +5,6 @@ import '../models/event.dart';
 import '../models/astuce_conseil.dart';
 import '../models/product.dart';
 import '../config/app_config.dart';
-import '../utils/unicode_style_normalizer.dart';
 
 /// Service de génération de liens de partage pour l'application.
 ///
@@ -30,6 +29,9 @@ class AppShareService {
   // générique de l'application. Les anciens index.html restent en place en
   // simple redirection statique vers index.php, pour ne pas casser les
   // liens déjà partagés avant ce changement.
+  // title/desc restent acceptés (et ignorés) pour ne pas casser les
+  // 6 appelants ci-dessous : voir la note juste en dessous sur pourquoi ils
+  // ne sont plus mis dans le lien.
   static String _previewParams({
     required String title,
     String? desc,
@@ -37,27 +39,13 @@ class AppShareService {
   }) {
     final buffer = StringBuffer();
 
-    // normalizeStylizedText : un titre en "texte stylé" (généré par les
-    // outils de gras/italique Unicode des réseaux sociaux) pèse jusqu'à 4
-    // octets par lettre — 12 caractères une fois encodés dans l'URL — et
-    // peut à lui seul générer un lien de plusieurs centaines de caractères.
-    // On ne touche qu'à ce qui part dans l'URL : le texte affiché ailleurs
-    // dans l'app garde son style.
-    final normalizedTitle = normalizeStylizedText(title);
-    final truncatedTitle = normalizedTitle.length > 100
-        ? '${normalizedTitle.substring(0, 100).trim()}…'
-        : normalizedTitle;
-    buffer.write('&title=${Uri.encodeQueryComponent(truncatedTitle)}');
-
-    if (desc != null && desc.trim().isNotEmpty) {
-      final cleaned = normalizeStylizedText(_stripHtmlAndFormat(desc));
-      final truncated = cleaned.length > 160
-          ? '${cleaned.substring(0, 160).trim()}…'
-          : cleaned;
-      if (truncated.isNotEmpty) {
-        buffer.write('&desc=${Uri.encodeQueryComponent(truncated)}');
-      }
-    }
+    // title/desc ne sont plus inclus dans le lien : l'app elle-même ne les
+    // lit jamais pour ouvrir le contenu (deep_link_service.dart ne regarde
+    // que type/id/ecole) — ils ne servaient qu'à générer og:title/
+    // og:description pour l'aperçu WhatsApp/Messenger côté serveur PHP.
+    // Même normalisés et tronqués, ils restaient le plus gros contributeur
+    // à la longueur du lien. `img` seul suffit à conserver la miniature de
+    // l'aperçu ; seul le titre affiché dans l'aperçu redevient générique.
     if (img != null && img.trim().isNotEmpty) {
       buffer.write('&img=${Uri.encodeQueryComponent(img)}');
     }

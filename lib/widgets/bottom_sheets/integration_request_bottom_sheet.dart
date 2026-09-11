@@ -8,7 +8,9 @@ import '../components/bottom_spacer.dart';
 import 'bottom_sheet_header.dart';
 import '../../config/app_config.dart';
 import '../../models/ecole.dart';
+import '../../models/etablissement_consultation.dart';
 import '../../services/pouls_scolaire_api_service.dart';
+import '../../services/consultation_api_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
 import '../../widgets/components/custom_select_input.dart';
@@ -98,11 +100,21 @@ class _IntegrationRequestBottomSheetState
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
+  final ConsultationApiService _consultationApi = ConsultationApiService();
 
   // ── État ───────────────────────────────────────────────────────────────────
-  List<Ecole> _ecoles = [];
+  //
+  // Migré vers l'API de consultation (établissements limités aux ~7 déjà
+  // migrés, au lieu des ~90 de l'ancien /connecte/ecole) — la consultation
+  // de la demande elle-même reste entièrement sur api2.vie-ecoles.com, qui
+  // n'existe pas côté API de consultation : on doit donc retrouver le code
+  // legacy (paramEcole) de chaque établissement pour que la suite du
+  // parcours fonctionne. Un établissement sans équivalent legacy n'a pas de
+  // consultation possible pour l'instant.
+  List<EtablissementConsultation> _ecoles = [];
+  final Map<String, String?> _paramEcoleByCode = {};
   bool _isLoadingEcoles = false;
-  int? _selectedEcoleId;
+  String? _selectedEcoleCode;
   String? _selectedEcoleName;
   bool _isLoadingRequest = false;
 
@@ -113,13 +125,61 @@ class _IntegrationRequestBottomSheetState
     _loadEcoles();
   }
 
+  String _normalizeName(String s) =>
+      s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
   // ── Chargement des écoles ─────────────────────────────────────────────────
 
   Future<void> _loadEcoles() async {
     setState(() => _isLoadingEcoles = true);
     try {
-      final ecoles = await _poulsApiService.getAllEcoles();
-      if (mounted) setState(() => _ecoles = ecoles);
+      final etablissements = await _consultationApi.getEtablissements();
+
+      // Résolution du code legacy (paramEcole) nécessaire à la consultation
+      // de la demande : un seul appel /connecte/ecole pour les ~7
+      // établissements, plutôt qu'un par établissement.
+      List<Ecole> legacyEcoles = [];
+      try {
+        legacyEcoles = await _poulsApiService.getAllEcoles();
+      } catch (e) {
+        debugPrint(
+          'Impossible de charger les écoles legacy (paramEcole indisponible) : $e',
+        );
+      }
+
+      final paramEcoleByCode = <String, String?>{};
+      for (final etab in etablissements) {
+        final candidates = legacyEcoles
+            .where((e) => e.ecolecode == etab.code)
+            .toList();
+        String? paramEcole;
+        if (candidates.length == 1) {
+          final c = candidates.first;
+          paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
+              ? c.paramecole
+              : c.ecolecode;
+        } else if (candidates.length > 1) {
+          final expected = _normalizeName(etab.nom);
+          for (final c in candidates) {
+            if (_normalizeName(c.ecoleclibelle) == expected) {
+              paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
+                  ? c.paramecole
+                  : c.ecolecode;
+              break;
+            }
+          }
+        }
+        paramEcoleByCode[etab.code] = paramEcole;
+      }
+
+      if (mounted) {
+        setState(() {
+          _ecoles = etablissements;
+          _paramEcoleByCode
+            ..clear()
+            ..addAll(paramEcoleByCode);
+        });
+      }
     } catch (e) {
       debugPrint('Error loading ecoles: $e');
     } finally {
@@ -130,16 +190,19 @@ class _IntegrationRequestBottomSheetState
   // ── Consultation de la demande ────────────────────────────────────────────
 
   Future<void> _consultRequest(String matricule) async {
-    if (_selectedEcoleId == null || matricule.isEmpty) return;
+    if (_selectedEcoleCode == null || matricule.isEmpty) return;
+
+    final ecoleCode = _paramEcoleByCode[_selectedEcoleCode];
+    if (ecoleCode == null) {
+      NotificationHelper.showError(
+        'La consultation de demande n\'est pas encore disponible pour cet établissement.',
+      );
+      return;
+    }
 
     setState(() => _isLoadingRequest = true);
 
     try {
-      final ecole = _ecoles.firstWhere((e) => e.ecoleid == _selectedEcoleId);
-      final ecoleCode = (ecole.paramecole?.isNotEmpty == true)
-          ? ecole.paramecole!
-          : ecole.ecolecode;
-
       final url =
           '${AppConfig.VIE_ECOLES_API_BASE_URL}/preinscription/demande-integration/consulte'
           '?ecole=$ecoleCode&matricule=$matricule';
@@ -216,14 +279,14 @@ class _IntegrationRequestBottomSheetState
       isLoadingEcoles: _isLoadingEcoles,
       isLoadingRequest: _isLoadingRequest,
       selectedEcoleName: _selectedEcoleName,
-      selectedEcoleId: _selectedEcoleId,
+      selectedEcoleCode: _selectedEcoleCode,
       matricule: widget.matricule,
       childFullName: widget.childFullName,
       isDarkMode: isDark,
       textSizeService: _textSizeService,
-      onEcoleChanged: (ecoleId, ecoleName) {
+      onEcoleChanged: (ecoleCode, ecoleName) {
         setState(() {
-          _selectedEcoleId = ecoleId;
+          _selectedEcoleCode = ecoleCode;
           _selectedEcoleName = ecoleName;
         });
       },
@@ -238,16 +301,16 @@ class _IntegrationRequestBottomSheetState
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _IntegrationRequestForm extends StatefulWidget {
-  final List<Ecole> ecoles;
+  final List<EtablissementConsultation> ecoles;
   final bool isLoadingEcoles;
   final bool isLoadingRequest;
   final String? selectedEcoleName;
-  final int? selectedEcoleId;
+  final String? selectedEcoleCode;
   final String? matricule;
   final String? childFullName;
   final bool isDarkMode;
   final TextSizeService textSizeService;
-  final void Function(int ecoleId, String ecoleName) onEcoleChanged;
+  final void Function(String ecoleCode, String ecoleName) onEcoleChanged;
   final VoidCallback onRetryEcoles;
   final Future<void> Function(String matricule) onConsultWithMatricule;
 
@@ -256,7 +319,7 @@ class _IntegrationRequestForm extends StatefulWidget {
     required this.isLoadingEcoles,
     required this.isLoadingRequest,
     required this.selectedEcoleName,
-    required this.selectedEcoleId,
+    required this.selectedEcoleCode,
     required this.matricule,
     required this.childFullName,
     required this.isDarkMode,
@@ -531,12 +594,12 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
           CustomSelectInput(
             label: 'École',
             value: widget.selectedEcoleName ?? '',
-            items: widget.ecoles.map((e) => e.ecoleclibelle).toList(),
+            items: widget.ecoles.map((e) => e.nom).toList(),
             onChanged: (selected) {
               final ecole = widget.ecoles.firstWhere(
-                (e) => e.ecoleclibelle == selected,
+                (e) => e.nom == selected,
               );
-              widget.onEcoleChanged(ecole.ecoleid, selected);
+              widget.onEcoleChanged(ecole.code, selected);
             },
             isDarkMode: widget.isDarkMode,
             required: true,
@@ -893,11 +956,11 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0:
-        return widget.selectedEcoleId != null;
+        return widget.selectedEcoleCode != null;
       case 1:
         return _currentMatricule.isNotEmpty;
       case 2:
-        return widget.selectedEcoleId != null && _currentMatricule.isNotEmpty;
+        return widget.selectedEcoleCode != null && _currentMatricule.isNotEmpty;
       default:
         return false;
     }

@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:parents_responsable/config/app_colors.dart';
 import 'package:parents_responsable/config/app_dimensions.dart';
 import 'package:parents_responsable/models/ecole.dart';
+import 'package:parents_responsable/models/etablissement_consultation.dart';
 import 'package:parents_responsable/services/integration_service.dart';
 import 'package:parents_responsable/services/pouls_scolaire_api_service.dart';
+import 'package:parents_responsable/services/consultation_api_service.dart';
 import 'package:parents_responsable/services/text_size_service.dart';
 import 'package:parents_responsable/utils/auth_guard.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
@@ -84,6 +86,7 @@ class IntegrationFormContent extends StatefulWidget {
 class _IntegrationFormContentState extends State<IntegrationFormContent> {
   static const _actionColor = Color(0xFF3B82F6);
   final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
+  final ConsultationApiService _consultationApi = ConsultationApiService();
   final TextSizeService _textSizeService = TextSizeService();
 
   // ── Wizard state ────────────────────────────────────────────────────────
@@ -111,8 +114,18 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   ];
 
   // ── Sélection d'établissement ─────────────────────────────────────────────
-  List<Ecole> _ecoles = [];
-  int? _selectedEcoleId;
+  //
+  // Migré vers l'API de consultation (établissements limités aux ~7 déjà
+  // migrés, au lieu des ~90 de l'ancien /connecte/ecole) — la soumission de
+  // la demande d'intégration elle-même reste entièrement sur
+  // api2.vie-ecoles.com (IntegrationService.submitIntegrationRequest), qui
+  // n'existe pas côté API de consultation : on doit donc retrouver le code
+  // legacy (paramEcole) de chaque établissement pour que la suite du
+  // parcours fonctionne. Un établissement sans équivalent legacy n'a pas
+  // d'intégration en ligne possible pour l'instant.
+  List<EtablissementConsultation> _ecoles = [];
+  final Map<String, String?> _paramEcoleByCode = {};
+  String? _selectedEcoleCode;
   String? _selectedEcoleName;
   String? _selectedEcoleParametre;
   bool _isLoadingEcoles = false;
@@ -263,19 +276,63 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+  String _normalizeName(String s) =>
+      s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
   Future<void> _loadEcoles() async {
     setState(() {
       _isLoadingEcoles = true;
       _ecoleErrorMessage = null;
     });
     try {
-      final ecoles = await _poulsApiService.getAllEcoles();
+      final etablissements = await _consultationApi.getEtablissements();
+
+      // Résolution du code legacy (paramEcole) nécessaire à la soumission de
+      // la demande d'intégration : un seul appel /connecte/ecole pour les
+      // ~7 établissements, plutôt qu'un par établissement.
+      List<Ecole> legacyEcoles = [];
+      try {
+        legacyEcoles = await _poulsApiService.getAllEcoles();
+      } catch (e) {
+        debugPrint(
+          'Impossible de charger les écoles legacy (paramEcole indisponible) : $e',
+        );
+      }
+
+      final paramEcoleByCode = <String, String?>{};
+      for (final etab in etablissements) {
+        final candidates = legacyEcoles
+            .where((e) => e.ecolecode == etab.code)
+            .toList();
+        String? paramEcole;
+        if (candidates.length == 1) {
+          final c = candidates.first;
+          paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
+              ? c.paramecole
+              : c.ecolecode;
+        } else if (candidates.length > 1) {
+          final expected = _normalizeName(etab.nom);
+          for (final c in candidates) {
+            if (_normalizeName(c.ecoleclibelle) == expected) {
+              paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
+                  ? c.paramecole
+                  : c.ecolecode;
+              break;
+            }
+          }
+        }
+        paramEcoleByCode[etab.code] = paramEcole;
+      }
+
       setState(() {
-        _ecoles = ecoles;
+        _ecoles = etablissements;
+        _paramEcoleByCode
+          ..clear()
+          ..addAll(paramEcoleByCode);
         _isLoadingEcoles = false;
         _hasAttemptedLoad = true;
       });
-      if (ecoles.isEmpty && mounted) {
+      if (etablissements.isEmpty && mounted) {
         _showSnack('Aucun établissement disponible', isError: true);
       }
     } catch (e) {
@@ -289,7 +346,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           errorStr.contains('pas de connexion internet') ||
           errorStr.contains('failed host lookup') ||
           errorStr.contains('no address associated');
-      
+
       if (!isNetworkError && mounted) {
         _showSnack('Erreur : ${e.toString().replaceAll('Exception: ', '')}', isError: true);
       }
@@ -339,8 +396,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0:
-        if (_selectedEcoleId == null) {
+        if (_selectedEcoleCode == null) {
           NotificationHelper.showError('Veuillez sélectionner un établissement');
+          return false;
+        }
+        if (_selectedEcoleParametre == null) {
+          NotificationHelper.showError(
+            'L\'intégration en ligne n\'est pas encore disponible pour cet établissement.',
+          );
           return false;
         }
         return true;
@@ -382,7 +445,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   bool _canNavigateToNext() {
     switch (_currentStep) {
       case 0:
-        return _selectedEcoleId != null;
+        return _selectedEcoleCode != null;
 
       case 1:
         return _studentNameController.text.isNotEmpty ||
@@ -933,18 +996,15 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
         CustomSelectInput(
           label: 'Établissement',
           value: _selectedEcoleName ?? 'Sélectionner un établissement...',
-          items: _ecoles.map((e) => e.ecoleclibelle).toList(),
+          items: _ecoles.map((e) => e.nom).toList(),
           onChanged: (String selected) {
             final ecole = _ecoles.firstWhere(
-              (e) => e.ecoleclibelle == selected,
+              (e) => e.nom == selected,
             );
             setState(() {
-              _selectedEcoleId = ecole.ecoleid;
+              _selectedEcoleCode = ecole.code;
               _selectedEcoleName = selected;
-              _selectedEcoleParametre =
-                  (ecole.paramecole?.isNotEmpty == true)
-                      ? ecole.paramecole
-                      : ecole.parametreCode;
+              _selectedEcoleParametre = _paramEcoleByCode[ecole.code];
               _ecoleErrorMessage = null;
             });
           },

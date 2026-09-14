@@ -297,7 +297,7 @@ class AppShareService {
 
     // ─── Section 2 : invitation à télécharger l'application ───
     buffer.writeln();
-    buffer.writeln('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+    buffer.writeln('▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
     buffer.writeln();
     buffer.writeln(
       '📲 Pour aller plus loin, téléchargez "Parent Responsable" : '

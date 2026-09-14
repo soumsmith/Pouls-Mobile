@@ -12,6 +12,7 @@ import '../models/devoir_consultation.dart';
 import '../models/progression_consultation.dart';
 import '../utils/api_exception_handler.dart';
 import 'pedagogie_auth_service.dart';
+import 'pouls_scolaire_api_service.dart';
 
 /// Service pour l'API de consultation (api-pedagogie.pouls-scolaire.net).
 ///
@@ -20,6 +21,18 @@ import 'pedagogie_auth_service.dart';
 /// d'année/période/classe) sont des chaînes opaques : reçues depuis un appel,
 /// repassées telles quelles au suivant, jamais interprétées ni composées.
 class ConsultationApiService {
+  // Singleton : chaque écran instanciait `ConsultationApiService()`
+  // séparément, ce qui vidait `_etablissementsCache` à chaque nouvelle
+  // instance et relançait l'appel legacy `/connecte/ecole` (résolution du
+  // paramEcole, voir getEtablissements) à chaque écran ouvert au lieu d'une
+  // seule fois par session — vérifié en conditions réelles (log répété à
+  // chaque ouverture de bottom sheet). Partager l'instance rend le cache
+  // mémoire réellement effectif.
+  static final ConsultationApiService _instance =
+      ConsultationApiService._internal();
+  factory ConsultationApiService() => _instance;
+  ConsultationApiService._internal();
+
   String get _baseUrl => '${AppConfig.PEDAGOGIE_API_BASE_URL}/v1';
 
   /// Cache mémoire des établissements (rarement modifiés) : évite de
@@ -119,6 +132,48 @@ class ConsultationApiService {
       final etablissements = data
           .map((e) => EtablissementConsultation.fromJson(e as Map<String, dynamic>))
           .toList();
+
+      // paramecole n'existe pas dans cette API : résolu une seule fois ici
+      // depuis l'ancienne liste /connecte/ecole et attaché à chaque objet
+      // (mis en cache avec le reste) — les écrans appelants n'ont donc plus
+      // besoin d'appeler l'API legacy eux-mêmes pour l'obtenir. Best-effort :
+      // en cas d'échec, paramEcole reste `null` sans faire échouer l'appel.
+      try {
+        final legacyEcoles = await PoulsScolaireApiService().getAllEcoles();
+        for (final etab in etablissements) {
+          final candidates = legacyEcoles
+              .where((le) => le.ecolecode == etab.code)
+              .toList();
+          if (candidates.length == 1) {
+            final c = candidates.first;
+            etab.paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
+                ? c.paramecole
+                : c.ecolecode;
+          } else if (candidates.length > 1) {
+            final expected = _normalizeName(etab.nom);
+            for (final c in candidates) {
+              if (_normalizeName(c.ecoleclibelle) == expected) {
+                etab.paramEcole =
+                    (c.paramecole != null && c.paramecole!.isNotEmpty)
+                        ? c.paramecole
+                        : c.ecolecode;
+                break;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        print('⚠️ Impossible de résoudre le paramecole legacy: $e');
+      }
+
+      print('✅ ${etablissements.length} établissement(s) trouvé(s)');
+      for (var i = 0; i < etablissements.length; i++) {
+        final e = etablissements[i];
+        print(
+          '   ${i + 1}. ${e.nom} (code: ${e.code}, schoolId: ${e.schoolId}, '
+          'paramecole: ${e.paramEcole ?? "—"})',
+        );
+      }
       _etablissementsCache = etablissements;
       return etablissements;
     } catch (e) {

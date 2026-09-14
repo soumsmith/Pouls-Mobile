@@ -7,9 +7,7 @@ import '../../config/app_colors.dart';
 import '../components/bottom_spacer.dart';
 import 'bottom_sheet_header.dart';
 import '../../config/app_config.dart';
-import '../../models/ecole.dart';
 import '../../models/etablissement_consultation.dart';
-import '../../services/pouls_scolaire_api_service.dart';
 import '../../services/consultation_api_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
@@ -99,7 +97,6 @@ class _IntegrationRequestBottomSheetState
   // ── Services ───────────────────────────────────────────────────────────────
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
-  final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
   final ConsultationApiService _consultationApi = ConsultationApiService();
 
   // ── État ───────────────────────────────────────────────────────────────────
@@ -107,12 +104,13 @@ class _IntegrationRequestBottomSheetState
   // Migré vers l'API de consultation (établissements limités aux ~7 déjà
   // migrés, au lieu des ~90 de l'ancien /connecte/ecole) — la consultation
   // de la demande elle-même reste entièrement sur api2.vie-ecoles.com, qui
-  // n'existe pas côté API de consultation : on doit donc retrouver le code
-  // legacy (paramEcole) de chaque établissement pour que la suite du
-  // parcours fonctionne. Un établissement sans équivalent legacy n'a pas de
-  // consultation possible pour l'instant.
+  // n'existe pas côté API de consultation : on a donc besoin du code legacy
+  // (paramEcole) de l'établissement choisi pour que la suite du parcours
+  // fonctionne. Ce code est déjà résolu et attaché à chaque établissement
+  // par ConsultationApiService.getEtablissements() (mis en cache) : plus
+  // besoin d'appeler l'API legacy ici. Un établissement sans équivalent
+  // legacy n'a pas de consultation possible pour l'instant.
   List<EtablissementConsultation> _ecoles = [];
-  final Map<String, String?> _paramEcoleByCode = {};
   bool _isLoadingEcoles = false;
   String? _selectedEcoleCode;
   String? _selectedEcoleName;
@@ -125,9 +123,6 @@ class _IntegrationRequestBottomSheetState
     _loadEcoles();
   }
 
-  String _normalizeName(String s) =>
-      s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-
   // ── Chargement des écoles ─────────────────────────────────────────────────
 
   Future<void> _loadEcoles() async {
@@ -135,49 +130,9 @@ class _IntegrationRequestBottomSheetState
     try {
       final etablissements = await _consultationApi.getEtablissements();
 
-      // Résolution du code legacy (paramEcole) nécessaire à la consultation
-      // de la demande : un seul appel /connecte/ecole pour les ~7
-      // établissements, plutôt qu'un par établissement.
-      List<Ecole> legacyEcoles = [];
-      try {
-        legacyEcoles = await _poulsApiService.getAllEcoles();
-      } catch (e) {
-        debugPrint(
-          'Impossible de charger les écoles legacy (paramEcole indisponible) : $e',
-        );
-      }
-
-      final paramEcoleByCode = <String, String?>{};
-      for (final etab in etablissements) {
-        final candidates = legacyEcoles
-            .where((e) => e.ecolecode == etab.code)
-            .toList();
-        String? paramEcole;
-        if (candidates.length == 1) {
-          final c = candidates.first;
-          paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
-              ? c.paramecole
-              : c.ecolecode;
-        } else if (candidates.length > 1) {
-          final expected = _normalizeName(etab.nom);
-          for (final c in candidates) {
-            if (_normalizeName(c.ecoleclibelle) == expected) {
-              paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
-                  ? c.paramecole
-                  : c.ecolecode;
-              break;
-            }
-          }
-        }
-        paramEcoleByCode[etab.code] = paramEcole;
-      }
-
       if (mounted) {
         setState(() {
           _ecoles = etablissements;
-          _paramEcoleByCode
-            ..clear()
-            ..addAll(paramEcoleByCode);
         });
       }
     } catch (e) {
@@ -192,7 +147,10 @@ class _IntegrationRequestBottomSheetState
   Future<void> _consultRequest(String matricule) async {
     if (_selectedEcoleCode == null || matricule.isEmpty) return;
 
-    final ecoleCode = _paramEcoleByCode[_selectedEcoleCode];
+    final selectedEtab = _ecoles
+        .where((e) => e.code == _selectedEcoleCode)
+        .firstOrNull;
+    final ecoleCode = selectedEtab?.paramEcole;
     if (ecoleCode == null) {
       NotificationHelper.showError(
         'La consultation de demande n\'est pas encore disponible pour cet établissement.',

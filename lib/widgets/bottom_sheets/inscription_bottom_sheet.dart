@@ -2,10 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 
-import '../../models/ecole.dart';
 import '../../models/etablissement_consultation.dart';
 import '../../config/app_config.dart';
-import '../../services/pouls_scolaire_api_service.dart';
 import '../../services/consultation_api_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
@@ -64,7 +62,6 @@ class InscriptionBottomSheet extends StatefulWidget {
 class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
-  final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
   final ConsultationApiService _consultationApi = ConsultationApiService();
 
   // État
@@ -72,13 +69,14 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
   // Migré vers l'API de consultation (établissements limités aux ~7 déjà
   // migrés, au lieu des ~90 de l'ancien /connecte/ecole) — l'inscription en
   // ligne elle-même (frais, échéances, paiement) reste entièrement sur
-  // api2.vie-ecoles.com, qui n'existe pas côté API de consultation : on doit
-  // donc retrouver le code legacy (paramEcole) de chaque établissement pour
-  // que la suite du parcours fonctionne. Un établissement sans équivalent
-  // legacy (la majorité des 7, encore récents) n'a pas d'inscription en
-  // ligne possible pour l'instant.
+  // api2.vie-ecoles.com, qui n'existe pas côté API de consultation : on a
+  // donc besoin du code legacy (paramEcole) de l'établissement choisi pour
+  // que la suite du parcours fonctionne. Ce code est déjà résolu et attaché
+  // à chaque établissement par ConsultationApiService.getEtablissements()
+  // (mis en cache) : plus besoin d'appeler l'API legacy ici. Un
+  // établissement sans équivalent legacy (la majorité des 7, encore
+  // récents) n'a pas d'inscription en ligne possible pour l'instant.
   List<EtablissementConsultation> _ecoles = [];
-  final Map<String, String?> _paramEcoleByCode = {};
   bool _isLoadingEcoles = false;
   bool _hasAttemptedLoad = false;
   String? _selectedEcoleCode;
@@ -99,59 +97,15 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
     super.dispose();
   }
 
-  String _normalizeName(String s) =>
-      s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-
   // Chargement des écoles
   Future<void> _loadEcoles() async {
     setState(() => _isLoadingEcoles = true);
     try {
       final etablissements = await _consultationApi.getEtablissements();
 
-      // Résolution du code legacy (paramEcole) nécessaire à l'inscription en
-      // ligne : un seul appel /connecte/ecole pour les ~7 établissements,
-      // plutôt qu'un appel par établissement (findLegacyParamEcoleByCodeAndName
-      // le referait sinon à chaque fois).
-      List<Ecole> legacyEcoles = [];
-      try {
-        legacyEcoles = await _poulsApiService.getAllEcoles();
-      } catch (e) {
-        debugPrint(
-          'Impossible de charger les écoles legacy (paramEcole indisponible) : $e',
-        );
-      }
-
-      final paramEcoleByCode = <String, String?>{};
-      for (final etab in etablissements) {
-        final candidates = legacyEcoles
-            .where((e) => e.ecolecode == etab.code)
-            .toList();
-        String? paramEcole;
-        if (candidates.length == 1) {
-          final c = candidates.first;
-          paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
-              ? c.paramecole
-              : c.ecolecode;
-        } else if (candidates.length > 1) {
-          final expected = _normalizeName(etab.nom);
-          for (final c in candidates) {
-            if (_normalizeName(c.ecoleclibelle) == expected) {
-              paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
-                  ? c.paramecole
-                  : c.ecolecode;
-              break;
-            }
-          }
-        }
-        paramEcoleByCode[etab.code] = paramEcole;
-      }
-
       if (mounted) {
         setState(() {
           _ecoles = etablissements;
-          _paramEcoleByCode
-            ..clear()
-            ..addAll(paramEcoleByCode);
           _hasAttemptedLoad = true;
         });
       }
@@ -396,7 +350,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
               setState(() {
                 _selectedEcoleCode = ecole.code;
                 _selectedEcoleName = ecole.nom;
-                _selectedParamEcole = _paramEcoleByCode[ecole.code];
+                _selectedParamEcole = ecole.paramEcole;
               });
             },
             isDarkMode: isDark,

@@ -8788,54 +8788,13 @@ class _ChildListScreenState extends State<ChildListScreen>
     );
   }
 
-  /// Retrouve le `schoolId` (référence opaque) de l'API de consultation pour
-  /// l'établissement de l'enfant courant, à partir de `_ecoleId` (int,
-  /// legacy) : on relit l'ancienne liste `/connecte/ecole` pour obtenir le
-  /// code de l'établissement, puis on le fait correspondre au `code` de
-  /// `GET /consultation/etablissements`. Mis en cache pour la durée de
-  /// l'écran.
+  /// Retourne le `schoolId` (référence opaque) de l'API de consultation pour
+  /// l'établissement de l'enfant courant, persisté en base à l'ajout de
+  /// l'enfant (add_child_screen). Plus de résolution via l'ancienne API
+  /// `/connecte/ecole` : tous les enfants sont désormais ajoutés via l'API
+  /// de consultation, qui fournit directement ce `schoolId`.
   Future<String?> _resolveConsultationSchoolId() async {
-    if (_consultationSchoolId != null) return _consultationSchoolId;
-    final ecoleId = _ecoleId;
-    if (ecoleId == null) return null;
-    try {
-      final ecoles = await _poulsApiService.getAllEcoles();
-      Ecole? ecole;
-      for (final e in ecoles) {
-        if (e.ecoleid == ecoleId) {
-          ecole = e;
-          break;
-        }
-      }
-      if (ecole == null) {
-        print('❌ Résolution schoolId: école introuvable pour ecoleId=$ecoleId');
-        return null;
-      }
-      print(
-        '🔎 Résolution schoolId: ecoleId=$ecoleId → "${ecole.ecoleclibelle}" '
-        '(ecolecode="${ecole.ecolecode}", parametreCode="${ecole.parametreCode}", '
-        'paramecole="${ecole.paramecole}")',
-      );
-      final schoolId = await _consultationApi.findSchoolIdByCode(
-        ecole.ecolecode,
-        expectedName: ecole.ecoleclibelle,
-      );
-      if (schoolId == null) {
-        print(
-          '❌ Résolution schoolId: aucun établissement de l\'API de consultation '
-          'ne correspond au code "${ecole.ecolecode}" et au nom '
-          '"${ecole.ecoleclibelle}" (code potentiellement partagé par plusieurs '
-          'établissements sans code assigné)',
-        );
-      } else {
-        print('✅ Résolution schoolId: code "${ecole.ecolecode}" → schoolId=$schoolId');
-      }
-      _consultationSchoolId = schoolId;
-      return schoolId;
-    } catch (e) {
-      print('❌ Erreur résolution schoolId consultation: $e');
-      return null;
-    }
+    return _consultationSchoolId;
   }
 
   /// Corrige en arrière-plan un `paramEcole` enregistré à tort avec le code
@@ -8859,8 +8818,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       }
       if (etab == null) return;
 
-      final legacyParamEcole = await _poulsApiService
-          .findLegacyParamEcoleByCodeAndName(etab.code, etab.nom);
+      final legacyParamEcole = etab.paramEcole;
       if (legacyParamEcole != null && legacyParamEcole != currentParamEcole) {
         await DatabaseService.instance.updateChildParamEcole(
           widget.child.id,

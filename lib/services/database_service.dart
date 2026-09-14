@@ -305,43 +305,6 @@ class DatabaseService {
     }
   }
 
-  /// Sauvegarde (ou met à jour) une école dans le cache local
-  Future<void> saveEcoleCache(Map<String, dynamic> ecoleJson) async {
-    final db = await database;
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    final id = ecoleJson['id'];
-    if (id is! int) {
-      throw Exception('Ecole cache: champ "id" invalide');
-    }
-
-    await db.insert('ecoles_cache', {
-      'id': id,
-      'libelle': ecoleJson['libelle']?.toString(),
-      'json': jsonEncode(ecoleJson),
-      'updatedAt': now,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  /// Récupère une école depuis le cache local
-  Future<Map<String, dynamic>?> getEcoleCacheById(int ecoleId) async {
-    final db = await database;
-    final maps = await db.query(
-      'ecoles_cache',
-      where: 'id = ?',
-      whereArgs: [ecoleId],
-      limit: 1,
-    );
-
-    if (maps.isEmpty) return null;
-    final jsonStr = maps.first['json'] as String?;
-    if (jsonStr == null || jsonStr.isEmpty) return null;
-
-    final decoded = jsonDecode(jsonStr);
-    if (decoded is Map<String, dynamic>) return decoded;
-    if (decoded is Map) return Map<String, dynamic>.from(decoded);
-    return null;
-  }
 
   /// Sauvegarde ou met à jour un utilisateur
   Future<void> saveUser(User user) async {

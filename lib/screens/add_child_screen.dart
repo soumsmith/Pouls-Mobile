@@ -428,10 +428,10 @@ class _AddChildScreenState extends State<AddChildScreen>
       // de consultation ("057955") : ce sont des intégrations tierces
       // différentes (inscription en ligne api2.vie-ecoles.com, galeries...)
       // qui attendent ce code-là — les confondre casse ces flux (404 "Ecole
-      // not found"). Peut être `null` si l'établissement n'a pas d'équivalent
-      // legacy (propre à l'API de consultation).
-      final legacyParamEcole = await PoulsScolaireApiService()
-          .findLegacyParamEcoleByCodeAndName(ecole.code, ecole.nom);
+      // not found"). Déjà résolu par ConsultationApiService.getEtablissements()
+      // (mis en cache avec l'établissement) ; `null` si l'établissement n'a
+      // pas d'équivalent legacy.
+      final legacyParamEcole = ecole.paramEcole;
 
       final newChild = Child(
         id: childId,

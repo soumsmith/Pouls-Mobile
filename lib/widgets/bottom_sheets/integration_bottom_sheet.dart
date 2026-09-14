@@ -5,7 +5,6 @@ import 'package:parents_responsable/config/app_dimensions.dart';
 import 'package:parents_responsable/models/ecole.dart';
 import 'package:parents_responsable/models/etablissement_consultation.dart';
 import 'package:parents_responsable/services/integration_service.dart';
-import 'package:parents_responsable/services/pouls_scolaire_api_service.dart';
 import 'package:parents_responsable/services/consultation_api_service.dart';
 import 'package:parents_responsable/services/text_size_service.dart';
 import 'package:parents_responsable/utils/auth_guard.dart';
@@ -85,7 +84,6 @@ class IntegrationFormContent extends StatefulWidget {
 
 class _IntegrationFormContentState extends State<IntegrationFormContent> {
   static const _actionColor = Color(0xFF3B82F6);
-  final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
   final ConsultationApiService _consultationApi = ConsultationApiService();
   final TextSizeService _textSizeService = TextSizeService();
 
@@ -115,16 +113,18 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   // ── Sélection d'établissement ─────────────────────────────────────────────
   //
-  // Migré vers l'API de consultation (établissements limités aux ~7 déjà
-  // migrés, au lieu des ~90 de l'ancien /connecte/ecole) — la soumission de
-  // la demande d'intégration elle-même reste entièrement sur
-  // api2.vie-ecoles.com (IntegrationService.submitIntegrationRequest), qui
-  // n'existe pas côté API de consultation : on doit donc retrouver le code
-  // legacy (paramEcole) de chaque établissement pour que la suite du
-  // parcours fonctionne. Un établissement sans équivalent legacy n'a pas
-  // d'intégration en ligne possible pour l'instant.
+  // La liste affichée vient uniquement de l'API de consultation
+  // (établissements limités aux ~7 déjà migrés, au lieu des ~90 de l'ancien
+  // /connecte/ecole) — la soumission de la demande d'intégration elle-même
+  // reste entièrement sur api2.vie-ecoles.com
+  // (IntegrationService.submitIntegrationRequest), qui n'existe pas côté API
+  // de consultation : on a donc besoin du code legacy (paramEcole) de
+  // l'établissement choisi pour que la suite du parcours fonctionne. Ce code
+  // est déjà résolu et attaché à chaque établissement par
+  // ConsultationApiService.getEtablissements() (mis en cache) : plus besoin
+  // d'appeler l'API legacy ici. Un établissement sans équivalent legacy n'a
+  // pas d'intégration en ligne possible pour l'instant.
   List<EtablissementConsultation> _ecoles = [];
-  final Map<String, String?> _paramEcoleByCode = {};
   String? _selectedEcoleCode;
   String? _selectedEcoleName;
   String? _selectedEcoleParametre;
@@ -276,9 +276,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  String _normalizeName(String s) =>
-      s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-
   Future<void> _loadEcoles() async {
     setState(() {
       _isLoadingEcoles = true;
@@ -287,48 +284,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     try {
       final etablissements = await _consultationApi.getEtablissements();
 
-      // Résolution du code legacy (paramEcole) nécessaire à la soumission de
-      // la demande d'intégration : un seul appel /connecte/ecole pour les
-      // ~7 établissements, plutôt qu'un par établissement.
-      List<Ecole> legacyEcoles = [];
-      try {
-        legacyEcoles = await _poulsApiService.getAllEcoles();
-      } catch (e) {
-        debugPrint(
-          'Impossible de charger les écoles legacy (paramEcole indisponible) : $e',
-        );
-      }
-
-      final paramEcoleByCode = <String, String?>{};
-      for (final etab in etablissements) {
-        final candidates = legacyEcoles
-            .where((e) => e.ecolecode == etab.code)
-            .toList();
-        String? paramEcole;
-        if (candidates.length == 1) {
-          final c = candidates.first;
-          paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
-              ? c.paramecole
-              : c.ecolecode;
-        } else if (candidates.length > 1) {
-          final expected = _normalizeName(etab.nom);
-          for (final c in candidates) {
-            if (_normalizeName(c.ecoleclibelle) == expected) {
-              paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
-                  ? c.paramecole
-                  : c.ecolecode;
-              break;
-            }
-          }
-        }
-        paramEcoleByCode[etab.code] = paramEcole;
-      }
-
       setState(() {
         _ecoles = etablissements;
-        _paramEcoleByCode
-          ..clear()
-          ..addAll(paramEcoleByCode);
         _isLoadingEcoles = false;
         _hasAttemptedLoad = true;
       });
@@ -1004,7 +961,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
             setState(() {
               _selectedEcoleCode = ecole.code;
               _selectedEcoleName = selected;
-              _selectedEcoleParametre = _paramEcoleByCode[ecole.code];
+              _selectedEcoleParametre = ecole.paramEcole;
               _ecoleErrorMessage = null;
             });
           },

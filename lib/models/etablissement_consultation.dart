@@ -8,11 +8,20 @@ class EtablissementConsultation {
   final String nom;
   final bool archive;
 
+  /// Code legacy attendu par les intégrations tierces (inscription en ligne
+  /// via api2.vie-ecoles.com, demandes d'intégration...). N'existe PAS dans
+  /// la réponse JSON de cette API — résolu et rempli une seule fois par
+  /// `ConsultationApiService.getEtablissements()` à partir de l'ancienne
+  /// liste `/connecte/ecole`, puis mis en cache avec le reste de l'objet.
+  /// `null` si l'établissement n'a pas d'équivalent legacy.
+  String? paramEcole;
+
   EtablissementConsultation({
     required this.schoolId,
     required this.code,
     required this.nom,
     required this.archive,
+    this.paramEcole,
   });
 
   factory EtablissementConsultation.fromJson(Map<String, dynamic> json) {

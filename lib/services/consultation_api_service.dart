@@ -12,7 +12,6 @@ import '../models/devoir_consultation.dart';
 import '../models/progression_consultation.dart';
 import '../utils/api_exception_handler.dart';
 import 'pedagogie_auth_service.dart';
-import 'pouls_scolaire_api_service.dart';
 
 /// Service pour l'API de consultation (api-pedagogie.pouls-scolaire.net).
 ///
@@ -134,36 +133,20 @@ class ConsultationApiService {
           .toList();
 
       // paramecole n'existe pas dans cette API : résolu une seule fois ici
-      // depuis l'ancienne liste /connecte/ecole et attaché à chaque objet
-      // (mis en cache avec le reste) — les écrans appelants n'ont donc plus
-      // besoin d'appeler l'API legacy eux-mêmes pour l'obtenir. Best-effort :
+      // via GET /integrations/vie-ecoles/admin/schools (même hôte api-
+      // pedagogie, même token), qui donne directement le `vieEcolesCode` par
+      // `schoolId` — correspondance exacte, fiable, sans ambiguïté de
+      // code/nom partagés. Remplace l'ancienne résolution via /connecte/ecole
+      // (API legacy api-pro) qui, vérifié en conditions réelles, se trompait
+      // ou ne trouvait rien pour la majorité des établissements. Best-effort :
       // en cas d'échec, paramEcole reste `null` sans faire échouer l'appel.
       try {
-        final legacyEcoles = await PoulsScolaireApiService().getAllEcoles();
+        final vieEcolesCodes = await _getVieEcolesCodes();
         for (final etab in etablissements) {
-          final candidates = legacyEcoles
-              .where((le) => le.ecolecode == etab.code)
-              .toList();
-          if (candidates.length == 1) {
-            final c = candidates.first;
-            etab.paramEcole = (c.paramecole != null && c.paramecole!.isNotEmpty)
-                ? c.paramecole
-                : c.ecolecode;
-          } else if (candidates.length > 1) {
-            final expected = _normalizeName(etab.nom);
-            for (final c in candidates) {
-              if (_normalizeName(c.ecoleclibelle) == expected) {
-                etab.paramEcole =
-                    (c.paramecole != null && c.paramecole!.isNotEmpty)
-                        ? c.paramecole
-                        : c.ecolecode;
-                break;
-              }
-            }
-          }
+          etab.paramEcole = vieEcolesCodes[etab.schoolId];
         }
       } catch (e) {
-        print('⚠️ Impossible de résoudre le paramecole legacy: $e');
+        print('⚠️ Impossible de résoudre le paramEcole (vie-ecoles): $e');
       }
 
       print('✅ ${etablissements.length} établissement(s) trouvé(s)');
@@ -181,6 +164,29 @@ class ConsultationApiService {
       ApiExceptionHandler.handle(e, context: 'la récupération des établissements');
       rethrow;
     }
+  }
+
+  /// GET /integrations/vie-ecoles/admin/schools
+  ///
+  /// Retourne le `vieEcolesCode` (= paramEcole legacy) par `schoolId`. Champ
+  /// `null` pour un établissement sans intégration vie-ecoles configurée
+  /// (`configured: false` côté API).
+  Future<Map<String, String?>> _getVieEcolesCodes() async {
+    final uri = Uri.parse('$_baseUrl/integrations/vie-ecoles/admin/schools');
+    final response = await _getWithRetry(uri, 'vie-ecoles (admin/schools)');
+    if (response.statusCode != 200) {
+      _throwForStatus('les codes vie-ecoles', response);
+    }
+    final List<dynamic> data = json.decode(response.body);
+    final codes = <String, String?>{};
+    for (final item in data) {
+      final m = item as Map<String, dynamic>;
+      final schoolId = m['schoolId'] as String?;
+      if (schoolId == null) continue;
+      final code = m['vieEcolesCode'] as String?;
+      codes[schoolId] = (code != null && code.isNotEmpty) ? code : null;
+    }
+    return codes;
   }
 
   /// Retrouve le `schoolId` (référence opaque de l'API de consultation)

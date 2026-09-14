@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../config/app_config.dart';
-import '../models/ecole.dart';
 import '../models/annee_scolaire.dart';
 import '../models/eleve.dart';
 import '../models/student_class_info.dart';
@@ -79,102 +78,6 @@ class PoulsScolaireApiService {
     print('⏱️  Timestamp: ${DateTime.now().toIso8601String()}');
     print('═══════════════════════════════════════════════════════════');
     print('');
-  }
-
-  /// Récupère toutes les écoles disponibles
-  ///
-  /// Endpoint: GET /connecte/ecole
-  Future<List<Ecole>> getAllEcoles() async {
-    try {
-      final uri = Uri.parse('$_baseUrl/connecte/ecole');
-      print('');
-      print('═══════════════════════════════════════════════════════════');
-      print('🏫 CHARGEMENT DES ÉCOLES');
-      print('═══════════════════════════════════════════════════════════');
-      print('🔗 URL: $uri');
-      print('📡 Envoi de la requête...');
-
-      final response = await http
-          .get(uri, headers: _headers)
-          .timeout(AppConfig.API_TIMEOUT);
-
-      print('📥 Réponse reçue:');
-      print('   - Status Code: ${response.statusCode}');
-      print('   - Content-Type: ${response.headers['content-type']}');
-      _logApiResponse(response.statusCode, bodyLength: response.body.length);
-      print('   - Body length: ${response.body.length} caractères');
-
-      if (response.statusCode == 200) {
-        try {
-          final List<dynamic> data = json.decode(response.body);
-          print('✅ ${data.length} école(s) trouvée(s)');
-
-          if (data.isEmpty) {
-            print('⚠️ La liste des écoles est vide');
-          } else {
-            print('📋 Premières écoles:');
-            for (int i = 0; i < (data.length > 3 ? 3 : data.length); i++) {
-              final ecoleJson = data[i] as Map<String, dynamic>;
-              print(
-                '   ${i + 1}. ${ecoleJson['ecoleclibelle'] ?? 'N/A'} (ID: ${ecoleJson['ecoleid'] ?? 'N/A'})',
-              );
-            }
-          }
-
-          final ecoles = data
-              .map((json) => Ecole.fromJson(json as Map<String, dynamic>))
-              .toList();
-          print('═══════════════════════════════════════════════════════════');
-          print('✅ FIN CHARGEMENT DES ÉCOLES');
-          print('═══════════════════════════════════════════════════════════');
-          print('');
-          return ecoles;
-        } catch (e) {
-          print('❌ Erreur lors du parsing JSON: $e');
-          print('❌ Contenu de la réponse (premiers 500 caractères):');
-          print(
-            '   ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}',
-          );
-          print('═══════════════════════════════════════════════════════════');
-          print('');
-          throw Exception('Erreur lors du parsing des écoles: $e');
-        }
-      } else {
-        print('❌ Erreur HTTP ${response.statusCode}');
-        print('❌ Corps de la réponse: ${response.body}');
-        print('═══════════════════════════════════════════════════════════');
-        print('');
-        throw Exception(
-          'Erreur lors de la récupération des écoles: ${response.statusCode}. ${response.body}',
-        );
-      }
-    } catch (e) {
-      print('');
-      print('❌ Exception lors de la récupération des écoles: $e');
-      print('═══════════════════════════════════════════════════════════');
-      print('');
-
-      // Utiliser le handler centralisé pour afficher la notification
-      ApiExceptionHandler.handle(e, context: 'la récupération des écoles');
-
-      // Gérer les différents types d'erreurs
-      if (e is http.ClientException) {
-        final errorMsg = e.message.toLowerCase();
-        if (errorMsg.contains('failed host lookup') ||
-            errorMsg.contains('no address associated')) {
-          throw Exception(
-            'Pas de connexion internet. Veuillez vérifier votre réseau.',
-          );
-        }
-        throw Exception(
-          'Erreur de connexion: ${e.message}. Vérifiez votre connexion internet.',
-        );
-      } else if (e is TimeoutException) {
-        throw Exception('La requête a pris trop de temps. Veuillez réessayer.');
-      } else {
-        throw Exception('Erreur lors de la récupération des écoles: $e');
-      }
-    }
   }
 
   /// Récupère l'année scolaire ouverte pour une école

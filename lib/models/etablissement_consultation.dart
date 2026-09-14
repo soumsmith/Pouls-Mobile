@@ -8,12 +8,14 @@ class EtablissementConsultation {
   final String nom;
   final bool archive;
 
-  /// Code legacy attendu par les intégrations tierces (inscription en ligne
-  /// via api2.vie-ecoles.com, demandes d'intégration...). N'existe PAS dans
-  /// la réponse JSON de cette API — résolu et rempli une seule fois par
-  /// `ConsultationApiService.getEtablissements()` à partir de l'ancienne
-  /// liste `/connecte/ecole`, puis mis en cache avec le reste de l'objet.
-  /// `null` si l'établissement n'a pas d'équivalent legacy.
+  /// Code legacy (`vieEcolesCode`) attendu par les intégrations tierces
+  /// (inscription en ligne via api2.vie-ecoles.com, demandes d'intégration...).
+  /// N'existe PAS dans la réponse JSON de cette API — résolu et rempli une
+  /// seule fois par `ConsultationApiService.getEtablissements()` via
+  /// `GET /integrations/vie-ecoles/admin/schools` (même hôte api-pedagogie),
+  /// par correspondance exacte sur `schoolId`, puis mis en cache avec le
+  /// reste de l'objet. `null` si l'établissement n'a pas d'intégration
+  /// vie-ecoles configurée.
   String? paramEcole;
 
   EtablissementConsultation({

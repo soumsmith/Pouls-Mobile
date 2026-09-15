@@ -5213,8 +5213,16 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<Widget> _buildAvailableSummaryCards() {
     List<Widget> cards = [];
 
+    // Un élève déjà inscrit (affecté à une classe) n'a plus besoin de voir
+    // sa préinscription : l'inscription la remplace, la carte devient
+    // redondante une fois l'élève inscrit.
+    final isInscritDejaConnu =
+        _eleveDetail != null && _eleveDetail!['status'] == 1;
+
     // Carte Préinscription
-    if (_eleveDetail != null && _eleveDetail!['preinscrit'] != null) {
+    if (!isInscritDejaConnu &&
+        _eleveDetail != null &&
+        _eleveDetail!['preinscrit'] != null) {
       final isPreinscrit = _eleveDetail!['preinscrit'] == 1;
       final datePreinsc = _eleveDetail!['date_preinsc']?.toString();
       cards.add(
@@ -5239,7 +5247,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       cards.add(
         _buildEnhancedSummaryCard(
           'Inscription',
-          isInscrit ? 'Inscrit' : 'Non inscrit',
+          isInscrit ? 'Déjà inscrit' : 'Non inscrit',
           isInscrit ? AppColors.success : Colors.red,
           isInscrit ? Icons.school : Icons.error_outline,
           subtitle: isInscrit

@@ -32,15 +32,6 @@ class AppConfig {
   // Pour Chrome/Windows Desktop, décommentez cette ligne et commentez celle du dessus :
   //static const String API_BASE_URL = 'http://localhost:8889/api';
 
-  // URL alternative pour le service Pouls Scolaire (utilisée par PoulsScolaireApiService)
-  // Cette URL est utilisée pour les endpoints spécifiques à Pouls Scolaire
-  static const String POULS_SCOLAIRE_API_URL =
-      'https://api-pro.pouls-scolaire.net/api'; //https://api-pouls-scolaire.vie-ecoles.com/api
-  //static const String POULS_SCOLAIRE_API_URL = 'http://10.0.2.2:8889/api';
-
-  // Pour Chrome/Windows Desktop, décommentez cette ligne et commentez celle du dessus :
-  //static const String POULS_SCOLAIRE_API_URL = 'http://localhost:8889/api';
-
   /// URL de base pour l'API de consultation (notes/bulletins), voir
   /// API-CONSULTATION-MOBILE.pdf. Authentification par compte de service
   /// unique (PedagogieAuthService), pas de login par parent.

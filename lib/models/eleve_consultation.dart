@@ -10,12 +10,20 @@ class EleveConsultation {
   final String classeRef;
   final String classeLibelle;
 
+  /// Chemin d'API RELATIF vers la photo (ex.
+  /// "/api/v1/consultation/etablissements/{schoolId}/eleves/{matricule}/photo"),
+  /// PAS une URL publique directe : l'endpoint exige le même Bearer token que
+  /// le reste de l'API de consultation (vérifié : 401 sans token). Ne pas
+  /// passer tel quel à `Image.network` sans ajouter l'en-tête Authorization.
+  final String? urlPhoto;
+
   EleveConsultation({
     required this.matricule,
     required this.nom,
     required this.prenoms,
     required this.classeRef,
     required this.classeLibelle,
+    this.urlPhoto,
   });
 
   String get fullName => '$nom $prenoms';
@@ -27,6 +35,7 @@ class EleveConsultation {
       prenoms: json['prenoms'] as String? ?? '',
       classeRef: json['classeRef'] as String? ?? '',
       classeLibelle: json['classeLibelle'] as String? ?? '',
+      urlPhoto: json['urlPhoto'] as String?,
     );
   }
 }

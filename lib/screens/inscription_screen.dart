@@ -9,15 +9,18 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/payment_verification_dialog.dart';
 import '../widgets/selectable_item_card.dart';
 import '../widgets/search_bar_widget.dart';
+import '../services/auth_service.dart';
 import '../services/ecole_eleve_service.dart';
 import '../services/inscription_api_service.dart';
 import '../widgets/bottom_fade_gradient.dart';
 import '../widgets/bottom_sheets/payment_choice_bottom_sheet.dart';
 import '../utils/notification_helper.dart';
 import '../widgets/components/custom_button.dart';
+import '../widgets/components/custom_text_input.dart';
 import '../widgets/scroll_to_top_fab.dart';
 import '../config/app_dimensions.dart';
 import '../services/notification_service.dart';
+import 'pdf_viewer_screen.dart';
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 
@@ -27,6 +30,7 @@ import '../services/notification_service.dart';
 // entier. Ainsi, ajouter ou retirer l'étape "zones" ne décale jamais les
 // autres.  Le PageView est reconstruit depuis _orderedStepIds à chaque build.
 
+const String _kStepEngagement = 'engagement';
 const String _kStepScolarite = 'scolarite';
 const String _kStepReservation = 'reservation';
 const String _kStepServices = 'services';
@@ -91,6 +95,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   // ── Paramètres de l'école ───────────────────────────────────────────────────
   bool _servicesEnabled = true;
   bool _periodsClosed = false;
+  String _anneeScolaire = '';
 
   // ── Données de chaque étape ─────────────────────────────────────────────────
   List<EcheanceScolarite> _echeancesScolarite = [];
@@ -116,6 +121,12 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   bool _isServiceSearching = false;
   bool _isZoneSearching = false;
+
+  // ── Étape Engagement (garant) ───────────────────────────────────────────────
+  bool _isGarant = false;
+  final TextEditingController _garantNomController = TextEditingController();
+  final TextEditingController _garantPrenomsController =
+      TextEditingController();
 
   // ── Accesseurs utilitaires ──────────────────────────────────────────────────
   String get _matricule => widget.child.matricule ?? '';
@@ -242,6 +253,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       (s) => s.service == 'TRANS' && s.selectionnee,
     );
     return [
+      _kStepEngagement,
       _kStepScolarite,
       if (_servicesEnabled) ...[
         _kStepServices,
@@ -258,6 +270,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   // Métadonnées d'affichage (label + icône) pour chaque identifiant d'étape.
   Map<String, dynamic> _stepMeta(String id) {
     switch (id) {
+      case _kStepEngagement:
+        return {'label': 'Engagement', 'icon': Icons.assignment_turned_in_rounded};
       case _kStepScolarite:
         return {'label': 'Scolarité', 'icon': Icons.school_rounded};
       case _kStepReservation:
@@ -278,6 +292,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
   // Builder associé à chaque identifiant d'étape.
   Widget _buildStepById(String id) {
     switch (id) {
+      case _kStepEngagement:
+        return _buildStepEngagement();
       case _kStepScolarite:
         return _buildStep1();
       case _kStepReservation:
@@ -355,6 +371,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
+
+    // Réévalue le bouton "Continuer" de l'étape Engagement à chaque frappe.
+    _garantNomController.addListener(_onGarantFieldChanged);
+    _garantPrenomsController.addListener(_onGarantFieldChanged);
+  }
+
+  void _onGarantFieldChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -493,6 +517,8 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
     _fadeController.dispose();
     _serviceSearchController.dispose();
     _zoneSearchController.dispose();
+    _garantNomController.dispose();
+    _garantPrenomsController.dispose();
     _mainScrollController.dispose();
     _paymentAlertTimer?.cancel();
     for (var controller in _stepControllers.values) {
@@ -600,7 +626,10 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
         _ecoleCode,
       );
       if (mounted) {
-        setState(() => _servicesEnabled = ecoleData.serviceExtra == 1);
+        setState(() {
+          _servicesEnabled = ecoleData.serviceExtra == 1;
+          _anneeScolaire = ecoleData.annee;
+        });
         _loadScolarite();
       }
     } catch (_) {
@@ -903,6 +932,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
 
   bool _canGoNext() {
     switch (_currentStepId) {
+      case _kStepEngagement:
+        return _garantNomController.text.trim().isNotEmpty &&
+            _garantPrenomsController.text.trim().isNotEmpty;
       case _kStepScolarite:
         return _echeancesScolarite.any((e) => e.selectionnee);
       case _kStepZones:
@@ -1330,6 +1362,173 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           ),
         ],
       );
+
+  // ─── ÉTAPE 0 – Engagement (garant) ─────────────────────────────────────────
+
+  void _toggleGarant(bool? checked) {
+    setState(() {
+      _isGarant = checked ?? false;
+      if (_isGarant) {
+        final user = AuthService().getCurrentUser();
+        _garantNomController.text = user?.firstName ?? '';
+        _garantPrenomsController.text = user?.lastName ?? '';
+      } else {
+        _garantNomController.clear();
+        _garantPrenomsController.clear();
+      }
+    });
+  }
+
+  Widget _buildStepEngagement() {
+    final accentColor = isDark ? AppColors.shopBlueLight : AppColors.shopBlue;
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SingleChildScrollView(
+        key: const ValueKey('stepEngagement'),
+        controller: _getControllerForStep(_kStepEngagement),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStepHeader(
+              'Engagement du garant',
+              'Confirmez votre engagement pour ${widget.child.firstName}',
+              Icons.assignment_turned_in_rounded,
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border(left: BorderSide(color: accentColor, width: 3)),
+              ),
+              child: Text(
+                'Merci de confirmer votre engagement en tant que garant de '
+                'l\'élève.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  fontWeight: FontWeight.w500,
+                  color: accentColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _toggleGarant(!_isGarant),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: _isGarant,
+                    onChanged: _toggleGarant,
+                    activeColor: accentColor,
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Je suis le garant de l\'élève',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: CustomTextInput(
+                    label: 'Nom du garant',
+                    hint: 'Nom',
+                    icon: Icons.person_outline,
+                    controller: _garantNomController,
+                    required: true,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: CustomTextInput(
+                    label: 'Prénoms du garant',
+                    hint: 'Prénoms',
+                    icon: Icons.person_outline,
+                    controller: _garantPrenomsController,
+                    required: true,
+                  ),
+                ),
+              ],
+            ),
+            if (_garantNomController.text.trim().isNotEmpty ||
+                _garantPrenomsController.text.trim().isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _buildEngagementDeclaration(accentColor),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Phrase d'engagement récapitulant qui s'engage, pour qui et pour quelle
+  // année scolaire — se met à jour en direct pendant la saisie du garant.
+  Widget _buildEngagementDeclaration(Color accentColor) {
+    final nomGarant = _garantNomController.text.trim();
+    final prenomsGarant = _garantPrenomsController.text.trim();
+    final garantDisplay = [
+      nomGarant,
+      prenomsGarant,
+    ].where((v) => v.isNotEmpty).join(' ');
+    final eleveNom = widget.child.fullName.trim().toUpperCase();
+    final classe = widget.child.grade.trim().toUpperCase();
+
+    TextStyle boldStyle = TextStyle(
+      fontWeight: FontWeight.w800,
+      color: textColor,
+    );
+    TextStyle normalStyle = TextStyle(
+      color: textSecondaryColor,
+      height: 1.5,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accentColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border(left: BorderSide(color: accentColor, width: 3)),
+      ),
+      child: Text.rich(
+        TextSpan(
+          style: TextStyle(fontSize: 13.5, height: 1.5),
+          children: [
+            TextSpan(text: garantDisplay, style: boldStyle),
+            TextSpan(
+              text:
+                  ' a déclaré prendre en charge et s\'est engagé sur '
+                  'l\'honneur à payer tous les frais de Scolarité, '
+                  'Transport – Cantine à la caisse du ',
+              style: normalStyle,
+            ),
+            TextSpan(text: 'groupe scolaire', style: boldStyle),
+            if (_anneeScolaire.isNotEmpty) ...[
+              TextSpan(text: ' pour l\'année scolaire ', style: normalStyle),
+              TextSpan(text: _anneeScolaire, style: boldStyle),
+            ],
+            TextSpan(text: ' de l\'élève : ', style: normalStyle),
+            TextSpan(text: eleveNom, style: boldStyle),
+            TextSpan(text: ' en classe de : ', style: normalStyle),
+            TextSpan(text: classe, style: boldStyle),
+          ],
+        ),
+      ),
+    );
+  }
 
   // ─── ÉTAPE 1 – Scolarité ───────────────────────────────────────────────────
 
@@ -2160,7 +2359,9 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
           if (_currentPageIndex > 0) const Spacer(),
           if (!isLast)
             CustomButton(
-              text: isSecondToLast ? 'Récap' : 'Suivant',
+              text: _currentStepId == _kStepEngagement
+                  ? 'Continuer'
+                  : (isSecondToLast ? 'Récap' : 'Suivant'),
               onPressed: canNext ? _nextStep : null,
               color: AppColors.integrationBlue,
               icon: Icons.arrow_forward_rounded,
@@ -2392,7 +2593,19 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
+
+                  // Bouton fiche d'inscription
+                  CustomButton(
+                    text: 'Imprimer la fiche d\'inscription',
+                    onPressed: _openFicheInscription,
+                    color: AppColors.success,
+                    icon: Icons.download_rounded,
+                    isLight: true,
+                    height: 50,
+                    fontSize: 15,
+                  ),
+                  const SizedBox(height: 12),
 
                   // Bouton retour
                   CustomButton(
@@ -2408,6 +2621,33 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Ouvre (et permet de télécharger/partager) la fiche d'inscription déjà
+  // générée côté serveur pour cet élève.
+  void _openFicheInscription() {
+    final uid = _uid_eleve;
+    final ecole = _ecoleCode;
+
+    if (uid.isEmpty || ecole.isEmpty) {
+      NotificationHelper.showError(
+        'Informations insuffisantes pour générer la fiche',
+      );
+      return;
+    }
+
+    final url =
+        '${AppConfig.VIE_ECOLES_API_BASE_URL}/preinscription/generer-fiche-paiement/$uid'
+        '?ecole=$ecole';
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PDFViewerScreen(
+          pdfUrl: url,
+          title: 'Fiche d\'inscription',
+        ),
       ),
     );
   }
@@ -2494,7 +2734,14 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
       await InscriptionApiService.submitInscription(
         matricule: _matricule,
         ecoleCode: _ecoleCode,
-        payload: InscriptionPayload(ids: _buildPaymentPayload()),
+        payload: InscriptionPayload(
+          ids: _buildPaymentPayload(),
+          engagement: {
+            'garant': _isGarant,
+            'nom': _garantNomController.text.trim(),
+            'prenoms': _garantPrenomsController.text.trim(),
+          },
+        ),
       );
       if (mounted) {
         Navigator.of(context).pop();

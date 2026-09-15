@@ -28,7 +28,9 @@ import '../models/gestion_presence_eleve_entry.dart';
 import '../services/database_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/gestion_presence_eleve_service.dart';
-import '../services/pouls_scolaire_api_service.dart';
+import '../services/consultation_api_service.dart';
+import 'package:path_provider/path_provider.dart';
+import '../utils/child_photo.dart';
 import '../services/notification_service.dart';
 import '../services/text_size_service.dart';
 import '../services/theme_service.dart';
@@ -1786,7 +1788,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _updatePhotosInBackground(List<Child> children) async {
-    final poulsApiService = PoulsScolaireApiService();
+    final consultationApi = ConsultationApiService();
     for (final child in children) {
       if ((child.photoUrl == null || child.photoUrl!.isEmpty) &&
           child.id.isNotEmpty) {
@@ -1794,49 +1796,100 @@ class _HomeScreenState extends State<HomeScreen> {
           final childInfo = await DatabaseService.instance.getChildInfoById(
             child.id,
           );
-          if (childInfo != null) {
-            final ecoleId = childInfo['ecoleId'] as int?;
-            final matricule = childInfo['matricule'] as String?;
-            if (ecoleId != null && matricule != null) {
-              final anneeScolaire = await poulsApiService
-                  .getAnneeScolaireOuverte(ecoleId);
-              final anneeId = anneeScolaire.anneeOuverteCentraleId;
-              final eleve = await poulsApiService.findEleveByMatricule(
-                ecoleId,
-                anneeId,
-                matricule,
-              );
-              if (eleve != null &&
-                  eleve.urlPhoto != null &&
-                  eleve.urlPhoto!.isNotEmpty) {
-                await DatabaseService.instance.updateChildPhoto(
-                  child.id,
-                  eleve.urlPhoto,
-                );
-                if (!mounted) return;
-                setState(() {
-                  final index = _children.indexWhere((c) => c.id == child.id);
-                  if (index >= 0) {
-                    _children[index] = Child(
-                      id: child.id,
-                      firstName: child.firstName,
-                      lastName: child.lastName,
-                      establishment: child.establishment,
-                      grade: child.grade,
-                      photoUrl: eleve.urlPhoto,
-                      parentId: child.parentId,
-                    );
-                    final fi = _filteredChildren.indexWhere(
-                      (c) => c.id == child.id,
-                    );
-                    if (fi >= 0) _filteredChildren[fi] = _children[index];
-                  }
-                });
-              }
-            }
+          if (childInfo == null) continue;
+
+          final schoolId = childInfo['schoolId'] as String?;
+          final matricule = childInfo['matricule'] as String?;
+          String? photoPath;
+
+          // API de consultation exclusivement : la photo est téléchargée et
+          // mise en cache localement, car l'endpoint est protégé par le même
+          // Bearer token que le reste de l'API — inutilisable tel quel dans
+          // Image.network (vérifié : 401 sans token, token qui expire par
+          // ailleurs toutes les heures). `photoUrl` pointe donc vers un
+          // fichier local, pas une URL distante.
+          if (schoolId != null && matricule != null) {
+            photoPath = await _fetchAndCacheElevePhoto(
+              consultationApi,
+              schoolId,
+              matricule,
+              child.id,
+            );
           }
+
+          if (photoPath == null) continue;
+
+          if (!mounted) return;
+          setState(() {
+            final index = _children.indexWhere((c) => c.id == child.id);
+            if (index >= 0) {
+              _children[index] = Child(
+                id: child.id,
+                firstName: child.firstName,
+                lastName: child.lastName,
+                establishment: child.establishment,
+                grade: child.grade,
+                photoUrl: photoPath,
+                parentId: child.parentId,
+              );
+              final fi = _filteredChildren.indexWhere(
+                (c) => c.id == child.id,
+              );
+              if (fi >= 0) _filteredChildren[fi] = _children[index];
+            }
+          });
         } catch (_) {}
       }
+    }
+  }
+
+  /// Résout l'année courante puis l'élève par matricule via l'API de
+  /// consultation, télécharge sa photo (endpoint protégé) et la sauvegarde
+  /// comme fichier local. Retourne le chemin du fichier local, ou `null` si
+  /// l'élève n'a pas de photo ou en cas d'erreur — best-effort, ne lève
+  /// jamais (appelée depuis une synchronisation en arrière-plan).
+  Future<String?> _fetchAndCacheElevePhoto(
+    ConsultationApiService consultationApi,
+    String schoolId,
+    String matricule,
+    String childId,
+  ) async {
+    try {
+      final annees = await consultationApi.getAnnees(schoolId);
+      if (annees.isEmpty) return null;
+      final anneeCourante = annees.firstWhere(
+        (a) => a.courante,
+        orElse: () => annees.first,
+      );
+      final eleves = await consultationApi.getEleves(
+        schoolId,
+        anneeCourante.ref,
+      );
+      final eleve = eleves
+          .where((e) => e.matricule.toLowerCase() == matricule.toLowerCase())
+          .firstOrNull;
+      if (eleve == null ||
+          eleve.urlPhoto == null ||
+          eleve.urlPhoto!.isEmpty) {
+        return null;
+      }
+
+      final bytes = await consultationApi.getElevePhotoBytes(
+        eleve.urlPhoto!,
+      );
+      if (bytes == null || bytes.isEmpty) return null;
+
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/child_photo_$childId.jpg');
+      await file.writeAsBytes(bytes, flush: true);
+
+      await DatabaseService.instance.updateChildPhoto(childId, file.path);
+      return file.path;
+    } catch (e) {
+      print(
+        '❌ Erreur backfill photo (API de consultation) pour $childId: $e',
+      );
+      return null;
     }
   }
 
@@ -2917,8 +2970,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: ClipOval(
                     child: child.photoUrl != null && child.photoUrl!.isNotEmpty
-                        ? Image.network(
-                            child.photoUrl!,
+                        ? Image(
+                            image: childPhotoProvider(child.photoUrl!),
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => _defaultChildIcon(),
                           )

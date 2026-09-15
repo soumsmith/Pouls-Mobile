@@ -7,11 +7,13 @@ class ClasseConsultation {
   final String classeRef;
   final String libelle;
   final String? niveau;
+  final int? effectif;
 
   ClasseConsultation({
     required this.classeRef,
     required this.libelle,
     this.niveau,
+    this.effectif,
   });
 
   factory ClasseConsultation.fromJson(Map<String, dynamic> json) {
@@ -19,6 +21,7 @@ class ClasseConsultation {
       classeRef: json['classeRef'] as String? ?? '',
       libelle: json['libelle'] as String? ?? '',
       niveau: json['niveau'] as String?,
+      effectif: json['effectif'] as int?,
     );
   }
 }

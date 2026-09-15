@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../config/app_config.dart';
 import '../models/etablissement_consultation.dart';
@@ -275,6 +276,42 @@ class ConsultationApiService {
       _logException('élèves', e);
       ApiExceptionHandler.handle(e, context: 'la récupération des élèves');
       rethrow;
+    }
+  }
+
+  /// Télécharge les octets de la photo d'un élève depuis le chemin renvoyé
+  /// par `EleveConsultation.urlPhoto` (chemin relatif, ex.
+  /// "/api/v1/consultation/etablissements/{schoolId}/eleves/{matricule}/photo").
+  /// Endpoint protégé par le même Bearer token que le reste de l'API — jamais
+  /// une URL publique à passer telle quelle à Image.network. Retourne `null`
+  /// si l'élève n'a pas de photo (404) ou en cas d'erreur (best-effort, ne
+  /// lève jamais : appelée depuis une synchronisation en arrière-plan).
+  Future<Uint8List?> getElevePhotoBytes(String urlPhotoPath) async {
+    try {
+      final origin = Uri.parse(AppConfig.PEDAGOGIE_API_BASE_URL);
+      final uri = origin.replace(path: urlPhotoPath);
+      // Accept: image/jpeg requis — l'API répond 406 sinon (même contrainte
+      // que bulletin.pdf/application/pdf, voir _getWithRetry). Un 404 est le
+      // cas normal d'un élève sans photo (doc recette du 15/09/2026) : pas
+      // de log d'erreur pour ce cas, volontairement silencieux.
+      final response = await http.get(
+        uri,
+        headers: await _authHeaders(accept: 'image/jpeg'),
+      );
+      if (response.statusCode == 401) {
+        await PedagogieAuthService().forceRefresh();
+        final retry = await http.get(
+          uri,
+          headers: await _authHeaders(accept: 'image/jpeg'),
+        );
+        if (retry.statusCode != 200) return null;
+        return retry.bodyBytes;
+      }
+      if (response.statusCode != 200) return null;
+      return response.bodyBytes;
+    } catch (e) {
+      _logException('photo élève', e);
+      return null;
     }
   }
 

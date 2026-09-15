@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../models/child.dart';
 import '../widgets/components/custom_button.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 import '../utils/auth_guard.dart';
 import 'inscription_screen.dart' as inscription;
 
@@ -100,140 +101,144 @@ class EleveInscriptionDetailScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.screenSurfaceThemed(context),
-      appBar: AppBar(
-        backgroundColor: AppColors.screenSurfaceThemed(context),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        iconTheme: IconThemeData(
-          color: AppColors.screenTextPrimaryThemed(context),
-        ),
-        title: Text(
-          'Élève trouvé',
-          style: TextStyle(
-            color: AppColors.screenTextPrimaryThemed(context),
-            fontWeight: FontWeight.w700,
+      body: CustomScrollView(
+        slivers: [
+          CustomSliverAppBar(
+            title: 'Élève trouvé',
+            pinned: true,
+            elevation: 0,
+            onBackTap: () => Navigator.of(context).pop(),
           ),
-        ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                Center(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 96,
+                        height: 96,
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.screenOrange.withOpacity(0.12),
+                        ),
+                        child: photo.isNotEmpty
+                            ? Image.network(
+                                photo,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(
+                                      Icons.person_rounded,
+                                      size: 48,
+                                      color: AppColors.screenOrange,
+                                    ),
+                              )
+                            : Icon(
+                                Icons.person_rounded,
+                                size: 48,
+                                color: AppColors.screenOrange,
+                              ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        _fullName,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.screenTextPrimaryThemed(context),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        ecoleNom,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.screenTextSecondaryThemed(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+                _buildSection(
+                  context,
+                  title: 'Scolarité',
+                  icon: Icons.school_outlined,
+                  rows: [
+                    _InfoRow('Matricule', _valueOr('matricule')),
+                    _InfoRow('Niveau', _valueOr('niveau')),
+                    _InfoRow('Filière', _valueOr('filiere')),
+                    _InfoRow('Branche', _valueOr('branche')),
+                    _InfoRow('Statut', _valueOr('statut')),
+                    _InfoRow('Redoublant', _valueOr('redoublant')),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildSection(
+                  context,
+                  title: 'Identité',
+                  icon: Icons.badge_outlined,
+                  rows: [
+                    _InfoRow('Sexe', _sexeLabel),
+                    _InfoRow('Date de naissance', _dateNaissanceLabel),
+                    _InfoRow('Lieu de naissance', _valueOr('lieun')),
+                    _InfoRow('Nationalité', _valueOr('nationalite')),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildSection(
+                  context,
+                  title: 'Contact',
+                  icon: Icons.call_outlined,
+                  rows: [
+                    _InfoRow('Adresse', _valueOr('adresse')),
+                    _InfoRow('Téléphone', _valueOr('mobile')),
+                    if (_s('mobile2').isNotEmpty)
+                      _InfoRow('Téléphone 2', _valueOr('mobile2')),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildSection(
+                  context,
+                  title: 'Famille',
+                  icon: Icons.family_restroom_outlined,
+                  rows: [
+                    _InfoRow('Père', _valueOr('pere')),
+                    _InfoRow('Mère', _valueOr('mere')),
+                    _InfoRow('Tuteur', _valueOr('tuteur')),
+                  ],
+                ),
+              ]),
+            ),
+          ),
+        ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                children: [
-                  Center(
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundColor: AppColors.screenOrange.withOpacity(0.12),
-                          backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
-                          child: photo.isEmpty
-                              ? Icon(
-                                  Icons.person_rounded,
-                                  size: 48,
-                                  color: AppColors.screenOrange,
-                                )
-                              : null,
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          _fullName,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.screenTextPrimaryThemed(context),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          ecoleNom,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.screenTextSecondaryThemed(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  _buildSection(
-                    context,
-                    title: 'Scolarité',
-                    icon: Icons.school_outlined,
-                    rows: [
-                      _InfoRow('Matricule', _valueOr('matricule')),
-                      _InfoRow('Niveau', _valueOr('niveau')),
-                      _InfoRow('Filière', _valueOr('filiere')),
-                      _InfoRow('Branche', _valueOr('branche')),
-                      _InfoRow('Statut', _valueOr('statut')),
-                      _InfoRow('Redoublant', _valueOr('redoublant')),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSection(
-                    context,
-                    title: 'Identité',
-                    icon: Icons.badge_outlined,
-                    rows: [
-                      _InfoRow('Sexe', _sexeLabel),
-                      _InfoRow('Date de naissance', _dateNaissanceLabel),
-                      _InfoRow('Lieu de naissance', _valueOr('lieun')),
-                      _InfoRow('Nationalité', _valueOr('nationalite')),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSection(
-                    context,
-                    title: 'Contact',
-                    icon: Icons.call_outlined,
-                    rows: [
-                      _InfoRow('Adresse', _valueOr('adresse')),
-                      _InfoRow('Téléphone', _valueOr('mobile')),
-                      if (_s('mobile2').isNotEmpty)
-                        _InfoRow('Téléphone 2', _valueOr('mobile2')),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSection(
-                    context,
-                    title: 'Famille',
-                    icon: Icons.family_restroom_outlined,
-                    rows: [
-                      _InfoRow('Père', _valueOr('pere')),
-                      _InfoRow('Mère', _valueOr('mere')),
-                      _InfoRow('Tuteur', _valueOr('tuteur')),
-                    ],
-                  ),
-                ],
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          decoration: BoxDecoration(
+            color: AppColors.screenSurfaceThemed(context),
+            boxShadow: [
+              BoxShadow(
+                color: (isDark ? Colors.black : Colors.black12).withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, -4),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              decoration: BoxDecoration(
-                color: AppColors.screenSurfaceThemed(context),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isDark ? Colors.black : Colors.black12).withOpacity(0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: CustomButton(
-                text: 'Commencer',
-                onPressed: () => _startInscription(context),
-                color: AppColors.screenOrange,
-                icon: Icons.arrow_forward_rounded,
-                iconOnRight: true,
-                height: 54,
-                fontSize: 16,
-              ),
-            ),
-          ],
+            ],
+          ),
+          child: CustomButton(
+            text: 'Commencer',
+            onPressed: () => _startInscription(context),
+            color: AppColors.screenOrange,
+            icon: Icons.arrow_forward_rounded,
+            iconOnRight: true,
+            height: 54,
+            fontSize: 16,
+          ),
         ),
       ),
     );

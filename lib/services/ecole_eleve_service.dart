@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../models/ecole_detail.dart';
+import '../models/code_dren_ecole.dart';
 import '../config/app_config.dart';
 
 /// Service pour gérer les données de l'école d'un élève
@@ -152,6 +153,66 @@ class EcoleEleveService {
       'inscription': isInscriptionsOuvertes(ecoleData),
       'reservation': isReservationsOuvertes(ecoleData),
     };
+  }
+
+  /// Recherche une école par son code DREN (POST, pas GET malgré l'usage
+  /// d'un paramètre `code`). Retourne l'école (avec son code legacy
+  /// vie-ecoles à réutiliser comme `paramEcole`) ou lève une [Exception]
+  /// avec le message renvoyé par l'API (ex: "Aucune école ne correspond
+  /// au code ...").
+  static Future<CodeDrenEcole> rechercherParCodeDren(String codeDren) async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('🏫 RECHERCHE ÉCOLE PAR CODE DREN');
+    print('═══════════════════════════════════════════════════════════');
+    print('🎫 Code DREN: $codeDren');
+
+    final url = '$baseUrl/vie-ecoles/recherche/code-dren';
+    print('🔗 URL: $url');
+    print('📡 Envoi de la requête...');
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: json.encode({'code': codeDren}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      print('📥 Réponse reçue:');
+      print('   - Status Code: ${response.statusCode}');
+      print('   - Body length: ${response.body.length} caractères');
+
+      final Map<String, dynamic> data = json.decode(response.body);
+      final bool status = data['status'] == true;
+      final String message = data['message']?.toString() ?? '';
+
+      if (status && data['data'] is Map) {
+        final ecole = CodeDrenEcole.fromJson(data['data'] as Map<String, dynamic>);
+        print('✅ École trouvée: ${ecole.nom} (code: ${ecole.code})');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
+        return ecole;
+      }
+
+      print('⚠️ Aucune école trouvée: $message');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      throw Exception(
+        message.isNotEmpty ? message : 'Aucune école ne correspond à ce code DREN',
+      );
+    } on Exception {
+      rethrow;
+    } catch (e) {
+      print('💥 Exception lors de la recherche par code DREN: $e');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      throw Exception('Erreur lors de la recherche de l\'école: $e');
+    }
   }
 
   /// Récupère les détails complets d'un élève

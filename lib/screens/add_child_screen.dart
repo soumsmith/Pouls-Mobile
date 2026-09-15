@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/child.dart';
@@ -6,12 +5,10 @@ import '../models/etablissement_consultation.dart';
 import '../models/eleve_consultation.dart';
 import '../models/user.dart';
 import '../services/consultation_api_service.dart';
-import '../services/pouls_scolaire_api_service.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
 import '../services/mock_api_service.dart';
 import '../services/remote_api_service.dart';
-import '../services/notification_service.dart';
 import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_config.dart';
@@ -449,7 +446,27 @@ class _AddChildScreenState extends State<AddChildScreen>
         paramEcole: legacyParamEcole,
       );
 
-      print('💾 Sauvegarde locale de l\'élève...');
+      print('');
+      print('═══════════════════════════════════════════════════════════');
+      print('💾 SAUVEGARDE LOCALE DE L\'ÉLÈVE — données stockées');
+      print('═══════════════════════════════════════════════════════════');
+      print('   🆔 id (matricule): ${newChild.id}');
+      print('   👤 firstName: ${newChild.firstName}');
+      print('   👤 lastName: ${newChild.lastName}');
+      print('   🏫 establishment: ${newChild.establishment}');
+      print('   📚 grade: ${newChild.grade}');
+      print('   🖼️ photoUrl: ${newChild.photoUrl ?? "null"}');
+      print('   👪 parentId: ${newChild.parentId}');
+      print('   🔑 paramEcole: ${newChild.paramEcole ?? "null"}');
+      print('   🎫 matricule: ${eleve.matricule}');
+      print('   🏫 ecoleName: ${ecole.nom}');
+      print('   🆔 schoolId: ${ecole.schoolId}');
+      print(
+        '   📚 classeRef: ${eleve.classeRef.isNotEmpty ? eleve.classeRef : "null"}',
+      );
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+
       await DatabaseService.instance.saveChild(
         newChild,
         matricule: eleve.matricule,
@@ -460,11 +477,6 @@ class _AddChildScreenState extends State<AddChildScreen>
         classeRef: eleve.classeRef.isNotEmpty ? eleve.classeRef : null,
       );
       print('✅ Sauvegarde locale terminée');
-      // Ne pas bloquer la confirmation/navigation sur cet appel réseau
-      // best-effort (l'élève est déjà sauvegardé localement à ce stade) :
-      // un appel lent ou qui ne répond pas ne doit pas donner l'impression
-      // que le tap sur "Ajouter" n'a rien fait.
-      _updateNotificationTokenWithNewMatricule(parentId, eleve.matricule);
 
       print('✅ Élève ajouté localement avec succès');
       setState(() => _isLoading = false);
@@ -1511,30 +1523,4 @@ class _AddChildScreenState extends State<AddChildScreen>
     );
   }
 
-  // ─── NOTIFICATION TOKEN UPDATE ────────────────────────────────────────────
-  Future<void> _updateNotificationTokenWithNewMatricule(
-    String userId,
-    String newMatricule,
-  ) async {
-    try {
-      final notificationService = NotificationService();
-      final token = await notificationService.getTokenAsync();
-      if (token == null || token.isEmpty) return;
-      final childrenInfo = await DatabaseService.instance
-          .getChildrenInfoByParent(userId);
-      final matricules = childrenInfo
-          .map((info) => info['matricule'] as String?)
-          .where((m) => m != null && m.isNotEmpty)
-          .cast<String>()
-          .toList();
-      if (matricules.isEmpty) return;
-      final deviceType = Platform.isIOS ? 'ios' : 'android';
-      await PoulsScolaireApiService().registerNotificationToken(
-        token,
-        userId,
-        deviceType: deviceType,
-        matricules: matricules,
-      );
-    } catch (_) {}
-  }
 }

@@ -11,15 +11,6 @@ class NotificationService {
 
   Stream<Map<String, dynamic>> get notificationStream => _notificationController.stream;
 
-  Future<String?> getTokenAsync() async {
-    try {
-      return await FirebaseMessaging.instance.getToken();
-    } catch (e) {
-      debugPrint('Error getting FCM token: $e');
-      return null;
-    }
-  }
-
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../utils/child_photo.dart';
 import '../models/subscription_offer.dart';
 import '../services/subscription_service.dart';
 import '../services/paiement_service.dart';
@@ -389,31 +390,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                             borderRadius: BorderRadius.circular(
                                               22,
                                             ),
-                                            child: CachedNetworkImage(
-                                              imageUrl: child.photoUrl!,
+                                            child: Image(
+                                              image: childPhotoProvider(
+                                                child.photoUrl!,
+                                              ),
                                               width: 44,
                                               height: 44,
                                               fit: BoxFit.cover,
-                                              placeholder: (context, url) =>
-                                                  Container(
-                                                    width: 44,
-                                                    height: 44,
-                                                    color: isDark
-                                                        ? Colors.white10
-                                                        : const Color(
-                                                            0xFFF1F5F9,
-                                                          ),
-                                                    child: Icon(
-                                                      Icons.person,
-                                                      color: isDark
-                                                          ? Colors.white60
-                                                          : const Color(
-                                                              0xFF64748B,
-                                                            ),
-                                                    ),
-                                                  ),
-                                              errorWidget:
-                                                  (context, url, error) =>
+                                              errorBuilder:
+                                                  (context, error, stackTrace) =>
                                                       Container(
                                                         width: 44,
                                                         height: 44,

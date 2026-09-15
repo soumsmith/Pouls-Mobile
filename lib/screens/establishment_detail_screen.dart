@@ -51,7 +51,6 @@ import '../models/group_message.dart';
 import '../models/order.dart';
 import '../models/cart_item.dart';
 import '../models/product.dart';
-import '../models/student_class_info.dart';
 import '../models/student_scolarite.dart';
 import '../models/student_message.dart';
 import '../models/student_timetable.dart';

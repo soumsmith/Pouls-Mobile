@@ -422,8 +422,8 @@ class DatabaseService {
   }
 
   /// Corrige le `paramEcole` d'un enfant déjà enregistré (voir
-  /// PoulsScolaireApiService.findLegacyParamEcoleByCodeAndName) sans toucher
-  /// au reste de la fiche.
+  /// ChildListScreen._healLegacyParamEcoleIfNeeded) sans toucher au reste de
+  /// la fiche.
   Future<void> updateChildParamEcole(String childId, String paramEcole) async {
     final db = await database;
     await db.update(

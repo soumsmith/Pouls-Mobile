@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../utils/child_photo.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:parents_responsable/widgets/payment_verification_dialog.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -22,7 +23,6 @@ import '../models/timetable_entry.dart';
 import '../models/message.dart';
 import '../models/fee.dart';
 import '../models/school_supply.dart';
-import '../services/pouls_scolaire_api_service.dart';
 import '../services/database_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/order_service.dart';
@@ -83,7 +83,6 @@ import '../models/echeance_notification.dart';
 import '../models/access_log.dart';
 import '../models/place_reservation.dart';
 import '../services/inscription_api_service.dart' as api_service;
-import '../models/student_class_info.dart';
 import '../models/group_message.dart';
 import '../models/ecole.dart';
 import '../services/group_message_service.dart';
@@ -462,17 +461,11 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   // Variables pour les données de notes globales
   GlobalAverage? _globalAverage;
-  final PoulsScolaireApiService _poulsApiService = PoulsScolaireApiService();
 
   // Informations de l'enfant pour l'API
   int? _ecoleId;
   String? _ecoleCode;
-  int? _classeId;
   String? _matricule;
-  int? _anneeId;
-
-  // Informations supplémentaires de la classe/école
-  StudentClassInfo? _studentClassInfo;
 
   // Détails complets de l'élève
   Map<String, dynamic>? _eleveDetail;
@@ -858,17 +851,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       // Étape 4: Charger les données de statistiques de notes
       print('Étape 4: Chargement des données de statistiques de notes...');
       await _loadNotesStatistics();
-
-      // Étape 5: Charger les informations détaillées de la classe/école
-      print(
-        '🏫 Étape 5: Chargement des informations détaillées de la classe/école...',
-      );
-      if (_studentClassInfo == null &&
-          _matricule != null &&
-          _anneeId != null &&
-          _classeId != null) {
-        await _loadStudentClassInfo();
-      }
     } catch (e) {
       print('❌ Erreur lors du chargement des données: $e');
       print('Stack trace: ${StackTrace.current}');
@@ -1008,7 +990,6 @@ class _ChildListScreenState extends State<ChildListScreen>
               (childInfo['paramEcole'] as String?) ??
               widget.child.paramEcole ??
               widget.child.ecoleCode;
-          _classeId = childInfo['classeId'] as int?;
           _matricule = childInfo['matricule'] as String?;
           // Enregistré directement à l'ajout de l'enfant (add_child_screen,
           // API de consultation) : évite de repasser par la résolution par
@@ -1024,7 +1005,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         // Best-effort, non bloquant : corrige en arrière-plan un paramEcole
         // enregistré à tort avec le code de l'API de consultation au lieu du
         // code legacy attendu par les intégrations tierces (inscription en
-        // ligne, etc.) — voir PoulsScolaireApiService.findLegacyParamEcoleByCodeAndName.
+        // ligne, etc.) — voir _healLegacyParamEcoleIfNeeded ci-dessous.
         if (_persistedSchoolId != null) {
           _healLegacyParamEcoleIfNeeded(childInfo['paramEcole'] as String?);
         }
@@ -1032,27 +1013,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         print(' Informations de l\'enfant récupérées:');
         print('   École ID: $_ecoleId');
         print('   École Code (depuis childInfo): $_ecoleCode');
-        print('   Classe ID: $_classeId');
         print('   🎫 Matricule: $_matricule');
 
-        // Charger l'année scolaire ouverte
-        if (_ecoleId != null) {
-          try {
-            final anneeScolaire = await _poulsApiService
-                .getAnneeScolaireOuverte(_ecoleId!);
-            setState(() {
-              _anneeId = anneeScolaire.anneeOuverteCentraleId;
-            });
-            print('   📅 Année ID: $_anneeId');
-          } catch (e) {
-            print('❌ Erreur lors du chargement de l\'année scolaire: $e');
-          }
-        }
-
-        // Charger les informations détaillées de la classe/école avec la nouvelle API
-        if (_matricule != null && _anneeId != null && _classeId != null) {
-          await _loadStudentClassInfo();
-        }
+        // SchoolService est un singleton global consommé par
+        // AccessControlService/StudentTimetableService/StudentScolariteService
+        // pour construire leurs appels à api2.vie-ecoles.com.
+        await _updateSchoolServiceFromEcoleCode();
 
         // Charger les détails complets de l'élève (après avoir récupéré le code école)
         if (_matricule != null) {
@@ -1065,7 +1031,6 @@ class _ChildListScreenState extends State<ChildListScreen>
             );
             print('   - Matricule: $_matricule');
             print('   - Code école: $_ecoleCode');
-            print('   - Tentative de chargement après _loadStudentClassInfo()');
           }
         } else {
           print(
@@ -1081,43 +1046,23 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  Future<void> _loadStudentClassInfo() async {
-    if (_matricule == null || _anneeId == null || _classeId == null) {
-      print('⚠️ Informations manquantes pour charger les infos classe/école');
-      return;
-    }
-
-    try {
-      print('🏫 Chargement des informations détaillées de la classe/école...');
-      final studentClassInfo = await _poulsApiService.getStudentClassInfo(
-        _matricule!,
-        _anneeId!,
-        _classeId!,
-      );
-
-      setState(() {
-        _studentClassInfo = studentClassInfo;
-        // Prioriser identifiantVieEcole sur childInfo['ecoleCode']
-        if (studentClassInfo.identifiantVieEcole.isNotEmpty) {
-          _ecoleCode = studentClassInfo.identifiantVieEcole;
-          print('Code école extrait depuis identifiantVieEcole: $_ecoleCode');
-          print(
-            'MISE À JOUR: _ecoleCode changé de "${widget.child.ecoleCode}" à "$_ecoleCode"',
-          );
-        }
-      });
-
-      print('✅ Informations classe/école chargées:');
-      print('   🏫 École: ${_studentClassInfo!.ecole.libelle}');
-      print('   📚 Classe: ${_studentClassInfo!.classe.libelle}');
-      print('   👤 Élève: ${_studentClassInfo!.eleve.fullName}');
-      print('   🏷️ ID Vie École: ${_studentClassInfo!.identifiantVieEcole}');
-      print('   🏷️ Code école utilisé: $_ecoleCode');
-    } catch (e) {
-      print('❌ Erreur lors du chargement des informations classe/école: $e');
-      // Ne pas bloquer le processus si cette API échoue
-    }
+  /// Met à jour SchoolService avec le code vie-ecoles (`_ecoleCode`, déjà
+  /// résolu depuis `paramEcole`) de l'enfant courant. `id`/`code`/`libelle`
+  /// sont best-effort (utilisés seulement pour l'affichage de debug) ; seul
+  /// `identifiantVieEcole` est réellement exploité par
+  /// AccessControlService/StudentTimetableService/StudentScolariteService.
+  Future<void> _updateSchoolServiceFromEcoleCode() async {
+    if (_ecoleCode == null || _ecoleCode!.isEmpty) return;
+    await _schoolService.updateSchoolData({
+      'id': _ecoleId ?? 0,
+      'libelle': widget.child.establishment,
+      'code': _ecoleCode,
+      'identifiantVieEcole': _ecoleCode,
+      'tel': null,
+      'nomSignataire': null,
+    });
   }
+
 
   Future<void> _loadEleveDetail() async {
     print('');
@@ -3004,8 +2949,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
                 child: widget.child.photoUrl != null
                     ? ClipOval(
-                        child: Image.network(
-                          widget.child.photoUrl!,
+                        child: Image(
+                          image: childPhotoProvider(widget.child.photoUrl!),
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return _buildDefaultAvatar();
@@ -4730,9 +4675,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                               studentName: widget.child.fullName,
                               studentMatricule:
                                   _matricule ?? widget.child.matricule ?? '',
-                              ecoleName:
-                                  _studentClassInfo?.ecole.libelle ??
-                                  widget.child.establishment,
+                              ecoleName: widget.child.establishment,
                               ecoleCode:
                                   _ecoleCode ?? widget.child.ecoleCode ?? '',
                             ),
@@ -4910,13 +4853,6 @@ class _ChildListScreenState extends State<ChildListScreen>
       loadReservationData: () async {
         // Si les données ne sont pas chargées, on les charge ici pour afficher le loader du bottom sheet
         if (_apiEcoleData == null) {
-          if (_ecoleCode == null &&
-              _matricule != null &&
-              _anneeId != null &&
-              _classeId != null) {
-            await _loadStudentClassInfo();
-          }
-
           if (_ecoleCode != null) {
             try {
               final ecoleData =

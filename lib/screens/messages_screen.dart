@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../utils/child_photo.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
@@ -540,7 +541,7 @@ class _MessagesScreenState extends State<MessagesScreen>
         radius: 28,
         backgroundColor: const Color(0xFF0288D1).withOpacity(0.1),
         backgroundImage: child.photoUrl != null
-            ? CachedNetworkImageProvider(child.photoUrl!)
+            ? childPhotoProvider(child.photoUrl!)
             : null,
         child: child.photoUrl == null
             ? Text(

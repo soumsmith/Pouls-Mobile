@@ -130,7 +130,6 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
             pinned: true,
             floating: false,
             elevation: 0,
-            backgroundColor: AppColors.screenBg(context),
             surfaceTintColor: Colors.transparent,
             actions: [
               IconButton(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/child.dart';
 import '../config/app_colors.dart';
+import '../utils/child_photo.dart';
 import 'custom_card.dart';
 
 /// Widget pour afficher un enfant dans une carte
@@ -43,13 +44,16 @@ class ChildItem extends StatelessWidget {
                 ),
                 child: photoUrl != null && photoUrl.isNotEmpty
                     ? ClipOval(
-                        child: Image.network(
-                          photoUrl,
+                        child: Image(
+                          // Optimiser le cache (2x pour les écrans haute résolution)
+                          image: ResizeImage(
+                            childPhotoProvider(photoUrl),
+                            width: 120,
+                            height: 120,
+                          ),
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
-                          cacheWidth: 120, // Optimiser le cache (2x pour les écrans haute résolution)
-                          cacheHeight: 120,
                           errorBuilder: (context, error, stackTrace) {
                             // Fallback vers l'icône si le chargement échoue
                             print('⚠️ Erreur lors du chargement de la photo pour $childName');

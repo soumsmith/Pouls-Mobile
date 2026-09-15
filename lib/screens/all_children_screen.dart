@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../utils/child_photo.dart';
 import '../services/auth_service.dart';
 import '../services/text_size_service.dart';
 import '../services/mock_api_service.dart';
@@ -304,8 +305,8 @@ class _AllChildrenScreenState extends State<AllChildrenScreen>
               ),
               child: child.photoUrl != null && child.photoUrl!.isNotEmpty
                   ? ClipOval(
-                      child: Image.network(
-                        child.photoUrl!,
+                      child: Image(
+                        image: childPhotoProvider(child.photoUrl!),
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _defaultChildIcon(child),
                       ),

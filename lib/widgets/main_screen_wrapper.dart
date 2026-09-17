@@ -8,6 +8,7 @@ import '../screens/establishment_screen.dart';
 import '../screens/child_list_screen.dart';
 import '../screens/establishment_detail_screen.dart';
 import '../screens/shop_screen.dart';
+import '../screens/messages_screen.dart';
 import '../screens/tips_advice_screen.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
@@ -240,11 +241,16 @@ class _MainScreenWrapperState extends State<MainScreenWrapper> {
       case 0:
         return const HomeScreen();
       case 1:
-        return const LibraryScreen();
+        return const MessagesScreen();
       case 2:
         return const EstablishmentScreen();
       case 3:
         return const TipsAdviceScreen();
+      // Boutique masquée de la bottom nav (index 1 réattribué à la
+      // Messagerie), mais toujours joignable sans onglet visible depuis
+      // le panier/les commandes (cart_screen.dart, orders_screen.dart).
+      case 5:
+        return const LibraryScreen();
       default:
         return const HomeScreen();
     }

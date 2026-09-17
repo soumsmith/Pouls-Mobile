@@ -255,7 +255,7 @@ class _CartScreenState extends State<CartScreen>
             final mainWrapper = MainScreenWrapper.maybeOf(context);
             if (mainWrapper != null) {
               Navigator.pop(context);
-              mainWrapper.updateCurrentIndex(1); // Onglet Boutique
+              mainWrapper.updateCurrentIndex(5); // Boutique (hors bottom nav)
             } else {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (_) => const LibraryScreen()),
@@ -797,13 +797,13 @@ class _CartScreenState extends State<CartScreen>
         );
 
         _loadCart();
-        // Rediriger vers la boutique (index 1 dans MainScreenWrapper)
+        // Rediriger vers la boutique (index 5, hors bottom nav) dans MainScreenWrapper
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) {
             print('DEBUG: Navigation depuis CartScreen vers MainScreenWrapper');
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
-                builder: (_) => const MainScreenWrapper(initialIndex: 1),
+                builder: (_) => const MainScreenWrapper(initialIndex: 5),
               ),
               (route) => false,
             );

@@ -429,7 +429,7 @@ class _OrdersScreenState extends State<OrdersScreen>
       onRetry: () {
         final wrapper = MainScreenWrapper.maybeOf(context);
         if (wrapper != null) {
-          wrapper.updateCurrentIndex(1); // Onglet Boutique
+          wrapper.updateCurrentIndex(5); // Boutique (hors bottom nav)
         } else {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const LibraryScreen()),

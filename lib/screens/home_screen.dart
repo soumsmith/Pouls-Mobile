@@ -50,8 +50,6 @@ import '../widgets/components/custom_error_state.dart';
 import '../widgets/recommendation_bottom_sheet.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'cart_screen.dart';
-import 'orders_screen.dart';
 import 'shop_screen.dart';
 import 'profile_screen.dart';
 import 'subscription_screen.dart';
@@ -3371,58 +3369,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
-              _buildCard(
-                index: 4,
-                cardKey: 'panier',
-                title: 'Mon\npanier',
-                imagePath: 'assets/images/icons/mon_panier.png',
-                color: AppColors.cardLightGrey,
-                backgroundColor: const Color(0xFFFCFAFF),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                allowLineBreak: true,
-                innerBorderColor: const Color(0xFFFB923C),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                onTap: () {
-                  MainScreenWrapper.of(context).navigateToExtraScreen(const CartScreen());
-                },
-              ),
-              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
-              _buildCard(
-                index: 5,
-                cardKey: 'commandes',
-                title: 'Mes\ncommandes',
-                imagePath: 'assets/images/icons/mes_commandes.png',
-                color: AppColors.cardLightGrey,
-                backgroundColor: const Color(0xFFFCFAFF),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                allowLineBreak: true,
-                innerBorderColor: const Color(0xFF34D399),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                onTap: () {
-                  AuthGuard.ensureLoggedIn(
-                    context,
-                    reason: 'Connectez-vous pour voir vos commandes',
-                    onAuthenticated: () {
-                      MainScreenWrapper.of(
-                        context,
-                      ).navigateToExtraScreen(const OrdersScreen());
-                    },
-                  );
-                },
-              ),
+              // Cartes "Mon panier" (index 4) et "Mes commandes" (index 5)
+              // masquées temporairement — CartScreen/OrdersScreen restent
+              // accessibles ailleurs (ex. MainScreenWrapper(initialIndex: 5)).
               SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
               _buildCard(
                 index: 6,

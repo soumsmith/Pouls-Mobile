@@ -1,20 +1,17 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../config/app_colors.dart';
-import '../components/bottom_spacer.dart';
-import 'bottom_sheet_header.dart';
 import '../../config/app_config.dart';
-import '../../models/etablissement_consultation.dart';
-import '../../services/consultation_api_service.dart';
+import '../../models/code_dren_ecole.dart';
+import '../../services/ecole_eleve_service.dart';
 import '../../services/text_size_service.dart';
 import '../../services/theme_service.dart';
-import '../../widgets/components/custom_select_input.dart';
 import '../../widgets/components/custom_text_input.dart';
 import '../../widgets/components/custom_button.dart';
-import '../../widgets/components/custom_error_state.dart';
 import '../../utils/notification_helper.dart';
 import 'integration_result_dialog.dart';
 import 'reusable_bottom_sheet.dart';
@@ -97,66 +94,23 @@ class _IntegrationRequestBottomSheetState
   // ── Services ───────────────────────────────────────────────────────────────
   final ThemeService _themeService = ThemeService();
   final TextSizeService _textSizeService = TextSizeService();
-  final ConsultationApiService _consultationApi = ConsultationApiService();
 
   // ── État ───────────────────────────────────────────────────────────────────
   //
-  // Migré vers l'API de consultation (établissements limités aux ~7 déjà
-  // migrés, au lieu des ~90 de l'ancien /connecte/ecole) — la consultation
-  // de la demande elle-même reste entièrement sur api2.vie-ecoles.com, qui
-  // n'existe pas côté API de consultation : on a donc besoin du code legacy
-  // (paramEcole) de l'établissement choisi pour que la suite du parcours
-  // fonctionne. Ce code est déjà résolu et attaché à chaque établissement
-  // par ConsultationApiService.getEtablissements() (mis en cache) : plus
-  // besoin d'appeler l'API legacy ici. Un établissement sans équivalent
-  // legacy n'a pas de consultation possible pour l'instant.
-  List<EtablissementConsultation> _ecoles = [];
-  bool _isLoadingEcoles = false;
+  // École trouvée par recherche directe au code DREN (api2.vie-ecoles.com,
+  // même mécanisme que InscriptionBottomSheet/IntegrationBottomSheet) :
+  // `_selectedEcoleCode` est directement le code legacy vie-ecoles
+  // (CodeDrenEcole.code), pas besoin de résolution supplémentaire pour
+  // consulter la demande.
   String? _selectedEcoleCode;
   String? _selectedEcoleName;
   bool _isLoadingRequest = false;
 
-  // ─────────────────────────────────────────────────────────────────────────
-  @override
-  void initState() {
-    super.initState();
-    _loadEcoles();
-  }
-
-  // ── Chargement des écoles ─────────────────────────────────────────────────
-
-  Future<void> _loadEcoles() async {
-    setState(() => _isLoadingEcoles = true);
-    try {
-      final etablissements = await _consultationApi.getEtablissements();
-
-      if (mounted) {
-        setState(() {
-          _ecoles = etablissements;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading ecoles: $e');
-    } finally {
-      if (mounted) setState(() => _isLoadingEcoles = false);
-    }
-  }
-
   // ── Consultation de la demande ────────────────────────────────────────────
 
   Future<void> _consultRequest(String matricule) async {
-    if (_selectedEcoleCode == null || matricule.isEmpty) return;
-
-    final selectedEtab = _ecoles
-        .where((e) => e.code == _selectedEcoleCode)
-        .firstOrNull;
-    final ecoleCode = selectedEtab?.paramEcole;
-    if (ecoleCode == null) {
-      NotificationHelper.showError(
-        'La consultation de demande n\'est pas encore disponible pour cet établissement.',
-      );
-      return;
-    }
+    final ecoleCode = _selectedEcoleCode;
+    if (ecoleCode == null || matricule.isEmpty) return;
 
     setState(() => _isLoadingRequest = true);
 
@@ -233,8 +187,6 @@ class _IntegrationRequestBottomSheetState
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return _IntegrationRequestForm(
-      ecoles: _ecoles,
-      isLoadingEcoles: _isLoadingEcoles,
       isLoadingRequest: _isLoadingRequest,
       selectedEcoleName: _selectedEcoleName,
       selectedEcoleCode: _selectedEcoleCode,
@@ -248,7 +200,6 @@ class _IntegrationRequestBottomSheetState
           _selectedEcoleName = ecoleName;
         });
       },
-      onRetryEcoles: _loadEcoles,
       onConsultWithMatricule: (matricule) => _consultRequest(matricule),
     );
   }
@@ -259,8 +210,6 @@ class _IntegrationRequestBottomSheetState
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _IntegrationRequestForm extends StatefulWidget {
-  final List<EtablissementConsultation> ecoles;
-  final bool isLoadingEcoles;
   final bool isLoadingRequest;
   final String? selectedEcoleName;
   final String? selectedEcoleCode;
@@ -269,12 +218,9 @@ class _IntegrationRequestForm extends StatefulWidget {
   final bool isDarkMode;
   final TextSizeService textSizeService;
   final void Function(String ecoleCode, String ecoleName) onEcoleChanged;
-  final VoidCallback onRetryEcoles;
   final Future<void> Function(String matricule) onConsultWithMatricule;
 
   const _IntegrationRequestForm({
-    required this.ecoles,
-    required this.isLoadingEcoles,
     required this.isLoadingRequest,
     required this.selectedEcoleName,
     required this.selectedEcoleCode,
@@ -283,7 +229,6 @@ class _IntegrationRequestForm extends StatefulWidget {
     required this.isDarkMode,
     required this.textSizeService,
     required this.onEcoleChanged,
-    required this.onRetryEcoles,
     required this.onConsultWithMatricule,
   });
 
@@ -294,7 +239,10 @@ class _IntegrationRequestForm extends StatefulWidget {
 
 class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   final TextEditingController _matriculeController = TextEditingController();
+  final TextEditingController _drenController = TextEditingController();
   int _currentStep = 0;
+  bool _isSearchingEcole = false;
+  String? _ecoleErrorMessage;
 
   @override
   void initState() {
@@ -309,7 +257,48 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
   @override
   void dispose() {
     _matriculeController.dispose();
+    _drenController.dispose();
     super.dispose();
+  }
+
+  // ── Étape 0 : recherche de l'école par code DREN (api2.vie-ecoles.com) ─────
+  Future<void> _searchEcole() async {
+    FocusScope.of(context).unfocus();
+
+    final codeDren = _drenController.text.trim();
+    if (codeDren.isEmpty) {
+      setState(() => _ecoleErrorMessage = 'Veuillez entrer le code DREN de l\'école');
+      return;
+    }
+
+    setState(() {
+      _isSearchingEcole = true;
+      _ecoleErrorMessage = null;
+    });
+
+    try {
+      final ecole = await EcoleEleveService.rechercherParCodeDren(codeDren);
+      widget.onEcoleChanged(ecole.code, ecole.nom);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _ecoleErrorMessage = _readableError(e));
+      }
+    } finally {
+      if (mounted) setState(() => _isSearchingEcole = false);
+    }
+  }
+
+  String _readableError(Object e) {
+    final errorString = e.toString();
+    final isNetworkError = errorString.contains('SocketException') ||
+        errorString.contains('ClientException') ||
+        errorString.contains('Failed host lookup') ||
+        errorString.contains('No address associated') ||
+        errorString.contains('Connection refused') ||
+        errorString.contains('Network is unreachable') ||
+        errorString.contains('Software caused connection abort');
+    if (isNetworkError) return 'Vérifiez votre connexion internet';
+    return errorString.replaceFirst('Exception: ', '');
   }
 
   String get _currentMatricule {
@@ -509,85 +498,90 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.isLoadingEcoles)
+        CustomTextInput(
+          label: 'Code DREN de l\'école',
+          hint: 'Ex: 002016',
+          icon: Icons.pin_outlined,
+          controller: _drenController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          required: true,
+        ),
+        const SizedBox(height: 12),
+        if (_ecoleErrorMessage != null) ...[
+          _buildInlineErrorBanner(_ecoleErrorMessage!),
+          const SizedBox(height: 12),
+        ],
+        CustomButton(
+          text: _isSearchingEcole ? 'Recherche en cours...' : 'Rechercher l\'école',
+          onPressed: _isSearchingEcole ? null : _searchEcole,
+          color: AppColors.integrationBlue,
+          icon: Icons.search_rounded,
+          isLoading: _isSearchingEcole,
+        ),
+        if (widget.selectedEcoleCode != null) ...[
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
+              color: Colors.green.withOpacity(isDark ? 0.12 : 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: isDark ? const Color(0xFF333333) : AppColors.screenDivider),
+              border: Border.all(color: Colors.green.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.screenOrange,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                    size: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Chargement des écoles...',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
+                Expanded(
+                  child: Text(
+                    widget.selectedEcoleName ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2A),
+                    ),
                   ),
                 ),
               ],
             ),
-          )
-        else if (widget.ecoles.isEmpty)
-          CustomErrorState(
-            title: 'Aucune école disponible',
-            message: 'Impossible de charger la liste des écoles pour le moment.',
-            onRetry: widget.onRetryEcoles,
-            retryText: 'Réessayer',
-            buttonIsLight: true,
-            buttonWidth: 200,
-            isLoading: false,
-          )
-        else
-          CustomSelectInput(
-            label: 'École',
-            value: widget.selectedEcoleName ?? '',
-            items: widget.ecoles.map((e) => e.nom).toList(),
-            onChanged: (selected) {
-              final ecole = widget.ecoles.firstWhere(
-                (e) => e.nom == selected,
-              );
-              widget.onEcoleChanged(ecole.code, selected);
-            },
-            isDarkMode: widget.isDarkMode,
-            required: true,
           ),
-        if (widget.ecoles.isNotEmpty && !widget.isLoadingEcoles) ...[
+        ] else ...[
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark 
-                  ? const Color(0xFF222222) 
+              color: isDark
+                  ? const Color(0xFF222222)
                   : const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDark 
-                    ? const Color(0xFF333333) 
+                color: isDark
+                    ? const Color(0xFF333333)
                     : const Color(0xFFE5E7EB),
               ),
             ),
             child: Row(
               children: [
                 Icon(
-                  Icons.info_outline_rounded, 
-                  color: isDark ? Colors.white54 : Colors.grey[600], 
+                  Icons.info_outline_rounded,
+                  color: isDark ? Colors.white54 : Colors.grey[600],
                   size: 16,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Sélectionnez une école pour consulter le statut de la demande d\'intégration',
+                    'Entrez le code DREN pour retrouver l\'école et consulter le statut de la demande d\'intégration',
                     style: TextStyle(
                       color: isDark ? Colors.white70 : const Color(0xFF4B5563),
                       fontSize: 12,
@@ -600,6 +594,33 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildInlineErrorBanner(String message) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red[400], size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Colors.red[700],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:parents_responsable/config/app_colors.dart';
 import 'package:parents_responsable/config/app_dimensions.dart';
 import 'package:parents_responsable/models/ecole.dart';
-import 'package:parents_responsable/models/etablissement_consultation.dart';
+import 'package:parents_responsable/models/code_dren_ecole.dart';
 import 'package:parents_responsable/services/integration_service.dart';
-import 'package:parents_responsable/services/consultation_api_service.dart';
+import 'package:parents_responsable/services/ecole_eleve_service.dart';
 import 'package:parents_responsable/services/text_size_service.dart';
 import 'package:parents_responsable/utils/auth_guard.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
@@ -13,7 +13,6 @@ import 'package:parents_responsable/widgets/components/custom_date_input.dart';
 import 'package:parents_responsable/widgets/components/custom_select_input.dart';
 import 'package:parents_responsable/widgets/components/custom_button.dart';
 import 'package:parents_responsable/widgets/components/custom_text_input.dart';
-import 'package:parents_responsable/widgets/components/custom_error_state.dart';
 import 'package:parents_responsable/widgets/custom_file_field.dart';
 import 'package:parents_responsable/widgets/custom_loader.dart';
 import 'package:parents_responsable/utils/notification_helper.dart';
@@ -84,7 +83,6 @@ class IntegrationFormContent extends StatefulWidget {
 
 class _IntegrationFormContentState extends State<IntegrationFormContent> {
   static const _actionColor = Color(0xFF3B82F6);
-  final ConsultationApiService _consultationApi = ConsultationApiService();
   final TextSizeService _textSizeService = TextSizeService();
 
   // ── Wizard state ────────────────────────────────────────────────────────
@@ -113,23 +111,14 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   // ── Sélection d'établissement ─────────────────────────────────────────────
   //
-  // La liste affichée vient uniquement de l'API de consultation
-  // (établissements limités aux ~7 déjà migrés, au lieu des ~90 de l'ancien
-  // /connecte/ecole) — la soumission de la demande d'intégration elle-même
-  // reste entièrement sur api2.vie-ecoles.com
-  // (IntegrationService.submitIntegrationRequest), qui n'existe pas côté API
-  // de consultation : on a donc besoin du code legacy (paramEcole) de
-  // l'établissement choisi pour que la suite du parcours fonctionne. Ce code
-  // est déjà résolu et attaché à chaque établissement par
-  // ConsultationApiService.getEtablissements() (mis en cache) : plus besoin
-  // d'appeler l'API legacy ici. Un établissement sans équivalent legacy n'a
-  // pas d'intégration en ligne possible pour l'instant.
-  List<EtablissementConsultation> _ecoles = [];
-  String? _selectedEcoleCode;
-  String? _selectedEcoleName;
-  String? _selectedEcoleParametre;
-  bool _isLoadingEcoles = false;
-  bool _hasAttemptedLoad = false;
+  // Recherche directe par code DREN via api2.vie-ecoles.com (même mécanisme
+  // que le wizard "Nouvelle Inscription", InscriptionBottomSheet) : le code
+  // renvoyé (CodeDrenEcole.code) est directement le code legacy attendu par
+  // IntegrationService.submitIntegrationRequest, pas besoin de résolution
+  // supplémentaire.
+  final TextEditingController _drenController = TextEditingController();
+  bool _isSearchingEcole = false;
+  CodeDrenEcole? _foundEcoleDren;
   String? _ecoleErrorMessage;
 
   // ── Champs de formulaire ─────────────────────────────────────────────────
@@ -182,7 +171,6 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     _textSizeService.addListener(() {
       if (mounted) setState(() {});
     });
-    _loadEcoles();
 
     _studentNameController.addListener(() {
       if (_studentNameController.text.isNotEmpty && _studentNameError) {
@@ -253,6 +241,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
   @override
   void dispose() {
+    _drenController.dispose();
     _studentNameController.dispose();
     _studentFirstNameController.dispose();
     _matriculeController.dispose();
@@ -276,38 +265,47 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  Future<void> _loadEcoles() async {
-    setState(() {
-      _isLoadingEcoles = true;
-      _ecoleErrorMessage = null;
-    });
-    try {
-      final etablissements = await _consultationApi.getEtablissements();
+  // Étape 0 : recherche de l'école par code DREN (api2.vie-ecoles.com).
+  Future<void> _searchEcole() async {
+    FocusScope.of(context).unfocus();
 
-      setState(() {
-        _ecoles = etablissements;
-        _isLoadingEcoles = false;
-        _hasAttemptedLoad = true;
-      });
-      if (etablissements.isEmpty && mounted) {
-        _showSnack('Aucun établissement disponible', isError: true);
+    final codeDren = _drenController.text.trim();
+    if (codeDren.isEmpty) {
+      setState(() => _ecoleErrorMessage = 'Veuillez entrer le code DREN de l\'école');
+      return;
+    }
+
+    setState(() {
+      _isSearchingEcole = true;
+      _ecoleErrorMessage = null;
+      _foundEcoleDren = null;
+    });
+
+    try {
+      final ecole = await EcoleEleveService.rechercherParCodeDren(codeDren);
+      if (mounted) {
+        setState(() => _foundEcoleDren = ecole);
       }
     } catch (e) {
-      setState(() {
-        _isLoadingEcoles = false;
-        _ecoleErrorMessage = 'Erreur chargement des établissements';
-        _hasAttemptedLoad = true;
-      });
-      final errorStr = e.toString().toLowerCase();
-      final isNetworkError =
-          errorStr.contains('pas de connexion internet') ||
-          errorStr.contains('failed host lookup') ||
-          errorStr.contains('no address associated');
-
-      if (!isNetworkError && mounted) {
-        _showSnack('Erreur : ${e.toString().replaceAll('Exception: ', '')}', isError: true);
+      if (mounted) {
+        setState(() => _ecoleErrorMessage = _readableError(e));
       }
+    } finally {
+      if (mounted) setState(() => _isSearchingEcole = false);
     }
+  }
+
+  String _readableError(Object e) {
+    final errorString = e.toString();
+    final isNetworkError = errorString.contains('SocketException') ||
+        errorString.contains('ClientException') ||
+        errorString.contains('Failed host lookup') ||
+        errorString.contains('No address associated') ||
+        errorString.contains('Connection refused') ||
+        errorString.contains('Network is unreachable') ||
+        errorString.contains('Software caused connection abort');
+    if (isNetworkError) return 'Vérifiez votre connexion internet';
+    return errorString.replaceFirst('Exception: ', '');
   }
 
   String _convertDateFormat(String inputDate) {
@@ -353,14 +351,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0:
-        if (_selectedEcoleCode == null) {
-          NotificationHelper.showError('Veuillez sélectionner un établissement');
-          return false;
-        }
-        if (_selectedEcoleParametre == null) {
-          NotificationHelper.showError(
-            'L\'intégration en ligne n\'est pas encore disponible pour cet établissement.',
-          );
+        if (_foundEcoleDren == null) {
+          NotificationHelper.showError('Veuillez rechercher et trouver votre école');
           return false;
         }
         return true;
@@ -402,7 +394,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   bool _canNavigateToNext() {
     switch (_currentStep) {
       case 0:
-        return _selectedEcoleCode != null;
+        return _foundEcoleDren != null;
 
       case 1:
         return _studentNameController.text.isNotEmpty ||
@@ -550,7 +542,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
 
     try {
       final result = await IntegrationService.submitIntegrationRequest(
-        _selectedEcoleParametre ?? '',
+        _foundEcoleDren?.code ?? '',
         requestData,
       );
       Navigator.of(context).pop();
@@ -918,86 +910,91 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
   }
 
   Widget _buildEcoleField() {
-    if (_isLoadingEcoles && !_hasAttemptedLoad) {
-      return _buildLoadingField('Chargement des établissements...');
-    }
-    if (_isLoadingEcoles && _ecoles.isEmpty) {
-      return CustomErrorState(
-        title: 'Chargement des établissements...',
-        message: 'Veuillez patienter pendant le chargement...',
-        onRetry: _loadEcoles,
-        retryText: 'Réessayer',
-        buttonIsLight: true,
-        buttonWidth: 200,
-        isLoading: true,
-      );
-    }
-    if (_isLoadingEcoles) {
-      return _buildLoadingField('Chargement des établissements...');
-    }
-    if (_ecoles.isEmpty) {
-      return CustomErrorState(
-        title: 'Aucun établissement disponible',
-        message: _ecoleErrorMessage ?? 'Impossible de charger la liste des établissements pour le moment.',
-        onRetry: _loadEcoles,
-        retryText: 'Réessayer',
-        buttonIsLight: true,
-        buttonWidth: 200,
-        isLoading: false,
-      );
-    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 6),
-        CustomSelectInput(
-          label: 'Établissement',
-          value: _selectedEcoleName ?? 'Sélectionner un établissement...',
-          items: _ecoles.map((e) => e.nom).toList(),
-          onChanged: (String selected) {
-            final ecole = _ecoles.firstWhere(
-              (e) => e.nom == selected,
-            );
-            setState(() {
-              _selectedEcoleCode = ecole.code;
-              _selectedEcoleName = selected;
-              _selectedEcoleParametre = ecole.paramEcole;
-              _ecoleErrorMessage = null;
-            });
-          },
-          isDarkMode: Theme.of(context).brightness == Brightness.dark,
+        CustomTextInput(
+          label: 'Code DREN de l\'école',
+          hint: 'Ex: 002016',
+          icon: Icons.pin_outlined,
+          controller: _drenController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           required: true,
-          autoFocusSearch: false,
         ),
+        const SizedBox(height: 12),
+        if (_ecoleErrorMessage != null) ...[
+          _buildErrorBanner(_ecoleErrorMessage!),
+          const SizedBox(height: 12),
+        ],
+        CustomButton(
+          text: _isSearchingEcole ? 'Recherche en cours...' : 'Rechercher l\'école',
+          onPressed: _isSearchingEcole ? null : _searchEcole,
+          color: AppColors.integrationBlue,
+          icon: Icons.search_rounded,
+          isLoading: _isSearchingEcole,
+        ),
+        if (_foundEcoleDren != null) ...[
+          const SizedBox(height: 12),
+          _buildEcoleFoundCard(_foundEcoleDren!),
+        ],
       ],
     );
   }
 
-  Widget _buildLoadingField(String msg) {
+  Widget _buildEcoleFoundCard(CodeDrenEcole ecole) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final localisation = [
+      ecole.ville,
+      ecole.adresse,
+    ].where((v) => v != null && v.isNotEmpty).join(', ');
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF222222) : AppColors.screenSurface,
+        color: Colors.green.withOpacity(isDark ? 0.12 : 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? const Color(0xFF333333) : AppColors.screenDivider),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppColors.screenOrange,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.green,
+              size: 20,
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            msg,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark ? Colors.white70 : AppColors.screenTextSecondary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ecole.nom,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(14),
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2A),
+                  ),
+                ),
+                if (localisation.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    localisation,
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(12),
+                      color: isDark ? Colors.white70 : const Color(0xFF8A8A9E),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

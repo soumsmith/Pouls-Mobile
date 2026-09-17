@@ -23,22 +23,12 @@ const _kOrangeGradient = LinearGradient(
   end: Alignment.bottomRight,
 );
 
-// ─── Couleurs spécifiques pour la boutique ───────────────────────────────────
-const _kShopGreen = Color(0xFF4CAF50);
-const _kShopGreenLight = Color(0xFF81C784);
-
 // ─── Couleurs spécifiques pour Astuces & Conseils ────────────────────────────
 const _kTipsBlue = Color(0xFF5B8DEF);
 const _kTipsBlueLight = Color(0xFF7DA8F5);
 
 const _kTipsBlueGradient = LinearGradient(
   colors: [_kTipsBlueLight, _kTipsBlue],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
-
-const _kShopGreenGradient = LinearGradient(
-  colors: [_kShopGreenLight, _kShopGreen],
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
 );
@@ -62,9 +52,9 @@ const _navItems = [
     label: 'Accueil',
   ),
   _NavItem(
-    icon: Icons.shopping_bag_outlined,
-    activeIcon: Icons.shopping_bag_rounded,
-    label: 'Boutique',
+    icon: Icons.chat_bubble_outline_rounded,
+    activeIcon: Icons.chat_bubble_rounded,
+    label: 'Messagerie',
   ),
   _NavItem(
     icon: Icons.business_outlined,
@@ -232,8 +222,10 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
                     item: _navItems[i],
                     isSelected: widget.currentIndex == i,
                     bounceAnim: _bounceAnims[i],
-                    showBadge: i == 1, // Boutique = index 1
-                    badgeCount: i == 1 ? _cartItemCount : 0,
+                    // Boutique (badge panier) masquée pour le moment — plus
+                    // d'onglet auquel rattacher ce badge.
+                    showBadge: false,
+                    badgeCount: 0,
                     onTap: () => _handleTap(i),
                   ),
                 ),
@@ -304,11 +296,7 @@ class _NavItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unselectedColor = AppColors.bottomNavUnselected(context);
-    final activeColor = item.label == 'Boutique'
-        ? _kShopGreen
-        : item.label == 'Astuces'
-        ? _kTipsBlue
-        : _kOrange;
+    final activeColor = item.label == 'Astuces' ? _kTipsBlue : _kOrange;
 
     return GestureDetector(
       onTap: onTap,
@@ -367,9 +355,7 @@ class _NavItemWidget extends StatelessWidget {
               height: isSelected ? 3 : 0,
               decoration: BoxDecoration(
                 gradient: isSelected
-                    ? (item.label == 'Boutique'
-                          ? _kShopGreenGradient
-                          : item.label == 'Astuces'
+                    ? (item.label == 'Astuces'
                           ? _kTipsBlueGradient
                           : _kOrangeGradient)
                     : null,

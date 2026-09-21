@@ -33,6 +33,21 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Les téléphones réels tournent en arm64-v8a (récents) ou armeabi-v7a
+        // (anciens). x86/x86_64 ne sert qu'aux émulateurs et Chromebooks
+        // Intel, quasi inexistants côté parents/écoles ciblés par l'appli.
+        // Les retirer allège l'AAB (Play Store livre déjà un split par ABI,
+        // mais l'AAB uploadé et les tests via bundletool en profitent aussi).
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
+
+        // L'app est entièrement en français (aucune gestion de Locale dans
+        // main.dart) : restreindre les ressources traduites embarquées par
+        // Firebase/Play Services/AndroidX aux langues réellement utiles
+        // évite de livrer des chaînes pour des dizaines de langues inutiles.
+        resourceConfigurations += listOf("fr", "en")
     }
 
     signingConfigs {
@@ -53,6 +68,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    // `ndk.abiFilters` ne suffit pas : les .so précompilés livrés par les
+    // AAR de certains plugins (ex: ffmpeg_kit) pour x86_64 passent quand
+    // même dans le merge. On les exclut explicitement du packaging final.
+    packaging {
+        jniLibs {
+            excludes += setOf("**/x86_64/**", "**/x86/**")
         }
     }
 }

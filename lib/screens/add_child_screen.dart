@@ -59,15 +59,12 @@ class _AddChildScreenState extends State<AddChildScreen>
   final TextEditingController _adresseParentController =
       TextEditingController();
 
-  // Étape courante du wizard : 0 = code DREN, 1 = matricule
-  int _currentStep = 0;
-
-  // Étape 1 : recherche de l'école par code DREN (api2.vie-ecoles.com)
+  // Recherche de l'école par code DREN (api2.vie-ecoles.com)
   final TextEditingController _drenController = TextEditingController();
   bool _isSearchingEcole = false;
   CodeDrenEcole? _foundEcole;
 
-  // Étape 2 : recherche de l'élève par matricule
+  // Recherche de l'élève par matricule (une fois l'école trouvée)
   final TextEditingController _matriculeController = TextEditingController();
   bool _isSearching = false;
   Map<String, dynamic>? _foundEleve;
@@ -265,25 +262,22 @@ class _AddChildScreenState extends State<AddChildScreen>
     }
   }
 
-  void _goToMatriculeStep() {
-    FocusScope.of(context).unfocus();
-    if (_foundEcole == null) return;
-    setState(() {
-      _currentStep = 1;
-      _errorMessage = null;
-    });
-  }
-
-  void _backToEcoleStep() {
+  /// "Retour" — réinitialise la recherche d'école pour repartir de zéro
+  /// (l'ancien bouton orange "Rechercher l'école" devient ce bouton une fois
+  /// l'école trouvée).
+  void _resetEcoleSearch() {
     FocusScope.of(context).unfocus();
     setState(() {
-      _currentStep = 0;
-      _errorMessage = null;
+      _drenController.clear();
+      _matriculeController.clear();
+      _foundEcole = null;
       _foundEleve = null;
+      _resolvedSchoolId = null;
+      _errorMessage = null;
     });
   }
 
-  // ─── ÉTAPE 2 : recherche de l'élève par matricule ──────────────────────────
+  // ─── Recherche de l'élève par matricule (une fois l'école trouvée) ─────────
   Future<void> _searchEleve() async {
     FocusScope.of(context).unfocus();
 
@@ -778,7 +772,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  _currentStep == 0
+                  _foundEcole == null
                       ? 'Entrez le code DREN de l\'école'
                       : 'Entrez le matricule scolaire pour retrouver votre enfant',
                   textAlign: TextAlign.center,
@@ -830,96 +824,86 @@ class _AddChildScreenState extends State<AddChildScreen>
                     letterSpacing: -0.3,
                   ),
                 ),
-                const Spacer(),
-                _buildStepIndicator(),
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 16, 0, 20),
-            child: _currentStep == 0 ? _buildEcoleStep() : _buildMatriculeStep(),
+            child: _buildSearchForm(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStepIndicator() {
-    Widget dot(bool active) => Container(
-      width: active ? 20 : 7,
-      height: 7,
-      decoration: BoxDecoration(
-        color: active ? AppColors.screenOrange : AppColors.screenDivider,
-        borderRadius: BorderRadius.circular(4),
-      ),
-    );
+  // ─── FORMULAIRE DE RECHERCHE (école puis élève, sur un seul écran) ─────────
+  Widget _buildSearchForm() {
+    final ecoleFound = _foundEcole != null;
 
-    return Row(
-      children: [
-        dot(_currentStep == 0),
-        const SizedBox(width: 5),
-        dot(_currentStep == 1),
-        const SizedBox(width: 8),
-        Text(
-          _currentStep == 0 ? 'Étape 1/2' : 'Étape 2/2',
-          style: TextStyle(
-            fontSize: _textSizeService.getScaledFontSize(11),
-            fontWeight: FontWeight.w600,
-            color: AppColors.screenTextSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─── ÉTAPE 1 : CODE DREN ────────────────────────────────────────────────────
-  Widget _buildEcoleStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel('Code DREN de l\'école', required: true),
-        const SizedBox(height: 6),
-        _buildTextField(
-          controller: _drenController,
-          hintText: 'Ex: 002016',
-          icon: Icons.pin_outlined,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          onSubmitted: (_) => _searchEcole(),
-        ),
+        if (!ecoleFound) ...[
+          _fieldLabel('Code DREN de l\'école', required: true),
+          const SizedBox(height: 6),
+          _buildTextField(
+            controller: _drenController,
+            hintText: 'Ex: 002016',
+            icon: Icons.pin_outlined,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onSubmitted: (_) => _searchEcole(),
+          ),
+        ],
+        if (ecoleFound) ...[
+          _buildEcoleFoundCard(_foundEcole!),
+          const SizedBox(height: 20),
+          _fieldLabel('Matricule de l\'élève', required: true),
+          const SizedBox(height: 6),
+          _buildTextField(
+            controller: _matriculeController,
+            hintText: 'Ex: 24047355B',
+            icon: Icons.badge_outlined,
+            keyboardType: TextInputType.text,
+            onSubmitted: (_) => _searchEleve(),
+          ),
+        ],
         if (_errorMessage != null) ...[
           const SizedBox(height: 12),
           _buildErrorBanner(),
         ],
         const SizedBox(height: 20),
-        _buildOrangeButton(
-          label: _isSearchingEcole ? 'Recherche en cours...' : 'Rechercher l\'école',
-          onTap: _isSearchingEcole ? null : _searchEcole,
-          isLoading: _isSearchingEcole,
-          icon: Icons.search_rounded,
-        ),
-        if (_foundEcole != null) ...[
-          const SizedBox(height: 20),
-          _buildEcoleFoundCard(_foundEcole!),
-          const SizedBox(height: 16),
+        if (!ecoleFound)
+          _buildOrangeButton(
+            label: _isSearchingEcole ? 'Recherche en cours...' : 'Rechercher l\'école',
+            onTap: _isSearchingEcole ? null : _searchEcole,
+            isLoading: _isSearchingEcole,
+            icon: Icons.search_rounded,
+          )
+        else
           Row(
             children: [
-              Expanded(child: _buildRecommendSchoolButton()),
+              Expanded(
+                child: _buildOrangeButton(
+                  label: 'Retour',
+                  onTap: _resetEcoleSearch,
+                  icon: Icons.arrow_back_rounded,
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildOrangeButton(
-                  label: 'Continuer',
-                  onTap: _goToMatriculeStep,
+                  label: _isSearching ? 'Recherche en cours...' : 'Continuer',
+                  onTap: _isSearching ? null : _searchEleve,
+                  isLoading: _isSearching,
                   icon: Icons.arrow_forward_rounded,
                   color: AppColors.success,
                 ),
               ),
             ],
           ),
-        ] else ...[
-          const SizedBox(height: 16),
-          _buildRecommendSchoolButton(),
-        ],
+        const SizedBox(height: 16),
+        _buildRecommendSchoolButton(),
       ],
     );
   }
@@ -931,53 +915,78 @@ class _AddChildScreenState extends State<AddChildScreen>
     ].where((v) => v != null && v.isNotEmpty).join(', ');
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
       decoration: BoxDecoration(
-        color: AppColors.successLight.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withOpacity(0.3)),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.success.withValues(alpha: 0.10),
+            AppColors.success.withValues(alpha: 0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.15),
+              gradient: LinearGradient(
+                colors: [AppColors.success, AppColors.success.withValues(alpha: 0.75)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_circle_rounded,
-              color: AppColors.success,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ecole.nom,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(14),
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimary,
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.success.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
                 ),
-                if (localisation.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    localisation,
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(12),
-                      color: AppColors.screenTextSecondary,
-                    ),
-                  ),
-                ],
               ],
             ),
+            child: const Icon(
+              Icons.check_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
           ),
+          const SizedBox(height: 12),
+          Text(
+            'École trouvée !',
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(15),
+              fontWeight: FontWeight.w800,
+              color: AppColors.success,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            ecole.nom,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(15),
+              fontWeight: FontWeight.w700,
+              color: AppColors.screenTextPrimary,
+            ),
+          ),
+          if (localisation.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(
+              localisation,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(12),
+                color: AppColors.screenTextSecondary,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1027,78 +1036,6 @@ class _AddChildScreenState extends State<AddChildScreen>
   }
 
   // ─── ÉTAPE 2 : MATRICULE ────────────────────────────────────────────────────
-  Widget _buildMatriculeStep() {
-    final ecole = _foundEcole;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (ecole != null)
-          GestureDetector(
-            onTap: _backToEcoleStep,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.screenSurface,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.school_outlined,
-                    size: 18,
-                    color: AppColors.screenOrange,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      ecole.nom,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: _textSizeService.getScaledFontSize(13),
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.screenTextPrimary,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    'Changer',
-                    style: TextStyle(
-                      fontSize: _textSizeService.getScaledFontSize(12),
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.screenTextSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: 16),
-        _fieldLabel('Matricule de l\'élève', required: true),
-        const SizedBox(height: 6),
-        _buildTextField(
-          controller: _matriculeController,
-          hintText: 'Ex: 24047355B',
-          icon: Icons.badge_outlined,
-          keyboardType: TextInputType.text,
-          onSubmitted: (_) => _searchEleve(),
-        ),
-        if (_errorMessage != null) ...[
-          const SizedBox(height: 12),
-          _buildErrorBanner(),
-        ],
-        const SizedBox(height: 20),
-        _buildOrangeButton(
-          label: _isSearching ? 'Recherche en cours...' : 'Rechercher mon enfant',
-          onTap: _isSearching ? null : _searchEleve,
-          isLoading: _isSearching,
-          icon: Icons.search_rounded,
-        ),
-      ],
-    );
-  }
-
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,

@@ -248,10 +248,15 @@ class EcoleEleveService {
       print('   - Body length: ${response.body.length} caractères');
 
       if (response.statusCode == 200) {
+        print('📄 Corps brut de la réponse:');
+        print(response.body);
+
         final Map<String, dynamic> data = json.decode(response.body);
+        print('🔑 Clés au premier niveau de la réponse: ${data.keys.toList()}');
 
         if (data['data'] != null) {
           final eleveData = data['data'] as Map<String, dynamic>;
+          print('🔑 Clés de data.data: ${eleveData.keys.toList()}');
 
           // Ajouter le code école aux données de l'élève
           eleveData['ecole'] = ecoleCode;
@@ -266,6 +271,7 @@ class EcoleEleveService {
           print('   - Sexe: ${eleveData['sexe']}');
           print('   - Date de naissance: ${eleveData['datenaissance']}');
           print('   - Code école ajouté: $ecoleCode');
+          print('   - 🖼️ photo: ${eleveData['photo']}');
           print('═══════════════════════════════════════════════════════════');
           print('');
           return eleveData;

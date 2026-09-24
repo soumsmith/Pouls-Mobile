@@ -93,6 +93,7 @@ class ConsultationApiService {
       );
     } else {
       print('✅ API CONSULTATION — $label → ${response.statusCode}');
+      print('📦 Body: ${response.body}');
     }
   }
 

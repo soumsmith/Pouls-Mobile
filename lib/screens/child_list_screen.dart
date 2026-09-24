@@ -500,6 +500,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   List<DevoirConsultation>? _devoirs;
   bool _isLoadingHomework = false;
   StateSetter? _homeworkModalSetState;
+  String? _devoirsErrorMessage;
 
   // Progression du programme (API de consultation, §4.10)
   List<ProgressionConsultation>? _progressions;
@@ -1422,6 +1423,7 @@ class _ChildListScreenState extends State<ChildListScreen>
   void _showHomeworkBottomSheet() {
     _devoirs = null;
     _isLoadingHomework = false;
+    _devoirsErrorMessage = null;
     bool hasAttemptedLoad = false;
 
     ReusableBottomSheet.show(
@@ -1464,7 +1466,10 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (mounted) setState(fn);
     }
 
-    updateState(() => _isLoadingHomework = true);
+    updateState(() {
+      _isLoadingHomework = true;
+      _devoirsErrorMessage = null;
+    });
 
     try {
       final schoolId = await _resolveConsultationSchoolId();
@@ -1483,11 +1488,34 @@ class _ChildListScreenState extends State<ChildListScreen>
         orElse: () => annees.first,
       );
 
+      // La classe de l'élève pour CETTE année (doc §4.7) : plus fiable que
+      // la classe capturée à l'ajout de l'enfant, qui change chaque année
+      // (même correction que _loadProgressions).
+      String? classeRef;
+      try {
+        final classes = await _consultationApi.getClasses(
+          schoolId,
+          matricule,
+          anneeRef: annee.ref,
+        );
+        classeRef = classes.isNotEmpty ? classes.first.classeRef : null;
+      } catch (e) {
+        if (e.toString().contains('inscrit dans aucune classe')) {
+          throw Exception(
+            '${widget.child.firstName} n\'a pas encore été affecté(e) à une '
+            'classe pour l\'année ${annee.libelle} par '
+            '${widget.child.establishment ?? "l\'établissement"}. '
+            'Contactez l\'école pour finaliser l\'inscription.',
+          );
+        }
+        rethrow;
+      }
+
       final devoirs = await _consultationApi.getDevoirs(
         schoolId,
         matricule,
         anneeRef: annee.ref,
-        classeRef: _persistedClasseRef,
+        classeRef: classeRef,
       );
 
       updateState(() {
@@ -1498,6 +1526,7 @@ class _ChildListScreenState extends State<ChildListScreen>
       updateState(() {
         _devoirs = [];
         _isLoadingHomework = false;
+        _devoirsErrorMessage = e.toString().replaceFirst('Exception: ', '');
       });
       print('❌ Erreur lors du chargement des devoirs: $e');
     }
@@ -10895,16 +10924,21 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
 
     if (_devoirs == null || _devoirs!.isEmpty) {
+      final hasError = _devoirsErrorMessage != null;
       return CustomErrorState(
-        title: 'Aucun devoir enregistré',
-        message:
-            'Aucun devoir n\'a été enregistré récemment dans le cahier de '
-            'textes de cet élève.',
-        icon: Icons.menu_book_outlined,
+        title: hasError ? 'Impossible de charger les devoirs' : 'Aucun devoir enregistré',
+        message: hasError
+            ? _devoirsErrorMessage!
+            : 'Aucun devoir n\'a été enregistré récemment dans le cahier de '
+                'textes de cet élève.',
+        icon: hasError ? Icons.school_outlined : Icons.menu_book_outlined,
         iconColor: _homeworkColor,
         retryText: 'Réessayer',
         onRetry: () {
-          setState(() => _devoirs = null);
+          setState(() {
+            _devoirs = null;
+            _devoirsErrorMessage = null;
+          });
           _loadDevoirs();
         },
       );
@@ -13711,12 +13745,16 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
                 borderRadius: BorderRadius.circular(20),
               ),
               title: Row(
-                children: const [
-                  Icon(Icons.cancel_outlined, color: Colors.red, size: 24),
-                  SizedBox(width: 8),
+                children: [
+                  const Icon(Icons.cancel_outlined, color: Colors.red, size: 24),
+                  const SizedBox(width: 8),
                   Text(
                     'Annuler la commande',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                 ],
               ),
@@ -13725,9 +13763,13 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Veuillez sélectionner le motif d\'annulation de votre commande :',
-                      style: TextStyle(fontSize: 13, height: 1.4),
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     ...commonReasons.map((reason) {
@@ -13822,7 +13864,10 @@ class _OrderCardCancelButtonState extends State<_OrderCardCancelButton> {
                             borderSide: const BorderSide(color: Colors.red),
                           ),
                         ),
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
                       ),
                     ],
                   ],

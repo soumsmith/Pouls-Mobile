@@ -1666,11 +1666,12 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppColors.screenCardThemed(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1681,24 +1682,27 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: _AppColors.slate300,
+                color: AppColors.screenDividerThemed(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Sélectionner un ticket',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: _AppColors.slate900,
+              color: AppColors.screenTextPrimaryThemed(context),
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Choisissez votre catégorie et la quantité',
-            style: TextStyle(fontSize: 13, color: _AppColors.slate500),
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondaryThemed(context),
+            ),
           ),
           const SizedBox(height: 20),
 
@@ -1737,8 +1741,8 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _AppColors.slate700,
-                    side: const BorderSide(color: _AppColors.slate300),
+                    foregroundColor: AppColors.screenTextPrimaryThemed(context),
+                    side: BorderSide(color: AppColors.screenBorder(context)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1759,7 +1763,9 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _AppColors.indigo,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: _AppColors.slate300,
+                    disabledBackgroundColor: isDark
+                        ? const Color(0xFF333333)
+                        : _AppColors.slate300,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1783,6 +1789,7 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
 
   Widget _buildCategoryTile(TicketCategory category) {
     final isSelected = _selectedCategory?.id == category.id;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -1796,7 +1803,9 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? _AppColors.indigoLight : AppColors.screenCardThemed(context),
+          color: isSelected
+              ? (isDark ? _AppColors.indigo.withOpacity(0.18) : _AppColors.indigoLight)
+              : AppColors.screenCardThemed(context),
           borderRadius: BorderRadius.circular(14),
           boxShadow: AppDimensions.getSettingsCardShadow(context),
         ),
@@ -1816,7 +1825,7 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                     border: Border.all(
                       color: isSelected
                           ? _AppColors.indigo
-                          : _AppColors.slate300,
+                          : AppColors.screenBorder(context),
                       width: 1.5,
                     ),
                   ),
@@ -1835,18 +1844,18 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                     children: [
                       Text(
                         category.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: _AppColors.slate900,
+                          color: AppColors.screenTextPrimaryThemed(context),
                         ),
                       ),
                       if (category.description.isNotEmpty)
                         Text(
                           category.description,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: _AppColors.slate500,
+                            color: AppColors.screenTextSecondaryThemed(context),
                           ),
                         ),
                     ],
@@ -1865,9 +1874,9 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                     ),
                     Text(
                       '${category.quantity} dispo',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: _AppColors.slate500,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -1879,12 +1888,12 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Quantité',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: _AppColors.slate700,
+                      color: AppColors.screenTextPrimaryThemed(context),
                     ),
                   ),
                   Row(
@@ -1903,10 +1912,10 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         child: Text(
                           '$_qty',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: _AppColors.slate900,
+                            color: AppColors.screenTextPrimaryThemed(context),
                           ),
                         ),
                       ),
@@ -1977,7 +1986,7 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
               width: 54,
               height: 54,
               decoration: BoxDecoration(
-                color: _AppColors.slate100,
+                color: AppColors.screenDividerThemed(context),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(
@@ -1987,9 +1996,12 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Aucune catégorie disponible',
-              style: TextStyle(fontSize: 13, color: _AppColors.slate500),
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.screenTextSecondaryThemed(context),
+              ),
             ),
           ],
         ),
@@ -2017,12 +2029,16 @@ class _QtyBtn extends StatelessWidget {
         width: 30,
         height: 30,
         decoration: BoxDecoration(
-          color: enabled ? _AppColors.indigo : _AppColors.slate100,
+          color: enabled
+              ? _AppColors.indigo
+              : AppColors.screenDividerThemed(context),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
           icon,
-          color: enabled ? Colors.white : _AppColors.slate300,
+          color: enabled
+              ? Colors.white
+              : AppColors.screenTextSecondaryThemed(context),
           size: 16,
         ),
       ),
@@ -2048,6 +2064,7 @@ class _ConfirmTicketDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = (category.price * quantity).toStringAsFixed(2);
     return Dialog(
+      backgroundColor: AppColors.screenCardThemed(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -2055,19 +2072,19 @@ class _ConfirmTicketDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Confirmer la commande',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: _AppColors.slate900,
+                color: AppColors.screenTextPrimaryThemed(context),
               ),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: _AppColors.slate100,
+                color: AppColors.screenDividerThemed(context),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -2075,19 +2092,19 @@ class _ConfirmTicketDialog extends StatelessWidget {
                 children: [
                   Text(
                     category.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: _AppColors.slate900,
+                      color: AppColors.screenTextPrimaryThemed(context),
                     ),
                   ),
                   if (category.description.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       category.description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: _AppColors.slate500,
+                        color: AppColors.screenTextSecondaryThemed(context),
                       ),
                     ),
                   ],
@@ -2097,7 +2114,7 @@ class _ConfirmTicketDialog extends StatelessWidget {
                     value: '${category.price} FCFA',
                   ),
                   _SummaryRow(label: 'Quantité', value: '$quantity'),
-                  const Divider(height: 16, color: _AppColors.slate300),
+                  Divider(height: 16, color: AppColors.screenBorder(context)),
                   _SummaryRow(
                     label: 'Total',
                     value: '$total FCFA',
@@ -2114,15 +2131,13 @@ class _ConfirmTicketDialog extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: _AppColors.slate300),
+                      foregroundColor: AppColors.screenTextPrimaryThemed(context),
+                      side: BorderSide(color: AppColors.screenBorder(context)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
-                      'Annuler',
-                      style: TextStyle(color: _AppColors.slate700),
-                    ),
+                    child: const Text('Annuler'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -2174,14 +2189,17 @@ class _SummaryRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 13, color: _AppColors.slate500),
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.screenTextSecondaryThemed(context),
+            ),
           ),
           Text(
             value,
             style: TextStyle(
               fontSize: bold ? 15 : 13,
               fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-              color: valueColor ?? _AppColors.slate900,
+              color: valueColor ?? AppColors.screenTextPrimaryThemed(context),
             ),
           ),
         ],
@@ -2199,22 +2217,23 @@ class _LoadingDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: AppColors.screenCardThemed(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: const Padding(
-        padding: EdgeInsets.all(28),
+      child: Padding(
+        padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(
+            const CircularProgressIndicator(
               color: _AppColors.indigo,
               strokeWidth: 2.5,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'Traitement en cours…',
               style: TextStyle(
                 fontSize: 14,
-                color: _AppColors.slate700,
+                color: AppColors.screenTextPrimaryThemed(context),
                 fontWeight: FontWeight.w500,
               ),
             ),

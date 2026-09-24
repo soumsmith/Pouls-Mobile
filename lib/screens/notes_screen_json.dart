@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import '../config/app_colors.dart';
 import '../models/annee_consultation.dart';
+import '../models/periode_consultation.dart';
 import '../models/bulletin_consultation.dart';
 import '../services/consultation_api_service.dart';
 import '../utils/notification_helper.dart';
@@ -46,9 +47,27 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   AnneeConsultation? _selectedAnnee;
   bool _isLoadingYears = false;
 
-  // Un bulletin par période ayant des notes pour l'année sélectionnée
-  // (doc §4.8) : changer de période n'a donc pas besoin d'un nouvel appel.
-  List<BulletinConsultation> _bulletinsAnnee = [];
+  // Périodes de l'année sélectionnée (léger : ref+libellé, une seule requête
+  // GET .../periodes) — permet de peupler le filtre "Période" sans avoir à
+  // charger le bulletin de chacune d'entre elles à l'avance.
+  List<PeriodeConsultation> _periodesAnnee = [];
+
+  // Bulletins déjà chargés pour l'année sélectionnée, par periodeRef : un
+  // seul appel GET .../bulletin est fait au chargement de l'écran (période
+  // par défaut), les autres périodes ne sont chargées qu'à la demande
+  // (sélection explicite via le filtre) — jamais plusieurs requêtes en
+  // rafale à l'ouverture de l'écran.
+  final Map<String, BulletinConsultation> _bulletinsCache = {};
+
+  /// Classe de l'élève déjà résolue par année (voir [_resolveClasseRef]) :
+  /// évite de rappeler GET .../classes à chaque changement de période.
+  final Map<String, String?> _classeRefCache = {};
+
+  List<BulletinConsultation> get _bulletinsAnnee => _periodesAnnee
+      .map((p) => _bulletinsCache[p.ref])
+      .whereType<BulletinConsultation>()
+      .toList();
+
   BulletinConsultation? _selectedBulletin;
   bool _isLoading = true;
 
@@ -128,6 +147,72 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     }
   }
 
+  /// La classe de l'élève pour l'année donnée (doc §4.7) : plus fiable que
+  /// `widget.classeRef` (capturé à l'ajout de l'enfant, jamais mis à jour
+  /// ensuite et pas toujours renseigné) — même correction que
+  /// `_loadProgressions`/le cahier de textes dans child_list_screen.dart.
+  /// Repli sur `widget.classeRef` si la résolution échoue. Mise en cache par
+  /// année : ne rappelle pas GET .../classes à chaque changement de période.
+  Future<String?> _resolveClasseRef(String anneeRef) async {
+    if (_classeRefCache.containsKey(anneeRef)) {
+      return _classeRefCache[anneeRef];
+    }
+    String? resolved = widget.classeRef;
+    try {
+      final classes = await _consultationApi.getClasses(
+        widget.schoolId,
+        widget.matricule,
+        anneeRef: anneeRef,
+      );
+      if (classes.isNotEmpty) resolved = classes.first.classeRef;
+    } catch (_) {
+      // Ignoré : repli sur widget.classeRef.
+    }
+    _classeRefCache[anneeRef] = resolved;
+    return resolved;
+  }
+
+  PeriodeConsultation? _findPeriode(String? periodeRef) {
+    if (periodeRef == null) return null;
+    for (final p in _periodesAnnee) {
+      if (p.ref == periodeRef) return p;
+    }
+    return null;
+  }
+
+  /// Périodes de `anneeRef` et bulletin de la première d'entre elles
+  /// uniquement (période par défaut) — une seule requête GET .../bulletin,
+  /// jamais une par période. GET .../bulletin (singulier, avec periode+
+  /// classe) — GET .../bulletins (pluriel, sans periode) vérifié en
+  /// conditions réelles pour renvoyer une réponse incomplète/erronée côté
+  /// serveur, malgré la doc §4.8. Un 404 signale une période sans notes pour
+  /// l'instant : traité comme "pas de bulletin", pas une erreur bloquante.
+  Future<
+      ({List<PeriodeConsultation> periodes, BulletinConsultation? bulletin})>
+      _loadDefaultBulletinForAnnee(AnneeConsultation annee) async {
+    final periodes = await _consultationApi.getPeriodes(
+      widget.schoolId,
+      annee.ref,
+    );
+    if (periodes.isEmpty) return (periodes: periodes, bulletin: null);
+
+    final classeRef = await _resolveClasseRef(annee.ref);
+    try {
+      final bulletin = await _consultationApi.getBulletin(
+        widget.schoolId,
+        widget.matricule,
+        anneeRef: annee.ref,
+        periodeRef: periodes.first.ref,
+        classeRef: classeRef,
+        showNotification: false,
+      );
+      _bulletinsCache[periodes.first.ref] = bulletin;
+      return (periodes: periodes, bulletin: bulletin);
+    } catch (_) {
+      return (periodes: periodes, bulletin: null);
+    }
+  }
+
   Future<void> _loadBulletinsForSelectedYear() async {
     if (_selectedAnnee == null) return;
     setState(() {
@@ -136,28 +221,20 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     });
     try {
       final annee = _selectedAnnee!;
-      var bulletins = await _consultationApi.getBulletins(
-        widget.schoolId,
-        widget.matricule,
-        anneeRef: annee.ref,
-        classeRef: widget.classeRef,
-      );
+      var result = await _loadDefaultBulletinForAnnee(annee);
       var effectiveAnnee = annee;
 
-      // Repli sur la dernière année ayant des bulletins si l'année courante
+      // Repli sur la dernière année ayant des notes si l'année courante
       // (sélection par défaut, pas un choix explicite de l'utilisateur) n'en
       // a pas encore — cas fréquent en tout début d'année scolaire.
-      if (bulletins.isEmpty && annee.courante) {
+      if (result.bulletin == null && annee.courante) {
         for (final candidate in _annees) {
           if (candidate.ref == annee.ref) continue;
-          final result = await _consultationApi.getBulletins(
-            widget.schoolId,
-            widget.matricule,
-            anneeRef: candidate.ref,
-            classeRef: widget.classeRef,
+          final candidateResult = await _loadDefaultBulletinForAnnee(
+            candidate,
           );
-          if (result.isNotEmpty) {
-            bulletins = result;
+          if (candidateResult.bulletin != null) {
+            result = candidateResult;
             effectiveAnnee = candidate;
             break;
           }
@@ -165,19 +242,18 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       }
 
       if (!mounted) return;
+      final bulletin = result.bulletin;
       setState(() {
-        _bulletinsAnnee = bulletins;
+        _periodesAnnee = result.periodes;
         _selectedAnnee = effectiveAnnee;
-        _selectedBulletin = bulletins.isEmpty ? null : bulletins.last;
+        _selectedBulletin = bulletin;
         _isLoading = false;
-        if (_selectedBulletin != null) {
-          if (_selectedBulletin!.nom.isNotEmpty) _cachedNom = _selectedBulletin!.nom;
-          if (_selectedBulletin!.prenoms.isNotEmpty) {
-            _cachedPrenoms = _selectedBulletin!.prenoms;
-          }
+        if (bulletin != null) {
+          if (bulletin.nom.isNotEmpty) _cachedNom = bulletin.nom;
+          if (bulletin.prenoms.isNotEmpty) _cachedPrenoms = bulletin.prenoms;
         }
       });
-      if (_selectedBulletin != null) {
+      if (bulletin != null) {
         _fadeController.forward(from: 0);
         _startAutoPlay();
       } else {
@@ -186,11 +262,53 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _bulletinsAnnee = [];
+        _periodesAnnee = [];
         _selectedBulletin = null;
         _isLoading = false;
       });
       _showError('lors du chargement des bulletins: $e');
+    }
+  }
+
+  /// Charge le bulletin de `periode` à la demande (sélection explicite via le
+  /// filtre) — depuis le cache s'il a déjà été chargé, sinon une seule
+  /// requête GET .../bulletin.
+  Future<void> _selectPeriode(PeriodeConsultation periode, {String? subject}) async {
+    final cached = _bulletinsCache[periode.ref];
+    if (cached != null) {
+      setState(() {
+        _selectedBulletin = cached;
+        _selectedSubject = subject;
+      });
+      _fadeController.forward(from: 0);
+      return;
+    }
+
+    final annee = _selectedAnnee;
+    if (annee == null) return;
+    setState(() => _isLoading = true);
+    try {
+      final classeRef = await _resolveClasseRef(annee.ref);
+      final bulletin = await _consultationApi.getBulletin(
+        widget.schoolId,
+        widget.matricule,
+        anneeRef: annee.ref,
+        periodeRef: periode.ref,
+        classeRef: classeRef,
+        showNotification: false,
+      );
+      _bulletinsCache[periode.ref] = bulletin;
+      if (!mounted) return;
+      setState(() {
+        _selectedBulletin = bulletin;
+        _selectedSubject = subject;
+        _isLoading = false;
+      });
+      _fadeController.forward(from: 0);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showError('lors du chargement du bulletin: $e');
     }
   }
 
@@ -288,12 +406,14 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   List<String> get _availablePeriods =>
-      _bulletinsAnnee.map((b) => b.periodeLibelle).toList();
+      _periodesAnnee.map((p) => p.libelle).toList();
 
   void _showFiltersBottomSheet() {
     AnneeConsultation? tempAnnee = _selectedAnnee;
     String? tempSelectedSubject = _selectedSubject;
-    BulletinConsultation? tempBulletin = _selectedBulletin;
+    PeriodeConsultation? tempPeriode = _findPeriode(
+      _selectedBulletin?.periodeRef,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -327,7 +447,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           final annee = idx >= 0 ? _annees[idx] : tempAnnee!;
                           tempAnnee = annee;
                           tempSelectedSubject = null;
-                          tempBulletin = null;
+                          tempPeriode = null;
                         });
                       },
                       isDarkMode: isDark,
@@ -355,15 +475,15 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           child: SearchableDropdown(
                             label: 'Période',
                             value:
-                                (tempBulletin ?? _selectedBulletin)
-                                    ?.periodeLibelle ??
+                                tempPeriode?.libelle ??
+                                _selectedBulletin?.periodeLibelle ??
                                 'Période',
                             items: _availablePeriods,
                             onChanged: (val) {
                               setSheetState(() {
-                                tempBulletin = _bulletinsAnnee.firstWhere(
-                                  (b) => b.periodeLibelle == val,
-                                  orElse: () => _selectedBulletin!,
+                                tempPeriode = _periodesAnnee.firstWhere(
+                                  (p) => p.libelle == val,
+                                  orElse: () => tempPeriode ?? _periodesAnnee.first,
                                 );
                               });
                             },
@@ -390,7 +510,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                   child: SafeArea(
                     top: false,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(context);
 
                         final yearChanged =
@@ -398,19 +518,17 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         final subjectChanged =
                             tempSelectedSubject != _selectedSubject;
                         final periodChanged =
-                            tempBulletin != null &&
-                            tempBulletin!.periodeRef !=
-                                _selectedBulletin?.periodeRef;
+                            tempPeriode != null &&
+                            tempPeriode!.ref != _selectedBulletin?.periodeRef;
 
                         if (yearChanged) {
                           setState(() => _selectedAnnee = tempAnnee);
-                          _loadBulletinsForSelectedYear();
+                          await _loadBulletinsForSelectedYear();
                         } else if (periodChanged) {
-                          setState(() {
-                            _selectedBulletin = tempBulletin;
-                            _selectedSubject = tempSelectedSubject;
-                          });
-                          _fadeController.forward(from: 0);
+                          await _selectPeriode(
+                            tempPeriode!,
+                            subject: tempSelectedSubject,
+                          );
                         } else if (subjectChanged) {
                           setState(
                             () => _selectedSubject = tempSelectedSubject,
@@ -675,8 +793,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     final anneeLibelle = bulletin?.anneeLibelle ?? _selectedAnnee?.libelle ?? '';
     final moyenneAnnuelle = bulletin?.moyenneAnnuelle;
 
-    // Une carte par période disposant de notes (doc §4.8), triées telles que
-    // renvoyées par l'API (ordre des périodes).
+    // Une carte par période déjà chargée (dans l'ordre des périodes) — une
+    // seule au départ (la période par défaut), les autres s'ajoutent au fur
+    // et à mesure que l'utilisateur les sélectionne via le filtre, jamais
+    // toutes chargées d'avance.
     List<Widget> averageCards = _bulletinsAnnee.map((b) {
       final isCurrent = b.periodeRef == bulletin?.periodeRef;
       final moy = b.moyenne ?? 0.0;

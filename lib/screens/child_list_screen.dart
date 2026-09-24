@@ -8432,11 +8432,16 @@ class _ChildListScreenState extends State<ChildListScreen>
       // à gérer pour une année/période encore vide.
       BulletinConsultation? bulletin;
       for (final annee in orderedAnnees) {
+        final classeRef = await _resolveClasseRefForAnnee(
+          schoolId,
+          matricule,
+          annee.ref,
+        );
         final bulletins = await _consultationApi.getBulletins(
           schoolId,
           matricule,
           anneeRef: annee.ref,
-          classeRef: _persistedClasseRef,
+          classeRef: classeRef,
         );
         if (bulletins.isNotEmpty) {
           bulletin = bulletins.last;
@@ -8770,6 +8775,29 @@ class _ChildListScreenState extends State<ChildListScreen>
     return _consultationSchoolId;
   }
 
+  /// La classe de l'élève pour l'année donnée (doc §4.7) : plus fiable que
+  /// `_persistedClasseRef` (capturé à l'ajout de l'enfant, jamais mis à jour
+  /// ensuite et pas toujours renseigné) — même correction que
+  /// `_loadProgressions`/le cahier de textes. Repli sur `_persistedClasseRef`
+  /// si la résolution échoue.
+  Future<String?> _resolveClasseRefForAnnee(
+    String schoolId,
+    String matricule,
+    String anneeRef,
+  ) async {
+    try {
+      final classes = await _consultationApi.getClasses(
+        schoolId,
+        matricule,
+        anneeRef: anneeRef,
+      );
+      if (classes.isNotEmpty) return classes.first.classeRef;
+    } catch (_) {
+      // Ignoré : repli sur _persistedClasseRef ci-dessous.
+    }
+    return _persistedClasseRef;
+  }
+
   /// Corrige en arrière-plan un `paramEcole` enregistré à tort avec le code
   /// de l'API de consultation (bug de l'ajout d'enfant corrigé depuis) au
   /// lieu du code legacy attendu par les intégrations tierces (inscription
@@ -8885,11 +8913,16 @@ class _ChildListScreenState extends State<ChildListScreen>
         throw Exception('Aucune année scolaire disponible');
       }
 
+      var classeRef = await _resolveClasseRefForAnnee(
+        schoolId,
+        matricule,
+        annee.ref,
+      );
       var bulletins = await _consultationApi.getBulletins(
         schoolId,
         matricule,
         anneeRef: annee.ref,
-        classeRef: _persistedClasseRef,
+        classeRef: classeRef,
       );
       var effectiveAnnee = annee;
 
@@ -8902,11 +8935,16 @@ class _ChildListScreenState extends State<ChildListScreen>
       if (bulletins.isEmpty && annee.courante) {
         for (final candidate in _bulletinsAnnees) {
           if (candidate.ref == annee.ref) continue;
+          final candidateClasseRef = await _resolveClasseRefForAnnee(
+            schoolId,
+            matricule,
+            candidate.ref,
+          );
           final result = await _consultationApi.getBulletins(
             schoolId,
             matricule,
             anneeRef: candidate.ref,
-            classeRef: _persistedClasseRef,
+            classeRef: candidateClasseRef,
           );
           if (result.isNotEmpty) {
             bulletins = result;

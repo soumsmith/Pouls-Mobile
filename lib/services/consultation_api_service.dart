@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../config/app_config.dart';
 import '../models/etablissement_consultation.dart';
@@ -85,15 +86,24 @@ class ConsultationApiService {
     print('═══════════════════════════════════════════════════════════');
   }
 
+  /// Ré-indente `body` s'il s'agit de JSON valide ; sinon renvoie `body` tel
+  /// quel (ex. corps d'erreur non-JSON).
+  String _prettyBody(String body) {
+    try {
+      return const JsonEncoder.withIndent('  ').convert(json.decode(body));
+    } catch (_) {
+      return body;
+    }
+  }
+
   void _logResponse(String label, http.Response response) {
     final isError = response.statusCode != 200;
     if (isError) {
-      print(
-        '❌ API CONSULTATION — $label → ${response.statusCode}: ${response.body}',
-      );
+      print('❌ API CONSULTATION — $label → ${response.statusCode}');
+      debugPrint('📦 Body: ${_prettyBody(response.body)}');
     } else {
       print('✅ API CONSULTATION — $label → ${response.statusCode}');
-      print('📦 Body: ${response.body}');
+      debugPrint('📦 Body: ${_prettyBody(response.body)}');
     }
   }
 

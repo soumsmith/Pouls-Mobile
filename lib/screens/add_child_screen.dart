@@ -523,7 +523,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: AppColors.screenDivider,
+                      color: AppColors.screenDividerThemed(context),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -591,9 +591,9 @@ class _AddChildScreenState extends State<AddChildScreen>
         const SizedBox(width: 10),
         Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
-            color: AppColors.screenTextPrimary,
+            color: AppColors.screenTextPrimaryThemed(context),
           ),
         ),
       ],
@@ -712,7 +712,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.screenDivider,
+                        color: AppColors.screenDividerThemed(context),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -820,7 +820,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                   style: TextStyle(
                     fontSize: _textSizeService.getScaledFontSize(17),
                     fontWeight: FontWeight.w700,
-                    color: AppColors.screenTextPrimary,
+                    color: AppColors.screenTextPrimaryThemed(context),
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -973,7 +973,7 @@ class _AddChildScreenState extends State<AddChildScreen>
             style: TextStyle(
               fontSize: _textSizeService.getScaledFontSize(15),
               fontWeight: FontWeight.w700,
-              color: AppColors.screenTextPrimary,
+              color: AppColors.screenTextPrimaryThemed(context),
             ),
           ),
           if (localisation.isNotEmpty) ...[
@@ -983,7 +983,7 @@ class _AddChildScreenState extends State<AddChildScreen>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(12),
-                color: AppColors.screenTextSecondary,
+                color: AppColors.screenTextSecondaryThemed(context),
               ),
             ),
           ],
@@ -1073,11 +1073,11 @@ class _AddChildScreenState extends State<AddChildScreen>
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.screenDivider),
+          borderSide: BorderSide(color: AppColors.screenDividerThemed(context)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.screenDivider),
+          borderSide: BorderSide(color: AppColors.screenDividerThemed(context)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1096,10 +1096,10 @@ class _AddChildScreenState extends State<AddChildScreen>
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppColors.screenTextSecondary,
+            color: AppColors.screenTextSecondaryThemed(context),
             letterSpacing: 0.2,
           ),
         ),
@@ -1165,20 +1165,20 @@ class _AddChildScreenState extends State<AddChildScreen>
                 child: Container(
                   width: 56,
                   height: 56,
-                  color: AppColors.screenSurface,
+                  color: AppColors.screenCardThemed(context),
                   child: photo.isNotEmpty
                       ? Image.network(
                           photo,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
+                          errorBuilder: (_, __, ___) => Icon(
                             Icons.person,
-                            color: AppColors.screenTextSecondary,
+                            color: AppColors.screenTextSecondaryThemed(context),
                             size: 28,
                           ),
                         )
-                      : const Icon(
+                      : Icon(
                           Icons.person,
-                          color: AppColors.screenTextSecondary,
+                          color: AppColors.screenTextSecondaryThemed(context),
                           size: 28,
                         ),
                 ),
@@ -1194,7 +1194,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(16),
                       fontWeight: FontWeight.w800,
-                      color: AppColors.screenTextPrimary,
+                      color: AppColors.screenTextPrimaryThemed(context),
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -1203,7 +1203,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                     prenoms.isNotEmpty ? prenoms : 'Prénom inconnu',
                     style: TextStyle(
                       fontSize: _textSizeService.getScaledFontSize(13),
-                      color: AppColors.screenTextSecondary,
+                      color: AppColors.screenTextSecondaryThemed(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1216,17 +1216,17 @@ class _AddChildScreenState extends State<AddChildScreen>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.screenSurface,
+                          color: AppColors.screenCardThemed(context),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: AppColors.screenDivider.withOpacity(0.8),
+                            color: AppColors.screenDividerThemed(context),
                           ),
                         ),
                         child: Text(
                           grade.isNotEmpty ? grade : 'Classe inconnue',
                           style: TextStyle(
                             fontSize: _textSizeService.getScaledFontSize(11),
-                            color: AppColors.screenTextSecondary,
+                            color: AppColors.screenTextSecondaryThemed(context),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1268,7 +1268,7 @@ class _AddChildScreenState extends State<AddChildScreen>
           ],
         ),
         const SizedBox(height: 12),
-        const Divider(color: AppColors.screenDivider, height: 1),
+        Divider(color: AppColors.screenDividerThemed(context), height: 1),
         const SizedBox(height: 12),
         _infoRow(Icons.school_outlined, 'École', ecole.nom),
         const SizedBox(height: 10),
@@ -1333,13 +1333,17 @@ class _AddChildScreenState extends State<AddChildScreen>
             width: 30,
             height: 30,
             decoration: BoxDecoration(
-              color: AppColors.screenSurface,
+              color: AppColors.screenCardThemed(context),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: AppColors.screenDivider.withOpacity(0.8),
+                color: AppColors.screenDividerThemed(context),
               ),
             ),
-            child: Icon(icon, color: AppColors.screenTextSecondary, size: 15),
+            child: Icon(
+              icon,
+              color: AppColors.screenTextSecondaryThemed(context),
+              size: 15,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1348,7 +1352,7 @@ class _AddChildScreenState extends State<AddChildScreen>
               style: TextStyle(
                 fontSize: _textSizeService.getScaledFontSize(13),
                 fontWeight: FontWeight.w600,
-                color: AppColors.screenTextPrimary,
+                color: AppColors.screenTextPrimaryThemed(context),
               ),
               overflow: TextOverflow.ellipsis,
             ),

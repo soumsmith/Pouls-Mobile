@@ -98,7 +98,8 @@ import '../widgets/custom_text_field.dart';
 import '../services/consultation_api_service.dart';
 import '../models/annee_consultation.dart';
 import '../models/bulletin_consultation.dart';
-import '../models/devoir_consultation.dart';
+import '../models/travail_consultation.dart';
+import '../models/devoir_surveille_consultation.dart';
 import '../models/progression_consultation.dart';
 import '../models/etablissement_consultation.dart';
 import 'pdf_viewer_screen.dart';
@@ -496,11 +497,18 @@ class _ChildListScreenState extends State<ChildListScreen>
   String? _expandedBulletinId;
   StateSetter? _bulletinsModalSetState;
 
-  // Devoirs (API de consultation, §4.11)
-  List<DevoirConsultation>? _devoirs;
+  // Travail donné (cahier de textes + contenus pédagogiques, API de
+  // consultation §2 — remplace /devoirs, qui ne couvrait que le cahier)
+  List<TravailConsultation>? _devoirs;
   bool _isLoadingHomework = false;
   StateSetter? _homeworkModalSetState;
   String? _devoirsErrorMessage;
+
+  // Devoirs surveillés / compositions (API de consultation, §3)
+  List<DevoirSurveilleConsultation>? _devoirsSurveilles;
+  bool _isLoadingDevoirsSurveilles = false;
+  StateSetter? _devoirsSurveillesModalSetState;
+  String? _devoirsSurveillesErrorMessage;
 
   // Progression du programme (API de consultation, §4.10)
   List<ProgressionConsultation>? _progressions;
@@ -1511,7 +1519,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         rethrow;
       }
 
-      final devoirs = await _consultationApi.getDevoirs(
+      final devoirs = await _consultationApi.getTravail(
         schoolId,
         matricule,
         anneeRef: annee.ref,
@@ -1567,10 +1575,15 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showHomeworkProgramBottomSheet() {
+    _devoirsSurveilles = null;
+    _isLoadingDevoirsSurveilles = false;
+    _devoirsSurveillesErrorMessage = null;
+    bool hasAttemptedLoad = false;
+
     ReusableBottomSheet.show(
       context: context,
       title: 'Programme de devoirs',
-      subtitle: 'Planning des devoirs',
+      subtitle: 'Planning des devoirs surveillés',
       icon: Icons.assignment_rounded,
       imageBorderRadius: AppDimensions.getImageBorderRadius(context),
       iconColor: const Color(0xFF2E7D32),
@@ -1578,8 +1591,99 @@ class _ChildListScreenState extends State<ChildListScreen>
       minChildSize: 0.5,
       maxChildSize: 0.95,
       contentPadding: const EdgeInsets.all(16),
-      content: _buildComingSoonContent(),
-    );
+      content: StatefulBuilder(
+        builder: (context, setModalState) {
+          _devoirsSurveillesModalSetState = setModalState;
+          if (!hasAttemptedLoad) {
+            hasAttemptedLoad = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadDevoirsSurveilles(setModalState);
+            });
+          }
+          return _buildDevoirsSurveillesContent();
+        },
+      ),
+    ).whenComplete(() {
+      _devoirsSurveillesModalSetState = null;
+    });
+  }
+
+  Future<void> _loadDevoirsSurveilles([StateSetter? setModalState]) async {
+    if (_isLoadingDevoirsSurveilles) return;
+
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) return;
+
+    final effectiveModalSetState = setModalState ?? _devoirsSurveillesModalSetState;
+    void updateState(VoidCallback fn) {
+      if (effectiveModalSetState != null) effectiveModalSetState(fn);
+      if (mounted) setState(fn);
+    }
+
+    updateState(() {
+      _isLoadingDevoirsSurveilles = true;
+      _devoirsSurveillesErrorMessage = null;
+    });
+
+    try {
+      final schoolId = await _resolveConsultationSchoolId();
+      if (schoolId == null) {
+        throw Exception('Établissement introuvable dans l\'API de consultation');
+      }
+
+      final annees = await _consultationApi.getAnnees(schoolId);
+      if (annees.isEmpty) {
+        throw Exception('Aucune année scolaire disponible');
+      }
+      // Les compositions ne sont pas archivées : réservé aux années de la
+      // nouvelle plateforme (P:), les années H: répondent 400 (doc §3).
+      final annee = annees.firstWhere(
+        (a) => a.courante,
+        orElse: () => annees.first,
+      );
+
+      // La classe de l'élève pour CETTE année (doc §4.7) : plus fiable que
+      // la classe capturée à l'ajout de l'enfant (même correction que
+      // _loadDevoirs/_loadProgressions).
+      String? classeRef;
+      try {
+        final classes = await _consultationApi.getClasses(
+          schoolId,
+          matricule,
+          anneeRef: annee.ref,
+        );
+        classeRef = classes.isNotEmpty ? classes.first.classeRef : null;
+      } catch (e) {
+        if (e.toString().contains('inscrit dans aucune classe')) {
+          throw Exception(
+            '${widget.child.firstName} n\'a pas encore été affecté(e) à une '
+            'classe pour l\'année ${annee.libelle} par '
+            '${widget.child.establishment ?? "l\'établissement"}. '
+            'Contactez l\'école pour finaliser l\'inscription.',
+          );
+        }
+        rethrow;
+      }
+
+      final devoirsSurveilles = await _consultationApi.getDevoirsSurveilles(
+        schoolId,
+        matricule,
+        anneeRef: annee.ref,
+        classeRef: classeRef,
+      );
+
+      updateState(() {
+        _devoirsSurveilles = devoirsSurveilles;
+        _isLoadingDevoirsSurveilles = false;
+      });
+    } catch (e) {
+      updateState(() {
+        _devoirsSurveilles = [];
+        _isLoadingDevoirsSurveilles = false;
+        _devoirsSurveillesErrorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+      print('❌ Erreur lors du chargement des devoirs surveillés: $e');
+    }
   }
 
   Future<void> _loadProgressions([StateSetter? setModalState]) async {
@@ -10982,49 +11086,16 @@ class _ChildListScreenState extends State<ChildListScreen>
       );
     }
 
-    // Déjà triés par matière puis du plus récent au plus ancien (doc §4.11) :
-    // on ajoute juste un en-tête de section à chaque changement de matière.
+    // Déjà triés du plus récent au plus ancien, cahier de textes et contenus
+    // pédagogiques mélangés (doc §2) : plus de groupement par matière, l'ordre
+    // chronologique prime sur la matière contrairement à l'ancien /devoirs.
     final widgets = <Widget>[];
-    String? lastMatiereCode;
     for (final devoir in _devoirs!) {
-      if (devoir.matiereCode != lastMatiereCode) {
-        if (lastMatiereCode != null) widgets.add(const SizedBox(height: 18));
-        widgets.add(_buildMatiereSectionHeader(devoir.matiere));
-        widgets.add(const SizedBox(height: 10));
-        lastMatiereCode = devoir.matiereCode;
-      } else {
-        widgets.add(const SizedBox(height: 10));
-      }
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 10));
       widgets.add(_buildDevoirCard(devoir));
     }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: widgets);
-  }
-
-  Widget _buildMatiereSectionHeader(String matiere) {
-    final isDarkMode = _themeService.isDarkMode;
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 16,
-          decoration: BoxDecoration(
-            color: _homeworkColor,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          matiere,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: isDarkMode ? Colors.white70 : Colors.grey[700],
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
-    );
   }
 
   String _formatDevoirDate(String isoDate) {
@@ -11036,8 +11107,22 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  Widget _buildDevoirCard(DevoirConsultation devoir) {
+  Future<void> _openPieceJointe(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Widget _buildDevoirCard(TravailConsultation devoir) {
     final isDarkMode = _themeService.isDarkMode;
+    final estContenu = devoir.estContenuPedagogique;
+    final titre = estContenu
+        ? (devoir.titre?.isNotEmpty == true ? devoir.titre! : devoir.matiere)
+        : devoir.seance;
+    final corps = estContenu ? devoir.description : devoir.consigne;
+    final donneLe = devoir.donneLe;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -11066,8 +11151,8 @@ class _ChildListScreenState extends State<ChildListScreen>
                   color: _homeworkColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
-                  Icons.menu_book_rounded,
+                child: Icon(
+                  estContenu ? Icons.article_outlined : Icons.menu_book_rounded,
                   color: _homeworkColor,
                   size: 20,
                 ),
@@ -11077,18 +11162,20 @@ class _ChildListScreenState extends State<ChildListScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (devoir.seance.isNotEmpty)
+                    if (titre != null && titre.isNotEmpty)
                       Text(
-                        devoir.seance,
+                        titre,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
                         ),
                       ),
-                    if (devoir.professeur.isNotEmpty)
+                    if (devoir.matiere.isNotEmpty)
                       Text(
-                        devoir.professeur,
+                        devoir.professeur.isNotEmpty
+                            ? '${devoir.matiere} · ${devoir.professeur}'
+                            : devoir.matiere,
                         style: TextStyle(
                           fontSize: 12,
                           color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
@@ -11097,7 +11184,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                   ],
                 ),
               ),
-              if (devoir.donneLe.isNotEmpty)
+              if (donneLe != null && donneLe.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -11105,7 +11192,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    _formatDevoirDate(devoir.donneLe),
+                    _formatDevoirDate(donneLe),
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -11115,17 +11202,17 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
             ],
           ),
-          if (devoir.consigne.isNotEmpty) ...[
+          if (corps != null && corps.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(
-              devoir.consigne,
+              corps,
               style: TextStyle(
                 fontSize: 14,
                 color: isDarkMode ? Colors.grey[300] : const Color(0xFF374151),
               ),
             ),
           ],
-          if (devoir.prochaineSeance != null && devoir.prochaineSeance!.isNotEmpty) ...[
+          if (devoir.aRendreLe != null && devoir.aRendreLe!.isNotEmpty) ...[
             const SizedBox(height: 10),
             Row(
               children: [
@@ -11133,7 +11220,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Pour la séance du ${_formatDevoirDate(devoir.prochaineSeance!)}',
+                    'Pour la séance du ${_formatDevoirDate(devoir.aRendreLe!)}',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -11144,6 +11231,248 @@ class _ChildListScreenState extends State<ChildListScreen>
               ],
             ),
           ],
+          if (devoir.piecesJointes.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final piece in devoir.piecesJointes)
+                  if (piece.url != null && piece.url!.isNotEmpty)
+                    GestureDetector(
+                      onTap: () => _openPieceJointe(piece.url!),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _homeworkColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _homeworkColor.withOpacity(0.25)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.attach_file_rounded, size: 14, color: _homeworkColor),
+                            const SizedBox(width: 6),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 160),
+                              child: Text(
+                                piece.nom?.isNotEmpty == true ? piece.nom! : 'Pièce jointe',
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: _homeworkColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static const Color _devoirsSurveillesColor = Color(0xFF2E7D32);
+
+  Widget _buildDevoirsSurveillesContent() {
+    if (_isLoadingDevoirsSurveilles) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            CustomLoader(
+              message: 'Chargement du programme...',
+              loaderColor: _devoirsSurveillesColor,
+              backgroundColor: Colors.transparent,
+              showBackground: false,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_devoirsSurveilles == null || _devoirsSurveilles!.isEmpty) {
+      final hasError = _devoirsSurveillesErrorMessage != null;
+      return CustomErrorState(
+        title: hasError ? 'Impossible de charger le programme' : 'Aucune composition planifiée',
+        message: hasError
+            ? _devoirsSurveillesErrorMessage!
+            : 'Aucune composition n\'a été planifiée récemment pour cet élève.',
+        icon: hasError ? Icons.error_outline : Icons.assignment_outlined,
+        iconColor: _devoirsSurveillesColor,
+        retryText: 'Réessayer',
+        onRetry: () {
+          setState(() {
+            _devoirsSurveilles = null;
+            _devoirsSurveillesErrorMessage = null;
+          });
+          _loadDevoirsSurveilles();
+        },
+      );
+    }
+
+    final widgets = <Widget>[];
+    for (final ds in _devoirsSurveilles!) {
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 10));
+      widgets.add(_buildDevoirSurveilleCard(ds));
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: widgets);
+  }
+
+  Widget _buildDSInfoChip(IconData icon, String label) {
+    final isDarkMode = _themeService.isDarkMode;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isDarkMode ? Colors.grey[300] : const Color(0xFF374151),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDevoirSurveilleCard(DevoirSurveilleConsultation ds) {
+    final isDarkMode = _themeService.isDarkMode;
+    // salle/place ne sont jamais devinées : tant que la répartition n'est
+    // pas faite, les deux restent `null` (doc §3) — on l'indique clairement
+    // plutôt que de laisser un vide silencieux.
+    final repartitionFaite =
+        (ds.salle?.isNotEmpty ?? false) || (ds.place?.isNotEmpty ?? false);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _devoirsSurveillesColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.edit_calendar_outlined,
+                  color: _devoirsSurveillesColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (ds.matiere.isNotEmpty)
+                      Text(
+                        ds.matiere,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                        ),
+                      ),
+                    if (ds.classe.isNotEmpty)
+                      Text(
+                        ds.classe,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (ds.date.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _devoirsSurveillesColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _formatDevoirDate(ds.date),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _devoirsSurveillesColor,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if ((ds.horaire?.isNotEmpty ?? false) || (ds.duree?.isNotEmpty ?? false)) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                if (ds.horaire != null && ds.horaire!.isNotEmpty)
+                  _buildDSInfoChip(Icons.schedule_outlined, ds.horaire!),
+                if (ds.duree != null && ds.duree!.isNotEmpty)
+                  _buildDSInfoChip(Icons.timer_outlined, ds.duree!),
+              ],
+            ),
+          ],
+          const SizedBox(height: 10),
+          if (repartitionFaite)
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                if (ds.salle != null && ds.salle!.isNotEmpty)
+                  _buildDSInfoChip(Icons.meeting_room_outlined, 'Salle ${ds.salle}'),
+                if (ds.place != null && ds.place!.isNotEmpty)
+                  _buildDSInfoChip(Icons.event_seat_outlined, 'Place ${ds.place}'),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 14,
+                  color: isDarkMode ? Colors.grey[500] : Colors.grey[500],
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Salle et place pas encore connues',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    color: isDarkMode ? Colors.grey[500] : Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

@@ -11,6 +11,8 @@ import '../models/eleve_consultation.dart';
 import '../models/classe_consultation.dart';
 import '../models/bulletin_consultation.dart';
 import '../models/devoir_consultation.dart';
+import '../models/travail_consultation.dart';
+import '../models/devoir_surveille_consultation.dart';
 import '../models/progression_consultation.dart';
 import '../utils/api_exception_handler.dart';
 import 'pedagogie_auth_service.dart';
@@ -515,6 +517,83 @@ class ConsultationApiService {
     } catch (e) {
       _logException('devoirs', e);
       ApiExceptionHandler.handle(e, context: 'la récupération des devoirs');
+      rethrow;
+    }
+  }
+
+  /// GET /consultation/etablissements/{schoolId}/eleves/{matricule}/travail
+  ///
+  /// Fusionne le cahier de textes (`source: CAHIER_DE_TEXTES`) et les
+  /// contenus pédagogiques (`source: CONTENU_PEDAGOGIQUE`, avec leurs
+  /// `piecesJointes[]`), du plus récent au plus ancien — ce qui n'a pas de
+  /// date ferme la marche. Route à préférer à /devoirs (doc §2) : évite de
+  /// fusionner les deux sources et de trier côté application. Sans [depuis],
+  /// les trente derniers jours pour les deux sources ; un [depuis] mal
+  /// formé (pas AAAA-MM-JJ) est refusé en 400.
+  Future<List<TravailConsultation>> getTravail(
+    String schoolId,
+    String matricule, {
+    required String anneeRef,
+    String? classeRef,
+    String? matiere,
+    String? depuis,
+  }) async {
+    try {
+      final queryParams = {
+        'annee': anneeRef,
+        if (classeRef != null) 'classe': classeRef,
+        if (matiere != null) 'matiere': matiere,
+        if (depuis != null) 'depuis': depuis,
+      };
+      final uri = Uri.parse(
+        '$_baseUrl/consultation/etablissements/$schoolId/eleves/$matricule/travail',
+      ).replace(queryParameters: queryParams);
+      final response = await _getWithRetry(uri, 'travail');
+      if (response.statusCode != 200) _throwForStatus('le travail donné', response);
+      final List<dynamic> data = json.decode(response.body);
+      return data.map((e) => TravailConsultation.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (e) {
+      _logException('travail', e);
+      ApiExceptionHandler.handle(e, context: 'la récupération du travail donné');
+      rethrow;
+    }
+  }
+
+  /// GET /consultation/etablissements/{schoolId}/eleves/{matricule}/devoirs-surveilles
+  ///
+  /// Les compositions (DS) planifiées — à ne pas confondre avec /devoirs
+  /// (les devoirs de maison), voir [getTravail] (doc §3). Un DS rattaché à
+  /// plusieurs classes de l'élève apparaît une fois par classe. Un DS en
+  /// brouillon n'apparaît jamais. `salle`/`place` sont `null` tant que la
+  /// répartition n'est pas faite — ne jamais les deviner côté application.
+  /// Réservé aux années P: — les années H: (archive) répondent 400.
+  Future<List<DevoirSurveilleConsultation>> getDevoirsSurveilles(
+    String schoolId,
+    String matricule, {
+    required String anneeRef,
+    String? classeRef,
+    String? depuis,
+  }) async {
+    try {
+      final queryParams = {
+        'annee': anneeRef,
+        if (classeRef != null) 'classe': classeRef,
+        if (depuis != null) 'depuis': depuis,
+      };
+      final uri = Uri.parse(
+        '$_baseUrl/consultation/etablissements/$schoolId/eleves/$matricule/devoirs-surveilles',
+      ).replace(queryParameters: queryParams);
+      final response = await _getWithRetry(uri, 'devoirs surveillés');
+      if (response.statusCode != 200) {
+        _throwForStatus('les devoirs surveillés', response);
+      }
+      final List<dynamic> data = json.decode(response.body);
+      return data
+          .map((e) => DevoirSurveilleConsultation.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      _logException('devoirs surveillés', e);
+      ApiExceptionHandler.handle(e, context: 'la récupération des devoirs surveillés');
       rethrow;
     }
   }

@@ -83,6 +83,7 @@ class MatiereBulletin {
   final int? rang;
   final String? appreciation;
   final String? professeur;
+  final List<NoteEvaluation> notes;
 
   MatiereBulletin({
     required this.code,
@@ -93,6 +94,7 @@ class MatiereBulletin {
     this.rang,
     this.appreciation,
     this.professeur,
+    this.notes = const [],
   });
 
   factory MatiereBulletin.fromJson(Map<String, dynamic> json) {
@@ -105,6 +107,42 @@ class MatiereBulletin {
       rang: json['rang'] as int?,
       appreciation: json['appreciation'] as String?,
       professeur: json['professeur'] as String?,
+      notes: (json['notes'] as List?)
+              ?.map((e) => NoteEvaluation.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+/// Note d'une évaluation individuelle (ex. "DN n1", "DS N1") au sein d'une
+/// matière — `note`/`sur` sont le barème réel de l'évaluation (ex. 10/20),
+/// `sur20` est la valeur déjà ramenée sur 20 par l'API.
+class NoteEvaluation {
+  final String date;
+  final String evaluation;
+  final String type;
+  final double? note;
+  final double? sur;
+  final double? sur20;
+
+  NoteEvaluation({
+    required this.date,
+    required this.evaluation,
+    required this.type,
+    this.note,
+    this.sur,
+    this.sur20,
+  });
+
+  factory NoteEvaluation.fromJson(Map<String, dynamic> json) {
+    return NoteEvaluation(
+      date: json['date'] as String? ?? '',
+      evaluation: json['evaluation'] as String? ?? '',
+      type: json['type'] as String? ?? '',
+      note: (json['note'] as num?)?.toDouble(),
+      sur: (json['sur'] as num?)?.toDouble(),
+      sur20: (json['sur20'] as num?)?.toDouble(),
     );
   }
 }

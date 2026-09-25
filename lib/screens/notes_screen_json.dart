@@ -805,7 +805,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
         margin: const EdgeInsets.only(right: 12),
         child: _buildCompactAverageCard(
           b.periodeLibelle,
-          moy.toStringAsFixed(1),
+          moy.toStringAsFixed(2),
           isCurrent ? Icons.analytics_outlined : Icons.menu_book_outlined,
           _getAverageColor(moy),
         ),
@@ -1437,7 +1437,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         border: Border.all(color: color.withOpacity(0.3)),
                       ),
                       child: Text(
-                        avg.toStringAsFixed(1),
+                        avg.toStringAsFixed(2),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
@@ -1513,7 +1513,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                           Expanded(
                             child: _buildStatBadge(
                               'Moyenne',
-                              avg.toStringAsFixed(1),
+                              avg.toStringAsFixed(2),
                               AppColors.screenOrange,
                             ),
                           ),
@@ -1527,6 +1527,53 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                             : 'N/A',
                         Colors.grey[600]!,
                       ),
+                      if (matiere.notes.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.grey,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Détail des notes',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey[700],
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            // maxWidth peut être 0 quand AnimatedCrossFade
+                            // mesure la section repliée hors écran : sans le
+                            // clamp, (0 - 8) / 2 donne une largeur négative
+                            // et fait planter le SizedBox.
+                            final itemWidth = ((constraints.maxWidth - 8) / 2)
+                                .clamp(0.0, double.infinity);
+                            return Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final note in matiere.notes)
+                                  SizedBox(
+                                    width: itemWidth,
+                                    child: _buildNoteRow(note),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1539,6 +1586,75 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   }
 
   String? _expandedSubjectId;
+
+  // ─── NOTE ROW (détail des évaluations d'une matière) ─────────────────────
+  String _formatNoteDate(String isoDate) {
+    final parts = isoDate.split('-');
+    if (parts.length != 3) return isoDate;
+    return '${parts[2]}/${parts[1]}/${parts[0]}';
+  }
+
+  Widget _buildNoteRow(NoteEvaluation note) {
+    final score = note.sur20 ?? note.note;
+    final color = score != null ? _getAverageColor(score) : Colors.grey;
+    final sur = note.sur ?? 20.0;
+    final scoreLabel = note.note != null
+        ? '${note.note!.toStringAsFixed(2)}/${sur.toStringAsFixed(0)}'
+        : 'N/A';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.screenDividerThemed(context).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  note.evaluation.isNotEmpty ? note.evaluation : note.type,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.screenTextPrimaryThemed(context),
+                  ),
+                ),
+                if (note.date.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatNoteDate(note.date),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.screenTextSecondaryThemed(context),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withOpacity(0.3)),
+            ),
+            child: Text(
+              scoreLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // ─── STAT BADGE ───────────────────────────────────────────────────────────
   Widget _buildStatBadge(String label, String value, Color color) {

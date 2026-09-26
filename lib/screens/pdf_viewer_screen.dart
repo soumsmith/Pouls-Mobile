@@ -1,9 +1,13 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:file_picker/file_picker.dart';
+import 'package:parents_responsable/utils/app_http.dart' as http;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
 import '../config/app_colors.dart';
+import '../utils/notification_helper.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/components/custom_error_state.dart';
@@ -108,14 +112,60 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
     super.dispose();
   }
 
-  void _downloadPdf() async {
-    if (!widget.pdfUrl.startsWith('http') && !widget.pdfUrl.startsWith('assets/')) {
-      final file = File(widget.pdfUrl);
-      if (await file.exists()) {
-        await Share.shareXFiles([XFile(file.path)], text: 'Mon ticket');
+  bool _isDownloading = false;
+
+  /// Enregistre le PDF directement sur l'appareil via le sélecteur natif
+  /// (« Sur mon iPhone », iCloud Drive, stockage Android...) plutôt que de
+  /// passer par la feuille de partage : c'est un vrai téléchargement, pas
+  /// juste un envoi vers une autre app.
+  Future<void> _downloadPdf() async {
+    if (_isDownloading) return;
+    setState(() => _isDownloading = true);
+    try {
+      final Uint8List bytes;
+      if (widget.pdfUrl.startsWith('http')) {
+        final response = await http.get(Uri.parse(widget.pdfUrl));
+        if (response.statusCode != 200) {
+          throw Exception('Erreur ${response.statusCode} lors du téléchargement');
+        }
+        bytes = response.bodyBytes;
+      } else if (widget.pdfUrl.startsWith('assets/')) {
+        final data = await rootBundle.load(widget.pdfUrl);
+        bytes = data.buffer.asUint8List();
+      } else {
+        final file = File(widget.pdfUrl);
+        if (!await file.exists()) {
+          throw Exception('Fichier introuvable');
+        }
+        bytes = await file.readAsBytes();
       }
-    } else {
-      Share.share(widget.pdfUrl, subject: 'Mon ticket');
+
+      final sanitizedTitle = widget.title.trim().isEmpty
+          ? 'document'
+          : widget.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final fileName = sanitizedTitle.toLowerCase().endsWith('.pdf')
+          ? sanitizedTitle
+          : '$sanitizedTitle.pdf';
+
+      final savedPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Enregistrer le PDF',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        bytes: bytes,
+      );
+
+      if (!mounted) return;
+      if (savedPath != null) {
+        NotificationHelper.showSuccess('PDF enregistré sur votre appareil');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      NotificationHelper.showError(
+        'Impossible de télécharger le PDF : ${e.toString().replaceFirst('Exception: ', '')}',
+      );
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
     }
   }
 
@@ -133,9 +183,15 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
             surfaceTintColor: Colors.transparent,
             actions: [
               IconButton(
-                icon: const Icon(Icons.file_download_outlined),
-                onPressed: _downloadPdf,
-                tooltip: 'Télécharger / Partager',
+                icon: _isDownloading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.file_download_outlined),
+                onPressed: _isDownloading ? null : _downloadPdf,
+                tooltip: 'Télécharger',
               ),
               const SizedBox(width: 8),
             ],

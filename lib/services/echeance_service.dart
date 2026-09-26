@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../models/echeance_notification.dart';
 import '../config/app_config.dart';
@@ -9,17 +10,20 @@ import '../config/app_config.dart';
 class EcheanceService {
   static String get baseUrl => '${AppConfig.VIE_ECOLES_API_BASE_URL}/vie-ecoles';
 
-  // Cache pour éviter les appels répétés
-  static EcheanceNotification? _cachedNotification;
-  static DateTime? _cacheExpiry;
+  // Cache par matricule pour éviter les appels répétés — un unique cache
+  // statique partagé par tous les enfants affichait la notification
+  // d'échéance du premier enfant consulté pour tous les autres tant que le
+  // cache n'expirait pas (5 min), quel que soit le matricule demandé.
+  static final Map<String, EcheanceNotification> _cache = {};
+  static final Map<String, DateTime> _cacheExpiry = {};
 
   static Future<EcheanceNotification> getEcheanceNotification(String matricule) async {
     // Vérifier le cache d'abord
-    if (_cachedNotification != null && 
-        _cacheExpiry != null && 
-        DateTime.now().isBefore(_cacheExpiry!)) {
-      print('📦 Utilisation des données d\'échéance en cache');
-      return _cachedNotification!;
+    final cached = _cache[matricule];
+    final expiry = _cacheExpiry[matricule];
+    if (cached != null && expiry != null && DateTime.now().isBefore(expiry)) {
+      print('📦 Utilisation des données d\'échéance en cache ($matricule)');
+      return cached;
     }
 
     return await _fetchEcheanceNotification(matricule);
@@ -60,17 +64,21 @@ class EcheanceService {
         print(' Succès - Parsing du JSON...');
         final Map<String, dynamic> data = json.decode(response.body);
 
+        debugPrint(
+          '📦 Body brut (matricule=$matricule): '
+          '${const JsonEncoder.withIndent('  ').convert(data)}',
+        );
         print(' Structure de la réponse:');
         print('   status: ${data['status']}');
         print('   message: ${data['message']}');
-        print('   data présent: ${data['data'] != null}');
+        print('   data (texte affiché au parent): ${data['data']}');
 
         final notification = EcheanceNotification.fromJson(data);
 
-        // Mettre en cache le résultat pour 5 minutes
-        _cachedNotification = notification;
-        _cacheExpiry = DateTime.now().add(const Duration(minutes: 5));
-        print(' Résultat mis en cache pour 5 minutes');
+        // Mettre en cache le résultat pour 5 minutes, pour ce matricule
+        _cache[matricule] = notification;
+        _cacheExpiry[matricule] = DateTime.now().add(const Duration(minutes: 5));
+        print(' Résultat mis en cache pour 5 minutes ($matricule)');
 
         print(' Notification d\'échéance récupérée avec succès');
         print('   Statut: ${notification.status ? 'Ir régulier' : 'Régulier'}');
@@ -131,10 +139,10 @@ class EcheanceService {
     }
   }
 
-  /// Vide le cache des notifications d'échéance
+  /// Vide le cache des notifications d'échéance (tous matricules)
   static void clearCache() {
-    _cachedNotification = null;
-    _cacheExpiry = null;
+    _cache.clear();
+    _cacheExpiry.clear();
     print('🗑️ Cache des notifications d\'échéance vidé');
   }
 }

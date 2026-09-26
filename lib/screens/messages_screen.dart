@@ -96,6 +96,10 @@ class _MessagesScreenState extends State<MessagesScreen>
   List<_LocalMessage> _localMessages = [];
   List<Child> _children = [];
 
+  // Nombre de messages non lus par enfant (child.id), pour le badge affiché
+  // sur chaque item de la liste des enfants.
+  final Map<String, int> _unreadCountsByChild = {};
+
   bool _isLoading = true;
   bool _isLoadingChildren = true;
   final TextSizeService _textSizeService = TextSizeService();
@@ -221,6 +225,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       });
 
       _fadeController.forward(from: 0);
+      _loadUnreadCountsInBackground(children);
     } catch (e) {
       print('❌ MessagesScreen - Erreur chargement enfants: $e');
       if (!mounted) return;
@@ -240,6 +245,38 @@ class _MessagesScreenState extends State<MessagesScreen>
                              
       if (!isNetworkError) {
         _showError('Erreur chargement enfants: $errorString');
+      }
+    }
+  }
+
+  /// Récupère le nombre de messages non lus par enfant, un par un en
+  /// arrière-plan, pour afficher un badge sur chaque item de la liste sans
+  /// bloquer son affichage initial (déjà peuplée avec `_children`).
+  Future<void> _loadUnreadCountsInBackground(List<Child> children) async {
+    final currentUser = AuthService.instance.getCurrentUser();
+    if (currentUser == null) return;
+
+    for (final child in children) {
+      final matricule = _resolveMatricule(child);
+      if (matricule.isEmpty) continue;
+      try {
+        final result = await _messageService.getMessagesForStudent(
+          currentUser.phone,
+          matricule,
+        );
+        final conversationData =
+            result['conversationData'] as Map<String, dynamic>?;
+        final rawCount = conversationData?['unread_count'];
+        final unreadCount = rawCount is int
+            ? rawCount
+            : int.tryParse(rawCount?.toString() ?? '') ?? 0;
+
+        if (!mounted) return;
+        setState(() {
+          _unreadCountsByChild[child.id] = unreadCount;
+        });
+      } catch (_) {
+        // Best-effort : pas de badge pour cet enfant en cas d'erreur.
       }
     }
   }
@@ -533,32 +570,66 @@ class _MessagesScreenState extends State<MessagesScreen>
   Widget _buildChildListItem(Child child) {
     final matricule = _resolveMatricule(child);
     final hasMatricule = matricule.isNotEmpty;
+    final unreadCount = _unreadCountsByChild[child.id] ?? 0;
+    final hasUnread = unreadCount > 0;
 
     return ListTile(
       onTap: () => _navigateToConversation(child),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: CircleAvatar(
-        radius: 28,
-        backgroundColor: const Color(0xFF0288D1).withOpacity(0.1),
-        backgroundImage: child.photoUrl != null
-            ? childPhotoProvider(child.photoUrl!)
-            : null,
-        child: child.photoUrl == null
-            ? Text(
-                child.firstName[0].toUpperCase(),
-                style: const TextStyle(
-                  color: Color(0xFF0288D1),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: const Color(0xFF0288D1).withOpacity(0.1),
+            backgroundImage: child.photoUrl != null
+                ? childPhotoProvider(child.photoUrl!)
+                : null,
+            child: child.photoUrl == null
+                ? Text(
+                    child.firstName[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Color(0xFF0288D1),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  )
+                : null,
+          ),
+          if (hasUnread)
+            Positioned(
+              top: -2,
+              right: -2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.getSurfaceColor(AppColors.isDarkMode(context)),
+                    width: 2,
+                  ),
                 ),
-              )
-            : null,
+                child: Text(
+                  unreadCount > 99 ? '99+' : '$unreadCount',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       title: Text(
         child.fullName,
         style: TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w600,
           color: AppColors.screenTextPrimaryThemed(context),
         ),
       ),

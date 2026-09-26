@@ -29,6 +29,7 @@ import '../services/database_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/gestion_presence_eleve_service.dart';
 import '../services/consultation_api_service.dart';
+import '../models/eleve_consultation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../utils/child_photo.dart';
 import '../services/notification_service.dart';
@@ -58,6 +59,7 @@ import 'inscription_screen.dart' as inscription;
 import '../widgets/payment_bottom_sheet.dart';
 import '../services/paiement_service.dart';
 import '../services/group_message_service.dart';
+import '../services/message_service.dart';
 import '../services/echeance_service.dart';
 import '../models/group_message.dart';
 import '../models/echeance_notification.dart';
@@ -293,6 +295,13 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Child> _children = [];
   List<Child> _filteredChildren = [];
   bool _isLoading = true;
+
+  // Enfants pour lesquels un backfill de photo a déjà été tenté cette
+  // session (succès ou échec) : évite de rappeler GET .../eleves (liste
+  // complète des élèves de l'établissement, potentiellement des centaines)
+  // à chaque _loadChildren() (pull-to-refresh, etc.) pour un enfant dont la
+  // photo reste introuvable.
+  final Set<String> _photoBackfillAttempted = {};
   String? _error;
   final TextSizeService _textSizeService = TextSizeService();
   final ThemeService _themeService = ThemeService();
@@ -326,6 +335,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _unreadNotificationsCount = 0;
   bool _notificationsLoading = false;
+
+  // Messages parent-professeur non lus par enfant (child.id), pour inclure
+  // leur total dans le badge de la cloche de notifications — même source
+  // que le badge par enfant sur l'écran Messages (getMessagesForStudent).
+  final Map<String, int> _unreadMessagesByChild = {};
+  int get _unreadMessagesTotal =>
+      _unreadMessagesByChild.values.fold(0, (a, b) => a + b);
   bool _hasUpdateNotification = false;
   String _activeFilter = 'Tout';
   int _selectedChildIndex = 0;
@@ -687,6 +703,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
       _updatePhotosInBackground(children);
+      _loadUnreadMessagesCount(children);
       await _loadChildrenPresenceSignals();
     } catch (e) {
       if (!mounted) return;
@@ -1785,11 +1802,63 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Nombre de messages parent-professeur non lus par enfant, un par un en
+  /// arrière-plan — même source (`getMessagesForStudent`, champ
+  /// `unread_count` de la conversation) que le badge par enfant de l'écran
+  /// Messages, pour que la cloche de notifications de l'accueil reflète
+  /// aussi les nouveaux messages.
+  Future<void> _loadUnreadMessagesCount(List<Child> children) async {
+    final currentUser = AuthService.instance.getCurrentUser();
+    if (currentUser == null) return;
+    final messageService = MessageService();
+
+    for (final child in children) {
+      if (child.id.isEmpty) continue;
+      try {
+        final childInfo = await DatabaseService.instance.getChildInfoById(
+          child.id,
+        );
+        final matricule = childInfo?['matricule'] as String?;
+        if (matricule == null || matricule.isEmpty) continue;
+
+        final result = await messageService.getMessagesForStudent(
+          currentUser.phone,
+          matricule,
+        );
+        final conversationData =
+            result['conversationData'] as Map<String, dynamic>?;
+        final rawCount = conversationData?['unread_count'];
+        final unreadCount = rawCount is int
+            ? rawCount
+            : int.tryParse(rawCount?.toString() ?? '') ?? 0;
+
+        if (!mounted) return;
+        setState(() {
+          _unreadMessagesByChild[child.id] = unreadCount;
+        });
+      } catch (_) {
+        // Best-effort : ne bloque pas le reste, pas de mise à jour pour cet
+        // enfant en cas d'erreur.
+      }
+    }
+  }
+
   Future<void> _updatePhotosInBackground(List<Child> children) async {
     final consultationApi = ConsultationApiService();
+    // Partagé entre tous les enfants de ce passage : évite de rappeler
+    // GET .../eleves (liste complète, potentiellement des centaines
+    // d'élèves) une fois par enfant quand plusieurs enfants du même parent
+    // sont dans le même établissement.
+    final Map<String, List<EleveConsultation>> rosterCache = {};
+
     for (final child in children) {
       if ((child.photoUrl == null || child.photoUrl!.isEmpty) &&
-          child.id.isNotEmpty) {
+          child.id.isNotEmpty &&
+          !_photoBackfillAttempted.contains(child.id)) {
+        // Marqué avant la tentative, succès ou échec : ne réessaie plus à
+        // chaque _loadChildren() (pull-to-refresh...) si la photo reste
+        // introuvable pour cet enfant.
+        _photoBackfillAttempted.add(child.id);
         try {
           final childInfo = await DatabaseService.instance.getChildInfoById(
             child.id,
@@ -1812,6 +1881,7 @@ class _HomeScreenState extends State<HomeScreen> {
               schoolId,
               matricule,
               child.id,
+              rosterCache,
             );
           }
 
@@ -1851,18 +1921,20 @@ class _HomeScreenState extends State<HomeScreen> {
     String schoolId,
     String matricule,
     String childId,
+    Map<String, List<EleveConsultation>> rosterCache,
   ) async {
     try {
-      final annees = await consultationApi.getAnnees(schoolId);
-      if (annees.isEmpty) return null;
-      final anneeCourante = annees.firstWhere(
-        (a) => a.courante,
-        orElse: () => annees.first,
-      );
-      final eleves = await consultationApi.getEleves(
-        schoolId,
-        anneeCourante.ref,
-      );
+      List<EleveConsultation>? eleves = rosterCache[schoolId];
+      if (eleves == null) {
+        final annees = await consultationApi.getAnnees(schoolId);
+        if (annees.isEmpty) return null;
+        final anneeCourante = annees.firstWhere(
+          (a) => a.courante,
+          orElse: () => annees.first,
+        );
+        eleves = await consultationApi.getEleves(schoolId, anneeCourante.ref);
+        rosterCache[schoolId] = eleves;
+      }
       final eleve = eleves
           .where((e) => e.matricule.toLowerCase() == matricule.toLowerCase())
           .firstOrNull;
@@ -2065,10 +2137,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.notifications_outlined,
                   onTap: _showNotificationsMenu,
                   showBadge:
-                      _unreadNotificationsCount > 0 || _hasUpdateNotification,
+                      _unreadNotificationsCount > 0 ||
+                      _hasUpdateNotification ||
+                      _unreadMessagesTotal > 0,
                   badgeCount:
                       _unreadNotificationsCount +
-                      (_hasUpdateNotification ? 1 : 0),
+                      (_hasUpdateNotification ? 1 : 0) +
+                      _unreadMessagesTotal,
                   isPulsing: _hasUpdateNotification,
                 ),
               ),

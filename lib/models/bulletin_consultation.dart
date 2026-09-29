@@ -48,6 +48,15 @@ class BulletinConsultation {
 
   bool get estProvisoire => statut == 'PROVISOIRE';
 
+  /// Vrai tant qu'aucune décision de fin d'année n'a été enregistrée pour
+  /// cet élève : la période reste sujette à changement même après que
+  /// l'établissement a lancé un premier calcul de moyenne (qui fait passer
+  /// `statut` hors de PROVISOIRE, mais ne clôture pas la période pour
+  /// autant) — sert à garder une mention "provisoire" allégée au-delà du
+  /// bandeau complet, tant que ce champ reste vide.
+  bool get periodeNonCloturee =>
+      decisionFinAnnee == null || decisionFinAnnee!.trim().isEmpty;
+
   factory BulletinConsultation.fromJson(Map<String, dynamic> json) {
     return BulletinConsultation(
       matricule: json['matricule'] as String? ?? '',

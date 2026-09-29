@@ -244,7 +244,9 @@ class _MessagesScreenState extends State<MessagesScreen>
                              errorString.contains('Software caused connection abort');
                              
       if (!isNetworkError) {
-        _showError('Erreur chargement enfants: $errorString');
+        // Message générique et non technique, même logique que
+        // _loadConversations : jamais l'exception brute à l'écran.
+        _showError('Impossible de charger vos enfants pour le moment. Veuillez réessayer.');
       }
     }
   }
@@ -377,7 +379,9 @@ class _MessagesScreenState extends State<MessagesScreen>
                              errorString.contains('Software caused connection abort');
 
       if (!isNetworkError) {
-        _showError('Erreur chargement: $errorString');
+        // Message générique et non technique : ne jamais exposer le detail
+        // brut de l'exception (ApiException(...), stack, etc.) à l'écran.
+        _showError('Impossible de charger les messages pour le moment. Veuillez réessayer.');
       }
     }
   }

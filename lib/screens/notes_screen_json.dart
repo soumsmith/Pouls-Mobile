@@ -685,7 +685,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
           opacity: _fadeAnimation,
           child: Column(
             children: [
-              if (_selectedBulletin!.estProvisoire) _buildProvisoireBanner(),
+              if (_selectedBulletin!.estProvisoire)
+                _buildProvisoireBanner()
+              else if (_selectedBulletin!.periodeNonCloturee)
+                _buildProvisoireBadge(),
               _buildAverageCards(),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -732,6 +735,43 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Version allégée du bandeau ci-dessus : une fois le premier calcul de
+  /// moyenne lancé par l'établissement (statut hors PROVISOIRE), le message
+  /// détaillé n'a plus lieu d'être, mais la période reste sujette à
+  /// changement tant qu'aucune décision de fin d'année n'a été enregistrée
+  /// — on garde donc une simple mention.
+  Widget _buildProvisoireBadge() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: AppColors.screenOrange.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.screenOrange.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.info_outline, color: AppColors.screenOrange, size: 13),
+              const SizedBox(width: 5),
+              Text(
+                'Bulletin provisoire',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.screenOrange,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1492,40 +1532,50 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatBadge(
-                              'Coef',
-                              matiere.coefficient?.toStringAsFixed(1) ?? '1.0',
-                              Colors.grey[600]!,
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 90,
+                              child: _buildStatBadge(
+                                'Coef',
+                                matiere.coefficient?.toStringAsFixed(1) ?? '1.0',
+                                Colors.grey[600]!,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildStatBadge(
-                              'Rang',
-                              matiere.rang != null ? '${matiere.rang}e' : 'N/A',
-                              Colors.grey[600]!,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 90,
+                              child: _buildStatBadge(
+                                'Rang',
+                                matiere.rang != null ? '${matiere.rang}e' : 'N/A',
+                                Colors.grey[600]!,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildStatBadge(
-                              'Moyenne',
-                              avg.toStringAsFixed(2),
-                              AppColors.screenOrange,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 90,
+                              child: _buildStatBadge(
+                                'Moyenne',
+                                avg.toStringAsFixed(2),
+                                AppColors.screenOrange,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _buildStatBadge(
-                        'Appréciation',
-                        matiere.appreciation?.isNotEmpty == true
-                            ? matiere.appreciation!
-                            : 'N/A',
-                        Colors.grey[600]!,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 140,
+                              child: _buildStatBadge(
+                                'Appréciation',
+                                matiere.appreciation?.isNotEmpty == true
+                                    ? matiere.appreciation!
+                                    : 'N/A',
+                                Colors.grey[600]!,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       if (matiere.notes.isNotEmpty) ...[
                         const SizedBox(height: 14),

@@ -42,6 +42,13 @@ class ConsultationApiService {
   /// réinterroger l'API à chaque écran notes/bulletins ouvert.
   List<EtablissementConsultation>? _etablissementsCache;
 
+  /// Cache mémoire de la liste complète des élèves par établissement/année
+  /// (clé "schoolId|anneeRef"), key sur le service singleton pour survivre
+  /// à la recréation de HomeScreen (le bandeau Accueil est reconstruit à
+  /// chaque navigation, ce qui rejouait cet appel — coûteux, des centaines
+  /// d'élèves — en boucle sur n'importe quel écran).
+  final Map<String, List<EleveConsultation>> _elevesCache = {};
+
   Future<Map<String, String>> _authHeaders({String accept = 'application/json'}) async {
     final token = await PedagogieAuthService().getValidToken();
     return {
@@ -277,6 +284,10 @@ class ConsultationApiService {
   /// Un même matricule peut apparaître deux fois (élève inscrit dans deux
   /// classes) : ne jamais en élire une d'office côté appelant.
   Future<List<EleveConsultation>> getEleves(String schoolId, String anneeRef) async {
+    final cacheKey = '$schoolId|$anneeRef';
+    final cached = _elevesCache[cacheKey];
+    if (cached != null) return cached;
+
     try {
       final uri = Uri.parse(
         '$_baseUrl/consultation/etablissements/$schoolId/annees/$anneeRef/eleves',
@@ -284,7 +295,9 @@ class ConsultationApiService {
       final response = await _getWithRetry(uri, 'élèves');
       if (response.statusCode != 200) _throwForStatus('la liste des élèves', response);
       final List<dynamic> data = json.decode(response.body);
-      return data.map((e) => EleveConsultation.fromJson(e as Map<String, dynamic>)).toList();
+      final eleves = data.map((e) => EleveConsultation.fromJson(e as Map<String, dynamic>)).toList();
+      _elevesCache[cacheKey] = eleves;
+      return eleves;
     } catch (e) {
       _logException('élèves', e);
       ApiExceptionHandler.handle(e, context: 'la récupération des élèves');
@@ -337,6 +350,7 @@ class ConsultationApiService {
     String schoolId,
     String matricule, {
     required String anneeRef,
+    bool showNotification = true,
   }) async {
     try {
       final uri = Uri.parse(
@@ -348,7 +362,11 @@ class ConsultationApiService {
       return data.map((e) => ClasseConsultation.fromJson(e as Map<String, dynamic>)).toList();
     } catch (e) {
       _logException('classes', e);
-      ApiExceptionHandler.handle(e, context: 'la récupération des classes');
+      ApiExceptionHandler.handle(
+        e,
+        context: 'la récupération des classes',
+        showNotification: showNotification,
+      );
       rethrow;
     }
   }
@@ -429,6 +447,7 @@ class ConsultationApiService {
     String matricule, {
     required String anneeRef,
     String? classeRef,
+    bool showNotification = true,
   }) async {
     try {
       final queryParams = {
@@ -444,7 +463,11 @@ class ConsultationApiService {
       return data.map((e) => BulletinConsultation.fromJson(e as Map<String, dynamic>)).toList();
     } catch (e) {
       _logException('bulletins (liste)', e);
-      ApiExceptionHandler.handle(e, context: 'la récupération des bulletins');
+      ApiExceptionHandler.handle(
+        e,
+        context: 'la récupération des bulletins',
+        showNotification: showNotification,
+      );
       rethrow;
     }
   }

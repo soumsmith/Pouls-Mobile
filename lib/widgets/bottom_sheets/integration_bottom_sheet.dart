@@ -918,8 +918,8 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           hint: 'Ex: 002016',
           icon: Icons.pin_outlined,
           controller: _drenController,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          keyboardType: TextInputType.text,
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
           required: true,
         ),
         const SizedBox(height: 12),
@@ -1057,6 +1057,7 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
           hint: 'Entrez le matricule',
           icon: Icons.badge_rounded,
           controller: _matriculeController,
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
           hasError: _matriculeError,
         ),
         StatefulBuilder(

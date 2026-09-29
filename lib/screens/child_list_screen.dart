@@ -3120,7 +3120,9 @@ class _ChildListScreenState extends State<ChildListScreen>
                     Row(
                       children: [
                         Text(
-                          widget.child.grade,
+                          _eleveDetail?['nom_classe']?.toString().trim().isNotEmpty == true
+                              ? _eleveDetail!['nom_classe'].toString()
+                              : widget.child.grade,
                           style: TextStyle(
                             fontSize: _textSizeService.getScaledFontSize(14),
                             color: Colors.white.withOpacity(0.9),
@@ -8260,10 +8262,15 @@ class _ChildListScreenState extends State<ChildListScreen>
     } catch (e) {
       print('??? Erreur lors du chargement des messages: $e');
 
-      // Vérifier si l'erreur est un 404 (élève non trouvé)
-      if (e.toString().contains('404') ||
-          e.toString().contains('Élève non trouvé')) {
-        // Afficher une notification snackbar pour l'erreur 404
+      // Vérifier si l'erreur est un 404 (élève non trouvé). Ne montrer la
+      // bannière que si cet écran est toujours affiché : sinon une requête
+      // encore en vol pour un enfant précédemment consulté peut échouer
+      // après coup et afficher une erreur "Élève non trouvé" hors contexte
+      // (ex. par-dessus l'écran d'accueil, juste après l'ajout d'un autre
+      // enfant qui a remplacé toute la pile de navigation).
+      if (mounted &&
+          (e.toString().contains('404') ||
+              e.toString().contains('Élève non trouvé'))) {
         NotificationHelper.showError(
           'Élève non trouvé Vérifiez le matricule de l\'élève',
         );
@@ -8546,6 +8553,7 @@ class _ChildListScreenState extends State<ChildListScreen>
           matricule,
           anneeRef: annee.ref,
           classeRef: classeRef,
+          showNotification: false,
         );
         if (bulletins.isNotEmpty) {
           bulletin = bulletins.last;
@@ -8894,6 +8902,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         schoolId,
         matricule,
         anneeRef: anneeRef,
+        showNotification: false,
       );
       if (classes.isNotEmpty) return classes.first.classeRef;
     } catch (_) {
@@ -9027,6 +9036,7 @@ class _ChildListScreenState extends State<ChildListScreen>
         matricule,
         anneeRef: annee.ref,
         classeRef: classeRef,
+        showNotification: false,
       );
       var effectiveAnnee = annee;
 
@@ -9049,6 +9059,7 @@ class _ChildListScreenState extends State<ChildListScreen>
             matricule,
             anneeRef: candidate.ref,
             classeRef: candidateClasseRef,
+            showNotification: false,
           );
           if (result.isNotEmpty) {
             bulletins = result;
@@ -9285,19 +9296,19 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return CustomErrorState(
       title: isNetworkError
-          ? 'Erreur de connexion'
+          ? 'Informations indispensables manquantes'
           : 'Aucun bulletin disponible',
       message: isNetworkError
-          ? 'Impossible de se connecter au serveur.\nVeuillez vérifier votre connexion internet.'
+          ? 'Certaines informations indispensables à l\'affichage des bulletins ne sont pas disponibles pour le moment.\nVeuillez vérifier votre connexion et réessayer.'
           : 'Les bulletins ne sont pas encore disponibles pour cette période scolaire.',
       icon: isNetworkError
-          ? Icons.wifi_off_rounded
+          ? Icons.info_outline_rounded
           : Icons.description_outlined,
-      iconColor: isNetworkError ? Colors.red : AppColors.screenOrange,
-      buttonColor: isNetworkError ? Colors.red : AppColors.screenOrange,
+      iconColor: AppColors.screenOrange,
+      buttonColor: AppColors.screenOrange,
       buttonIsLight: true,
       buttonHasBorder: true,
-      buttonBorderColor: isNetworkError ? Colors.red : AppColors.screenOrange,
+      buttonBorderColor: AppColors.screenOrange,
       retryText: 'Réessayer',
       onRetry: () {
         setState(() {

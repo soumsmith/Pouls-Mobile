@@ -19,6 +19,7 @@ import '../utils/auth_guard.dart';
 import '../config/app_config.dart';
 import '../config/app_colors.dart';
 import '../services/theme_service.dart';
+import '../services/home_background_service.dart';
 import '../screens/login_screen.dart';
 import '../app.dart';
 
@@ -73,6 +74,7 @@ class BottomSheetMenu extends StatefulWidget {
 class _BottomSheetMenuState extends State<BottomSheetMenu> {
   final CartService _cartService = MockCartService();
   final ThemeService _themeService = ThemeService();
+  final HomeBackgroundService _homeBackgroundService = HomeBackgroundService();
   int _cartItemCount = 0;
   int _ticketCount = 0;
 
@@ -81,6 +83,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
     super.initState();
     _loadCartCount();
     _loadTicketCount();
+    _homeBackgroundService.loadStyle();
   }
 
   Future<void> _loadCartCount() async {
@@ -170,7 +173,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _themeService,
+      animation: Listenable.merge([_themeService, _homeBackgroundService]),
       builder: (context, child) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
@@ -207,12 +210,17 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
               Flexible(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  child: _buildMenuList(),
+                  child: Column(
+                    children: [
+                      _buildMenuList(),
+                      _buildHomeBackgroundRow(isDark),
+                    ],
+                  ),
                 ),
               ),
               _buildLogoutButton(),
-              const SizedBox(height: 8),
-              const BottomSpacer(),
+              const SizedBox(height: 4),
+              const BottomSpacer(height: 40),
             ],
           ),
         );
@@ -230,6 +238,83 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
         children: List.generate(items.length, (i) {
           return _MenuTile(item: items[i], showDivider: i < items.length - 1);
         }),
+      ),
+    );
+  }
+
+  // ── Fond d'écran de l'accueil (sous Thème sombre) ──────────
+  Widget _buildHomeBackgroundRow(bool isDark) {
+    final textPrimary = isDark ? Colors.white : _kTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : _kTextSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Fond d\'écran de l\'accueil',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: textSecondary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 52,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: HomeBackgroundStyle.values.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 14),
+              itemBuilder: (context, index) {
+                final style = HomeBackgroundStyle.values[index];
+                final isSelected = _homeBackgroundService.style == style;
+                return GestureDetector(
+                  onTap: () => _homeBackgroundService.setStyle(style),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 26,
+                        height: 26,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          gradient: style.gradient,
+                          color: style.gradient == null ? Colors.black : null,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected
+                                ? _kOrange
+                                : (isDark ? Colors.white24 : Colors.black12),
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 13,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        style.label,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

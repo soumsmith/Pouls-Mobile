@@ -424,11 +424,15 @@ class MessageService {
     String matricule, {
     int perPage = 20,
     int page = 1,
+    bool showNotification = true,
   }) async {
     try {
       print('📨 Récupération des messages pour l\'élève $matricule du parent $phoneNumber');
-      
-      final response = await HttpService.get('/vie-ecoles/messages/$phoneNumber/eleve/$matricule?per_page=$perPage&page=$page');
+
+      final response = await HttpService.get(
+        '/vie-ecoles/messages/$phoneNumber/eleve/$matricule?per_page=$perPage&page=$page',
+        showNotification: showNotification,
+      );
       
       if (response['status'] == true && response['data'] != null) {
         final innerData = response['data'];
@@ -467,7 +471,7 @@ class MessageService {
         'messages': [],
       };
     } catch (e) {
-      print('❌ Erreur lors de la récupération des messages: $e');
+      print('❌ Erreur lors de la récupération des messages pour l\'élève $matricule (parent $phoneNumber): $e');
       throw Exception('Erreur lors du chargement des messages: $e');
     }
   }

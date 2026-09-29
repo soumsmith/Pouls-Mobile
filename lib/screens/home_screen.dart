@@ -35,6 +35,7 @@ import '../utils/child_photo.dart';
 import '../services/notification_service.dart';
 import '../services/text_size_service.dart';
 import '../services/theme_service.dart';
+import '../services/home_background_service.dart';
 import '../services/integration_request_service.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_guard.dart';
@@ -95,7 +96,6 @@ import 'force_update_screen.dart';
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const _kDarkBg = Color(0xFF0F0F14);
-const _kDarkCard = Color(0xFF1E1E2A);
 const _kDarkBorder = Color(0xFF2A2A35);
 const _kOrange = Color(0xFFFF7A3C);
 const _kOrangeDeep = Color(0xFFFF5C1B);
@@ -305,6 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
   final TextSizeService _textSizeService = TextSizeService();
   final ThemeService _themeService = ThemeService();
+  final HomeBackgroundService _homeBackgroundService = HomeBackgroundService();
   final TextEditingController _matriculeController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
@@ -418,6 +419,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _textSizeService.addListener(() {
       if (mounted) setState(() {});
     });
+    _homeBackgroundService.loadStyle();
+    _homeBackgroundService.addListener(_onHomeBackgroundChanged);
     _loadChildren();
     _loadUnreadNotificationsCount();
     _checkAppUpdate();
@@ -428,6 +431,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadVisiteGuideeVideos(); // Ajouter cette ligne
     _loadAstuces(); // Charger les astuces/conseils
     _startPresenceAutoScrollIfNeeded();
+  }
+
+  void _onHomeBackgroundChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _refreshHome() async {
@@ -449,6 +456,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     ConnectivityService().removeReconnectCallback(_onReconnect);
     _textSizeService.removeListener(() {});
+    _homeBackgroundService.removeListener(_onHomeBackgroundChanged);
     _matriculeController.dispose();
     _searchController.dispose();
 
@@ -1824,6 +1832,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final result = await messageService.getMessagesForStudent(
           currentUser.phone,
           matricule,
+          showNotification: false,
         );
         final conversationData =
             result['conversationData'] as Map<String, dynamic>?;
@@ -2034,7 +2043,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Stack(
         children: [
-          Scaffold(backgroundColor: Colors.black, body: bodyContent),
+          Scaffold(
+            backgroundColor: _homeBackgroundService.seamColor,
+            body: bodyContent,
+          ),
           // const AdWidget(), // Mis en commentaire pour le nouveau test de publicité
         ],
       ),
@@ -2044,7 +2056,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── DARK HEADER SECTION ───────────────────────────────────────────────────
   Widget _buildDarkHeader() {
     return Container(
-      color: Colors.black,
+      decoration: _homeBackgroundService.decoration,
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -2678,6 +2690,13 @@ class _HomeScreenState extends State<HomeScreen> {
       return const SizedBox.shrink();
     }
 
+    // Même logique que les avatars/le bouton Nouveau : couleur sombre
+    // seulement sur fond noir (peu visible sinon), blanche sur les
+    // dégradés colorés.
+    final isBlackBackground =
+        _homeBackgroundService.style == HomeBackgroundStyle.black;
+    final dotColor = isBlackBackground ? _kTextSecondary : Colors.white;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: ValueListenableBuilder<int>(
@@ -2694,8 +2713,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: currentIndex == index ? 18 : 6,
                 decoration: BoxDecoration(
                   color: currentIndex == index
-                      ? AppColors.homeTextSecondary(context)
-                      : AppColors.homeTextSecondary(context).withOpacity(0.3),
+                      ? dotColor
+                      : dotColor.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -3030,26 +3049,47 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Stack(
               children: [
-                Container(
-                  width: AppDimensions.getChildImageSize(context),
-                  height: AppDimensions.getChildImageSize(context),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _kDarkCard,
-                    border: Border.all(
-                      color: isSelected ? _kOrange : _kDarkBorder,
-                      width: 2.5,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: child.photoUrl != null && child.photoUrl!.isNotEmpty
-                        ? Image(
-                            image: childPhotoProvider(child.photoUrl!),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _defaultChildIcon(),
-                          )
-                        : _defaultChildIcon(),
-                  ),
+                Builder(
+                  builder: (context) {
+                    final hasPhoto =
+                        child.photoUrl != null && child.photoUrl!.isNotEmpty;
+                    // Contour sombre uniquement sur fond noir (peu visible
+                    // sinon) ; blanc sur les dégradés colorés — que l'enfant
+                    // ait une photo ou non.
+                    final isBlackBackground =
+                        _homeBackgroundService.style == HomeBackgroundStyle.black;
+                    return Container(
+                      width: AppDimensions.getChildImageSize(context),
+                      height: AppDimensions.getChildImageSize(context),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        // Transparent : sans photo, le fond d'accueil choisi
+                        // (noir ou dégradé bleu/vert/orange) transparaît au
+                        // lieu d'un fond sombre fixe. Sans effet quand une
+                        // photo est présente, puisqu'elle couvre tout le
+                        // cercle.
+                        color: Colors.transparent,
+                        border: Border.all(
+                          color: isSelected
+                              ? _kOrange
+                              : (isBlackBackground
+                                  ? _kDarkBorder
+                                  : Colors.white.withOpacity(0.7)),
+                          width: 2.5,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: hasPhoto
+                            ? Image(
+                                image: childPhotoProvider(child.photoUrl!),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _defaultChildIcon(),
+                              )
+                            : _defaultChildIcon(),
+                      ),
+                    );
+                  },
                 ),
                 // Badge de notification dynamique
                 if (getNotificationCountForChild(child) > 0)
@@ -3063,7 +3103,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
-                        border: Border.all(color: _kDarkBg, width: 2),
+                        // Même logique que les avatars/le bouton Nouveau :
+                        // contour sombre seulement sur fond noir, blanc sur
+                        // les dégradés colorés.
+                        border: Border.all(
+                          color:
+                              _homeBackgroundService.style ==
+                                      HomeBackgroundStyle.black
+                                  ? _kDarkBg
+                                  : Colors.white,
+                          width: 2,
+                        ),
                       ),
                       constraints: BoxConstraints(
                         minWidth: AppDimensions.getNotificationBadgeSize(
@@ -3105,7 +3155,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               child.grade.isNotEmpty ? child.grade : '---',
               style: TextStyle(
-                color: _kOrange,
+                color: Colors.white,
                 fontSize: AppDimensions.getChildGradeTextSize(context),
               ),
               textAlign: TextAlign.center,
@@ -3117,15 +3167,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _defaultChildIcon() {
-    return Container(
-      color: const Color(
-        0xFF141414,
-      ), // Toujours sombre car le header est toujours noir
-      child: const Icon(Icons.person, color: Color(0xFF8A8AFF), size: 26),
+    // Transparent : s'adapte automatiquement au fond d'accueil choisi par
+    // l'utilisateur (noir ou dégradé bleu/vert/orange) au lieu d'un fond
+    // sombre fixe qui ne convenait qu'au noir.
+    return const ColoredBox(
+      color: Colors.transparent,
+      child: Icon(Icons.person, color: Colors.white, size: 26),
     );
   }
 
   Widget _buildAddChildButton() {
+    // Même logique que les avatars : contour/texte sombres seulement sur
+    // fond noir (peu visibles sinon), blancs sur les dégradés colorés.
+    final isBlackBackground =
+        _homeBackgroundService.style == HomeBackgroundStyle.black;
+    final borderColor = isBlackBackground ? _kDarkBorder : Colors.white.withOpacity(0.7);
+    final labelColor = isBlackBackground ? _kTextSecondary : Colors.white;
+
     final addChildCard = GestureDetector(
       onTap: () async {
         await AuthGuard.ensureLoggedIn(
@@ -3148,7 +3206,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: _kDarkBorder,
+                  color: borderColor,
                   width: 2,
                   style: BorderStyle
                       .solid, // dashed not directly supported; use a package for dashed
@@ -3164,7 +3222,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               'Nouveau',
               style: TextStyle(
-                color: _kTextSecondary,
+                color: labelColor,
                 fontSize: AppDimensions.getChildNameTextSize(context),
                 fontWeight: FontWeight.w500,
               ),
@@ -3203,7 +3261,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: Colors.grey.withOpacity(0.1),
                           shape: BoxShape.circle,
-                          border: Border.all(color: _kDarkBorder, width: 2),
+                          border: Border.all(color: borderColor, width: 2),
                         ),
                         child: Stack(
                           alignment: Alignment.center,
@@ -3232,7 +3290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         'Nouveau',
                         style: TextStyle(
-                          color: _kTextSecondary,
+                          color: labelColor,
                           fontSize: AppDimensions.getChildNameTextSize(
                             context,
                           ),

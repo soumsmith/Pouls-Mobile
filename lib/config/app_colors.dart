@@ -489,6 +489,28 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
+  // ================= FOND D'ÉCRAN PERSONNALISABLE (ACCUEIL) =================
+  // Deux teintes de la même couleur (clair → foncé), sans virer au noir —
+  // voir HomeBackgroundService.
+
+  static const LinearGradient homeBackgroundBlueGradient = LinearGradient(
+    colors: [Color(0xFF1E6FE0), Color(0xFF0A2E6B)],
+    begin: Alignment.bottomCenter,
+    end: Alignment.topCenter,
+  );
+
+  static const LinearGradient homeBackgroundGreenGradient = LinearGradient(
+    colors: [Color(0xFF3FA35B), Color(0xFF0F3D1F)],
+    begin: Alignment.bottomCenter,
+    end: Alignment.topCenter,
+  );
+
+  static const LinearGradient homeBackgroundOrangeGradient = LinearGradient(
+    colors: [Color(0xFFE85D1F), Color(0xFF5C1B02)],
+    begin: Alignment.bottomCenter,
+    end: Alignment.topCenter,
+  );
+
   // ================= GRADIENTS POUR LES ÉCRANS DE BOUTIQUE =================
 
   static const LinearGradient shopGreenGradient = LinearGradient(

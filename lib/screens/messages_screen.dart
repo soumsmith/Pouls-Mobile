@@ -263,6 +263,7 @@ class _MessagesScreenState extends State<MessagesScreen>
         final result = await _messageService.getMessagesForStudent(
           currentUser.phone,
           matricule,
+          showNotification: false,
         );
         final conversationData =
             result['conversationData'] as Map<String, dynamic>?;
@@ -290,6 +291,7 @@ class _MessagesScreenState extends State<MessagesScreen>
       final result = await _messageService.getMessagesForStudent(
         currentUser.phone,
         _args?.studentMatricule ?? '',
+        showNotification: false,
       );
 
       if (!mounted) return;
@@ -350,27 +352,30 @@ class _MessagesScreenState extends State<MessagesScreen>
       _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      // Rafraîchissement silencieux (toutes les 10s) : ne pas ré-afficher
+      // la même erreur à chaque tick tant que l'utilisateur reste sur
+      // l'écran — un seul avertissement suffit, au chargement initial.
+      if (silent) return;
 
       if (e.toString().contains('404') ||
           e.toString().contains('Élève non trouvé')) {
         NotificationHelper.showError(
           'Élève non trouvé Vérifiez le matricule de l\'élève',
         );
-        setState(() => _isLoading = false);
         return;
       }
 
-      setState(() => _isLoading = false);
-      
       final errorString = e.toString();
-      final isNetworkError = errorString.contains('SocketException') || 
+      final isNetworkError = errorString.contains('SocketException') ||
                              errorString.contains('ClientException') ||
                              errorString.contains('Failed host lookup') ||
                              errorString.contains('No address associated') ||
                              errorString.contains('Connection refused') ||
                              errorString.contains('Network is unreachable') ||
                              errorString.contains('Software caused connection abort');
-                             
+
       if (!isNetworkError) {
         _showError('Erreur chargement: $errorString');
       }

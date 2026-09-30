@@ -27,6 +27,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/custom_button.dart';
 import 'add_child_screen.dart';
 import '../widgets/scroll_to_top_fab.dart';
+import '../widgets/components/bottom_spacer.dart';
 
 // ─── ENUM : types de pièce jointe ────────────────────────────────────────────
 enum AttachmentType { none, image, audio, document }
@@ -436,7 +437,7 @@ class _MessagesScreenState extends State<MessagesScreen>
         floatingActionButton: ScrollToTopFab(
           scrollController: _scrollController,
           bottomSpacerHeight: 70,
-          isScrollToTop: false,
+          isScrollToTop: !_hasStudentContext,
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
         body: CustomScrollView(
@@ -560,15 +561,22 @@ class _MessagesScreenState extends State<MessagesScreen>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: ListView.separated(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _children.length,
-        separatorBuilder: (context, index) => Divider(
-          height: 1,
-          indent: 72,
-          endIndent: 16,
-          color: AppColors.screenDividerThemed(context),
-        ),
+        itemCount: _children.length + 1,
+        separatorBuilder: (context, index) {
+          if (index == _children.length - 1) return const SizedBox.shrink();
+          return Divider(
+            height: 1,
+            indent: 72,
+            endIndent: 16,
+            color: AppColors.screenDividerThemed(context),
+          );
+        },
         itemBuilder: (context, index) {
+          if (index == _children.length) {
+            return const BottomSpacer(height: 80);
+          }
           final child = _children[index];
           return _buildChildListItem(child);
         },

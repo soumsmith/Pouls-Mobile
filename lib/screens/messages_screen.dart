@@ -22,7 +22,6 @@ import '../models/child.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../services/text_size_service.dart';
-import '../utils/notification_helper.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/custom_button.dart';
 import 'add_child_screen.dart';
@@ -247,7 +246,6 @@ class _MessagesScreenState extends State<MessagesScreen>
       if (!isNetworkError) {
         // Message générique et non technique, même logique que
         // _loadConversations : jamais l'exception brute à l'écran.
-        _showError('Impossible de charger vos enfants pour le moment. Veuillez réessayer.');
       }
     }
   }
@@ -362,28 +360,6 @@ class _MessagesScreenState extends State<MessagesScreen>
       // l'écran — un seul avertissement suffit, au chargement initial.
       if (silent) return;
 
-      if (e.toString().contains('404') ||
-          e.toString().contains('Élève non trouvé')) {
-        NotificationHelper.showError(
-          'Élève non trouvé Vérifiez le matricule de l\'élève',
-        );
-        return;
-      }
-
-      final errorString = e.toString();
-      final isNetworkError = errorString.contains('SocketException') ||
-                             errorString.contains('ClientException') ||
-                             errorString.contains('Failed host lookup') ||
-                             errorString.contains('No address associated') ||
-                             errorString.contains('Connection refused') ||
-                             errorString.contains('Network is unreachable') ||
-                             errorString.contains('Software caused connection abort');
-
-      if (!isNetworkError) {
-        // Message générique et non technique : ne jamais exposer le detail
-        // brut de l'exception (ApiException(...), stack, etc.) à l'écran.
-        _showError('Impossible de charger les messages pour le moment. Veuillez réessayer.');
-      }
     }
   }
 
@@ -397,20 +373,6 @@ class _MessagesScreenState extends State<MessagesScreen>
         );
       }
     });
-  }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  //  SNACKBARS
-  // ════════════════════════════════════════════════════════════════════════════
-
-  void _showError(String msg) {
-    if (!mounted) return;
-    NotificationHelper.showError(msg);
-  }
-
-  void _showSuccess(String msg) {
-    if (!mounted) return;
-    NotificationHelper.showSuccess(msg);
   }
 
   void _openImageViewer(String imageUrl) {
@@ -441,6 +403,7 @@ class _MessagesScreenState extends State<MessagesScreen>
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
         body: CustomScrollView(
+          physics: const NeverScrollableScrollPhysics(),
           slivers: [
             _buildCustomAppBar(),
             SliverFillRemaining(
@@ -754,10 +717,6 @@ class _MessagesScreenState extends State<MessagesScreen>
 
     if (matricule.isEmpty) {
       print('   ❌ Matricule vide — navigation annulée');
-      _showError(
-        'Matricule de ${child.fullName} introuvable. '
-        'Vérifiez les données de l\'enfant.',
-      );
       return;
     }
 
@@ -1357,9 +1316,6 @@ class _MessagesScreenState extends State<MessagesScreen>
       // Filet de sécurité : certaines versions d'Android ne filtrent pas
       // toujours strictement par extension malgré `allowedExtensions`.
       if (attachmentType == null) {
-        _showError(
-          'Format non pris en charge. Formats acceptés : image, PDF.',
-        );
         return;
       }
 
@@ -1371,7 +1327,6 @@ class _MessagesScreenState extends State<MessagesScreen>
         _attachmentType = attachmentType;
       });
     } catch (e) {
-      _showError('Erreur: $e');
     }
   }
 
@@ -1383,7 +1338,6 @@ class _MessagesScreenState extends State<MessagesScreen>
     try {
       final hasPermission = await _audioRecorder!.hasPermission();
       if (!hasPermission) {
-        _showError('Permission micro refusée');
         return;
       }
       final dir = await getTemporaryDirectory();
@@ -1403,9 +1357,7 @@ class _MessagesScreenState extends State<MessagesScreen>
     } catch (e) {
       final errorString = e.toString();
       if (errorString.contains('objective_c') || errorString.contains('DOBJC_initializeApi')) {
-        _showError('Le micro n\'est pas disponible sur le simulateur iOS. Veuillez tester sur un appareil physique.');
       } else {
-        _showError('Erreur micro: $e');
       }
     }
   }
@@ -1451,11 +1403,9 @@ class _MessagesScreenState extends State<MessagesScreen>
   Future<void> _sendMessage() async {
     final currentUser = AuthService.instance.getCurrentUser();
     if (currentUser == null) {
-      _showError('Veuillez vous connecter');
       return;
     }
     if (!_hasStudentContext) {
-      _showError('Contexte élève manquant');
       return;
     }
 
@@ -1467,7 +1417,6 @@ class _MessagesScreenState extends State<MessagesScreen>
     final bool hasFile = _attachedFile != null;
 
     if (message.isEmpty && !hasFile) {
-      _showError('Écrivez un message ou joignez un fichier');
       return;
     }
 
@@ -1550,14 +1499,12 @@ class _MessagesScreenState extends State<MessagesScreen>
       if (result['success'] == true) {
         await Future.delayed(const Duration(milliseconds: 600));
         await _loadConversations(silent: true);
-        _showSuccess(result['message'] ?? 'Message envoyé !');
       } else {
         setState(() {
           _localMessages = _localMessages
               .where((m) => !identical(m, optimisticMsg))
               .toList();
         });
-        _showError(result['message'] ?? 'Erreur lors de l\'envoi');
       }
     } catch (e) {
       setState(() {
@@ -1565,7 +1512,6 @@ class _MessagesScreenState extends State<MessagesScreen>
             .where((m) => !identical(m, optimisticMsg))
             .toList();
       });
-      _showError('Erreur: $e');
     } finally {
       if (mounted) setState(() => _isSending = false);
     }

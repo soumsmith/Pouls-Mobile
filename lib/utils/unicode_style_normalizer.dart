@@ -26,8 +26,41 @@ String normalizeStylizedText(String input) {
       buffer.writeCharCode(rune);
     }
   }
+  return _composeAccents(buffer.toString());
+}
+
+String _composeAccents(String input) {
+  final runes = input.runes.toList();
+  final buffer = StringBuffer();
+  for (var i = 0; i < runes.length; i++) {
+    if (i + 1 < runes.length) {
+      final composed = _composeTable[String.fromCharCodes([runes[i], runes[i + 1]])];
+      if (composed != null) {
+        buffer.write(composed);
+        i++;
+        continue;
+      }
+    }
+    buffer.writeCharCode(runes[i]);
+  }
   return buffer.toString();
 }
+
+/// Lettre de base suivie d'un diacritique combinant (U+0300 grave, U+0301 aigu,
+/// U+0302 circonflexe, U+0308 tréma, U+0327 cédille, U+0303 tilde) vers la
+/// lettre précomposée correspondante.
+const Map<String, String> _composeTable = {
+  'à': 'à', 'á': 'á', 'â': 'â', 'ä': 'ä',
+  'è': 'è', 'é': 'é', 'ê': 'ê', 'ë': 'ë',
+  'î': 'î', 'ï': 'ï', 'ô': 'ô', 'ö': 'ö',
+  'ù': 'ù', 'ú': 'ú', 'û': 'û', 'ü': 'ü',
+  'ç': 'ç', 'ñ': 'ñ',
+  'À': 'À', 'Á': 'Á', 'Â': 'Â', 'Ä': 'Ä',
+  'È': 'È', 'É': 'É', 'Ê': 'Ê', 'Ë': 'Ë',
+  'Î': 'Î', 'Ï': 'Ï', 'Ô': 'Ô', 'Ö': 'Ö',
+  'Ù': 'Ù', 'Ú': 'Ú', 'Û': 'Û', 'Ü': 'Ü',
+  'Ç': 'Ç', 'Ñ': 'Ñ',
+};
 
 /// Débuts des blocs de 26 capitales A-Z contiguës (un bloc par style :
 /// gras, italique, gras italique, script, gras script, fraktur,

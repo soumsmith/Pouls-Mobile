@@ -40,6 +40,7 @@ import '../services/integration_request_service.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_guard.dart';
 import '../utils/notification_helper.dart';
+import '../utils/unicode_style_normalizer.dart';
 import '../services/recommendation_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
@@ -1581,7 +1582,9 @@ class _HomeScreenState extends State<HomeScreen> {
         (video.id % 3) == 0; // 1 chance sur 3 d'afficher la localisation
 
     return {
-      'title': video.titre.isNotEmpty ? video.titre : 'École Excellence',
+      'title': video.titre.isNotEmpty
+          ? normalizeStylizedText(video.titre)
+          : 'École Excellence',
       'subtitle': video.description.isNotEmpty
           ? video.description
           : 'Établissement scolaire',
@@ -3387,33 +3390,6 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildCard(
                 index: 0,
-                cardKey: 'inscription',
-                title: 'Inscription /\nPréinscription',
-                imagePath: 'assets/images/icons/inscription_en_ligne.png',
-                color: AppColors.cardLightGrey,
-                backgroundColor: const Color(0xFFF8FCFF),
-                textColor: const Color(0xFF333333),
-                actionText: '',
-                allowLineBreak: true,
-                enableInnerBorder: false,
-                enableOuterBorder: false,
-                innerBorderColor: const Color(0xFF93C5FD),
-                imageBorderRadius: AppDimensions.getImageBorderRadius(context),
-                width: AppDimensions.getSquareCardWidthSize(context),
-                height: AppDimensions.getSquareCardHeightSize(context),
-                centerTitle: true,
-                onTap: () => InscriptionBottomSheet.show(
-                  context,
-                  imagePath: 'assets/images/icons/inscription_en_ligne.png',
-                  imageBackgroundColor: const Color(0xFFF8FCFF),
-                  imageBorderRadius: AppDimensions.getImageBorderRadius(
-                    context,
-                  ),
-                ),
-              ),
-              SizedBox(width: AppDimensions.getActionButtonsSpacing(context)),
-              _buildCard(
-                index: 1,
                 cardKey: 'integration',
                 title: 'Demande\nintégration',
                 imagePath: 'assets/images/icons/demande_integration.png',

@@ -12,6 +12,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:gal/gal.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../services/message_service.dart';
 import '../services/auth_service.dart';
@@ -1531,10 +1532,68 @@ class _MessagesScreenState extends State<MessagesScreen>
 }
 
 // ─── ÉCRAN VISUALISATION IMAGE ────────────────────────────────────────────────
-class _ImageViewerScreen extends StatelessWidget {
+class _ImageViewerScreen extends StatefulWidget {
   final String imageUrl;
 
   const _ImageViewerScreen({required this.imageUrl});
+
+  @override
+  State<_ImageViewerScreen> createState() => _ImageViewerScreenState();
+}
+
+class _ImageViewerScreenState extends State<_ImageViewerScreen> {
+  bool _isDownloading = false;
+
+  Future<void> _downloadImage() async {
+    if (_isDownloading) return;
+    setState(() => _isDownloading = true);
+
+    try {
+      final hasAccess = await Gal.hasAccess(toAlbum: true);
+      if (!hasAccess) {
+        final granted = await Gal.requestAccess(toAlbum: true);
+        if (!granted) {
+          if (mounted) {
+            _showSnackBar(
+              "Accès à la galerie refusé. Autorisez l'accès aux photos dans les réglages.",
+              isError: true,
+            );
+          }
+          return;
+        }
+      }
+
+      final response = await http.get(Uri.parse(widget.imageUrl));
+      if (response.statusCode != 200) {
+        throw Exception('Échec du téléchargement (${response.statusCode})');
+      }
+
+      await Gal.putImageBytes(
+        response.bodyBytes,
+        album: 'Pouls',
+        name: 'pouls_${DateTime.now().millisecondsSinceEpoch}',
+      );
+
+      if (mounted) {
+        _showSnackBar('Image enregistrée dans la galerie.');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar("Impossible d'enregistrer l'image.", isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : null,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1544,13 +1603,29 @@ class _ImageViewerScreen extends StatelessWidget {
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: _isDownloading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.download),
+            tooltip: 'Télécharger',
+            onPressed: _isDownloading ? null : _downloadImage,
+          ),
+        ],
       ),
       body: Center(
         child: InteractiveViewer(
           minScale: 0.5,
           maxScale: 4.0,
           child: CachedNetworkImage(
-            imageUrl: imageUrl,
+            imageUrl: widget.imageUrl,
             fit: BoxFit.contain,
             placeholder: (context, url) => const Center(
               child: CircularProgressIndicator(

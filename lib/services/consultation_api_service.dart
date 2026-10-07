@@ -13,6 +13,7 @@ import '../models/bulletin_consultation.dart';
 import '../models/devoir_consultation.dart';
 import '../models/travail_consultation.dart';
 import '../models/devoir_surveille_consultation.dart';
+import '../models/difficulte_consultation.dart';
 import '../models/progression_consultation.dart';
 import '../utils/api_exception_handler.dart';
 import 'pedagogie_auth_service.dart';
@@ -617,6 +618,81 @@ class ConsultationApiService {
     } catch (e) {
       _logException('devoirs surveillés', e);
       ApiExceptionHandler.handle(e, context: 'la récupération des devoirs surveillés');
+      rethrow;
+    }
+  }
+
+  /// GET /consultation/etablissements/{schoolId}/eleves/{matricule}/difficultes
+  ///
+  /// Les matières où l'élève décroche (doc recette 05/10/2026, §1), verdict
+  /// calculé sur les notes de la période — jamais sur les moyennes du
+  /// bulletin, qui ne naissent qu'en fin de trimestre. Sans [periodeRef], la
+  /// dernière période portant des notes. [toutes] à `true` renvoie aussi les
+  /// matières qui vont bien (`niveau: null`). Réservé aux années P: — les
+  /// années H: (archive) répondent 400.
+  Future<List<DifficulteConsultation>> getDifficultes(
+    String schoolId,
+    String matricule, {
+    required String anneeRef,
+    String? classeRef,
+    String? periodeRef,
+    bool toutes = false,
+  }) async {
+    try {
+      final queryParams = {
+        'annee': anneeRef,
+        if (classeRef != null) 'classe': classeRef,
+        if (periodeRef != null) 'periode': periodeRef,
+        if (toutes) 'toutes': 'true',
+      };
+      final uri = Uri.parse(
+        '$_baseUrl/consultation/etablissements/$schoolId/eleves/$matricule/difficultes',
+      ).replace(queryParameters: queryParams);
+      final response = await _getWithRetry(uri, 'difficultés');
+      if (response.statusCode != 200) _throwForStatus('les difficultés', response);
+      final List<dynamic> data = json.decode(response.body);
+      return data
+          .map((e) => DifficulteConsultation.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      _logException('difficultés', e);
+      ApiExceptionHandler.handle(e, context: 'la récupération des difficultés');
+      rethrow;
+    }
+  }
+
+  /// GET /consultation/etablissements/{schoolId}/eleves/{matricule}/contenus/fichiers/{attachmentId}
+  ///
+  /// Octets d'une pièce jointe de contenu pédagogique (doc recette
+  /// 05/10/2026, §2) — l'`attachmentId` se lit dans `piecesJointes[].id` de
+  /// `/travail`. Un contenu non publié, d'une autre classe, ou un
+  /// identifiant inconnu répondent tous 404, volontairement indifférencié
+  /// (doc §2). Contrairement à bulletin.pdf, cette route générique répond
+  /// 406 si [accept] est forcé au `contentType` réel de la pièce — vérifié
+  /// en conditions réelles, laisser `*/*` (défaut).
+  Future<List<int>> getContenuFichier(
+    String schoolId,
+    String matricule,
+    String attachmentId, {
+    required String anneeRef,
+    String? classeRef,
+    String accept = '*/*',
+  }) async {
+    try {
+      final queryParams = {
+        'annee': anneeRef,
+        if (classeRef != null) 'classe': classeRef,
+      };
+      final uri = Uri.parse(
+        '$_baseUrl/consultation/etablissements/$schoolId/eleves/$matricule/contenus/fichiers/$attachmentId',
+      ).replace(queryParameters: queryParams);
+      final response = await _getWithRetry(uri, 'pièce jointe', accept: accept);
+      if (response.statusCode != 200) _throwForStatus('la pièce jointe', response);
+      print('✅ API CONSULTATION — pièce jointe → ${response.bodyBytes.length} octets');
+      return response.bodyBytes;
+    } catch (e) {
+      _logException('pièce jointe', e);
+      ApiExceptionHandler.handle(e, context: 'le téléchargement de la pièce jointe');
       rethrow;
     }
   }

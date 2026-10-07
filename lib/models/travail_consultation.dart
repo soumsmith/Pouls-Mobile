@@ -72,19 +72,28 @@ class TravailConsultation {
   }
 }
 
-/// Pièce jointe d'un contenu pédagogique. `nom`/`url` : noms de champs
-/// non confirmés par un exemple réel de réponse (best-effort, avec repli sur
-/// des alias plausibles).
+/// Pièce jointe d'un contenu pédagogique. `id` est l'`attachmentId` à passer
+/// à GET .../contenus/fichiers/{attachmentId} (doc recette 05/10/2026, §2)
+/// pour en récupérer les octets — `fileKey` est une clé de stockage interne,
+/// jamais exploitable côté client. `fileUrl` reste `null` pour les fichiers
+/// téléversés (c'est le cas de `fileKey`) et n'est renseigné que pour les
+/// pièces ajoutées par adresse.
 class PieceJointe {
-  final String? nom;
-  final String? url;
+  final String? id;
+  final String? fileKey;
+  final String? fileUrl;
+  final String? fileName;
+  final String? contentType;
 
-  PieceJointe({this.nom, this.url});
+  PieceJointe({this.id, this.fileKey, this.fileUrl, this.fileName, this.contentType});
 
   factory PieceJointe.fromJson(Map<String, dynamic> json) {
     return PieceJointe(
-      nom: json['nom'] as String? ?? json['titre'] as String? ?? json['name'] as String?,
-      url: json['url'] as String? ?? json['lien'] as String?,
+      id: json['id'] as String?,
+      fileKey: json['fileKey'] as String?,
+      fileUrl: json['fileUrl'] as String?,
+      fileName: json['fileName'] as String?,
+      contentType: json['contentType'] as String?,
     );
   }
 }

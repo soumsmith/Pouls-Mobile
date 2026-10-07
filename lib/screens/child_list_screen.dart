@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../utils/child_photo.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -100,6 +101,7 @@ import '../models/annee_consultation.dart';
 import '../models/bulletin_consultation.dart';
 import '../models/travail_consultation.dart';
 import '../models/devoir_surveille_consultation.dart';
+import '../models/difficulte_consultation.dart';
 import '../models/progression_consultation.dart';
 import '../models/etablissement_consultation.dart';
 import 'pdf_viewer_screen.dart';
@@ -107,6 +109,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:gal/gal.dart';
 
 // ─── MODÈLE POUR CARTE DE MENU D'ÉLÈVE ────────────────────────────────────────
 class StudentMenuCardItem {
@@ -503,6 +506,23 @@ class _ChildListScreenState extends State<ChildListScreen>
   bool _isLoadingHomework = false;
   StateSetter? _homeworkModalSetState;
   String? _devoirsErrorMessage;
+  // Index des devoirs dont la carte est dépliée (bouton Consulter/Télécharger
+  // visible) et identifiants des pièces jointes en cours de consultation ou
+  // de téléchargement (affichage d'un spinner sur le bouton concerné).
+  final Set<int> _expandedDevoirIndices = {};
+  final Set<String> _consultingPieceJointeIds = {};
+  final Set<String> _downloadingPieceJointeIds = {};
+
+  // Difficultés de l'élève (API de consultation, doc recette 05/10/2026 §1)
+  List<DifficulteConsultation>? _difficultes;
+  bool _isLoadingDifficultes = false;
+  StateSetter? _difficultesModalSetState;
+  String? _difficultesErrorMessage;
+  String _difficultesSearchQuery = '';
+  final TextEditingController _difficultesSearchController = TextEditingController();
+  // matiereCode (ou matiere si vide) des cartes dépliées — repliées par
+  // défaut, le détail (stats + appréciation) n'apparaît qu'au clic.
+  final Set<String> _expandedDifficulteCodes = {};
 
   // Devoirs surveillés / compositions (API de consultation, §3)
   List<DevoirSurveilleConsultation>? _devoirsSurveilles;
@@ -636,6 +656,7 @@ class _ChildListScreenState extends State<ChildListScreen>
     _animationController.dispose();
     _accessDateDebutController.dispose();
     _accessDateFinController.dispose();
+    _difficultesSearchController.dispose();
     _absencesScrollController.dispose();
     _mainScrollController.dispose();
     super.dispose();
@@ -1906,9 +1927,17 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showDifficultiesBottomSheet() {
+    _difficultes = null;
+    _isLoadingDifficultes = false;
+    _difficultesErrorMessage = null;
+    _difficultesSearchQuery = '';
+    _difficultesSearchController.clear();
+    _expandedDifficulteCodes.clear();
+    bool hasAttemptedLoad = false;
+
     ReusableBottomSheet.show(
       context: context,
-      title: 'Difficultés',
+      title: 'Performance scolaire',
       subtitle: 'Suivez les difficultés et le soutien',
       icon: Icons.psychology_rounded,
       imagePath: 'assets/images/icons/performance_scolaire.png',
@@ -1917,9 +1946,93 @@ class _ChildListScreenState extends State<ChildListScreen>
       initialChildSize: 0.8,
       minChildSize: 0.5,
       maxChildSize: 0.95,
-      contentPadding: EdgeInsets.zero,
-      content: _buildDifficultiesTab(),
-    );
+      contentPadding: const EdgeInsets.all(16),
+      content: StatefulBuilder(
+        builder: (context, setModalState) {
+          _difficultesModalSetState = setModalState;
+          if (!hasAttemptedLoad) {
+            hasAttemptedLoad = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadDifficultes(setModalState);
+            });
+          }
+          return _buildDifficultiesTab();
+        },
+      ),
+    ).whenComplete(() {
+      _difficultesModalSetState = null;
+    });
+  }
+
+  Future<void> _loadDifficultes([StateSetter? setModalState]) async {
+    if (_isLoadingDifficultes) return;
+
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) return;
+
+    final effectiveModalSetState = setModalState ?? _difficultesModalSetState;
+    void updateState(VoidCallback fn) {
+      if (effectiveModalSetState != null) effectiveModalSetState(fn);
+      if (mounted) setState(fn);
+    }
+
+    updateState(() {
+      _isLoadingDifficultes = true;
+      _difficultesErrorMessage = null;
+    });
+
+    try {
+      final schoolId = await _resolveConsultationSchoolId();
+      if (schoolId == null) {
+        throw Exception('Établissement introuvable dans l\'API de consultation');
+      }
+
+      final annees = await _consultationApi.getAnnees(schoolId);
+      if (annees.isEmpty) {
+        throw Exception('Aucune année scolaire disponible');
+      }
+      // Les difficultés se calculent sur les notes de la période, réservé
+      // aux années de la nouvelle plateforme (P:) — les années H: (archive)
+      // répondent 400 (doc §1).
+      final annee = annees.firstWhere(
+        (a) => a.courante,
+        orElse: () => annees.first,
+      );
+
+      String? classeRef;
+      try {
+        classeRef = await _resolveClasseRefForAnnee(schoolId, matricule, annee.ref);
+      } catch (e) {
+        if (e.toString().contains('inscrit dans aucune classe')) {
+          throw Exception(
+            '${widget.child.firstName} n\'a pas encore été affecté(e) à une '
+            'classe pour l\'année ${annee.libelle} par '
+            '${widget.child.establishment ?? "l\'établissement"}. '
+            'Contactez l\'école pour finaliser l\'inscription.',
+          );
+        }
+        rethrow;
+      }
+
+      final difficultes = await _consultationApi.getDifficultes(
+        schoolId,
+        matricule,
+        anneeRef: annee.ref,
+        classeRef: classeRef,
+      );
+
+      updateState(() {
+        _difficultes = difficultes;
+        _isLoadingDifficultes = false;
+      });
+    } catch (e) {
+      updateState(() {
+        _difficultes = [];
+        _isLoadingDifficultes = false;
+        _difficultesErrorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+      print('❌ Erreur lors du chargement des difficultés: $e');
+    }
   }
 
   void _showSuppliesBottomSheet() {
@@ -9804,12 +9917,340 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
+  static const Color _difficultiesColor = Color(0xFF9C27B0);
+
   Widget _buildDifficultiesTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    if (_isLoadingDifficultes) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            CustomLoader(
+              message: 'Chargement des difficultés...',
+              loaderColor: _difficultiesColor,
+              backgroundColor: Colors.transparent,
+              showBackground: false,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_difficultes == null || _difficultes!.isEmpty) {
+      final hasError = _difficultesErrorMessage != null;
+      return CustomErrorState(
+        title: hasError ? 'Impossible de charger les difficultés' : 'Aucune difficulté signalée',
+        message: hasError
+            ? _difficultesErrorMessage!
+            : 'Aucune matière ne présente de difficulté sur la période en cours. '
+                'Continuez ainsi !',
+        icon: hasError ? Icons.psychology_outlined : Icons.emoji_events_outlined,
+        iconColor: _difficultiesColor,
+        onRetry: hasError
+            ? () {
+                setState(() {
+                  _difficultes = null;
+                  _difficultesErrorMessage = null;
+                });
+                _loadDifficultes();
+              }
+            : null,
+      );
+    }
+
+    final query = _difficultesSearchQuery.trim().toLowerCase();
+    final filtered = query.isEmpty
+        ? _difficultes!
+        : _difficultes!.where((d) => d.matiere.toLowerCase().contains(query)).toList();
+
+    final widgets = <Widget>[];
+    for (final difficulte in filtered) {
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 10));
+      widgets.add(_buildDifficulteCard(difficulte));
+    }
+
+    final isDarkMode = _themeService.isDarkMode;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildDifficultesSearchField(),
+        const SizedBox(height: 12),
+        if (filtered.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'Aucune matière ne correspond à votre recherche.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+              ),
+            ),
+          )
+        else
+          ...widgets,
+      ],
+    );
+  }
+
+  void _updateDifficultesState(VoidCallback fn) {
+    if (_difficultesModalSetState != null) {
+      _difficultesModalSetState!(fn);
+    } else if (mounted) {
+      setState(fn);
+    }
+  }
+
+  Widget _buildDifficultesSearchField() {
+    final isDarkMode = _themeService.isDarkMode;
+    return TextField(
+      controller: _difficultesSearchController,
+      onChanged: (value) => _updateDifficultesState(() => _difficultesSearchQuery = value),
+      style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : const Color(0xFF1F2937)),
+      decoration: InputDecoration(
+        hintText: 'Rechercher une matière...',
+        hintStyle: TextStyle(fontSize: 14, color: isDarkMode ? Colors.grey[500] : Colors.grey[500]),
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          size: 20,
+          color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
+        ),
+        suffixIcon: _difficultesSearchQuery.isNotEmpty
+            ? IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
+                ),
+                onPressed: () {
+                  _difficultesSearchController.clear();
+                  _updateDifficultesState(() => _difficultesSearchQuery = '');
+                },
+              )
+            : null,
+        filled: true,
+        fillColor: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  void _toggleDifficulteExpanded(String key) {
+    _updateDifficultesState(() {
+      if (_expandedDifficulteCodes.contains(key)) {
+        _expandedDifficulteCodes.remove(key);
+      } else {
+        _expandedDifficulteCodes.add(key);
+      }
+    });
+  }
+
+  Color _difficulteNiveauColor(DifficulteConsultation d) {
+    if (d.estCritique) return const Color(0xFFD32F2F);
+    if (d.estFragile) return const Color(0xFFF57C00);
+    if (d.estEnBaisse) return const Color(0xFF1976D2);
+    return Colors.grey;
+  }
+
+  String _difficulteNiveauLabel(DifficulteConsultation d) {
+    if (d.estCritique) return 'Critique';
+    if (d.estFragile) return 'Fragile';
+    if (d.estEnBaisse) return 'En baisse';
+    return 'Stable';
+  }
+
+  IconData _difficulteNiveauIcon(DifficulteConsultation d) {
+    if (d.estCritique) return Icons.error_outline_rounded;
+    if (d.estFragile) return Icons.warning_amber_rounded;
+    if (d.estEnBaisse) return Icons.trending_down_rounded;
+    return Icons.check_circle_outline_rounded;
+  }
+
+  String _formatNote(double? value) {
+    if (value == null) return '—';
+    return value.toStringAsFixed(2).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  }
+
+  Widget _buildAggregateStatTile(String label, String value, {required bool isDarkMode}) {
+    return Expanded(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [_buildDifficultiesList()],
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDifficulteCard(DifficulteConsultation d) {
+    final isDarkMode = _themeService.isDarkMode;
+    final color = _difficulteNiveauColor(d);
+    final aggregateColor = isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[50];
+    final dividerColor = isDarkMode ? Colors.grey[700] : Colors.grey[300];
+    final key = d.matiereCode.isNotEmpty ? d.matiereCode : d.matiere;
+    final isExpanded = _expandedDifficulteCodes.contains(key);
+
+    final statTiles = <MapEntry<String, String>>[
+      if (d.moyenne != null) MapEntry('Moyenne', '${_formatNote(d.moyenne)}/20'),
+      if (d.notes != null) MapEntry(d.notes == 1 ? 'Devoir' : 'Devoirs', '${d.notes}'),
+      if (d.rang != null && d.classes != null) MapEntry('Rang', '${d.rang}e/${d.classes}'),
+      if (d.moyenneArretee != null) MapEntry('Arrêtée', '${_formatNote(d.moyenneArretee)}/20'),
+    ];
+
+    final statWidgets = <Widget>[];
+    for (final entry in statTiles) {
+      if (statWidgets.isNotEmpty) {
+        statWidgets.add(Container(width: 1, height: 30, color: dividerColor));
+      }
+      statWidgets.add(
+        _buildAggregateStatTile(entry.key, entry.value, isDarkMode: isDarkMode),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _toggleDifficulteExpanded(key),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(_difficulteNiveauIcon(d), color: color, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          d.matiere,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          ),
+                        ),
+                        if (!isExpanded && d.moyenne != null)
+                          Text(
+                            '${_formatNote(d.moyenne)}/20'
+                            '${d.notes != null ? ' · ${d.notes} note${d.notes! > 1 ? 's' : ''}' : ''}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _difficulteNiveauLabel(d),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                    size: 20,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
+                  ),
+                ],
+              ),
+              if (isExpanded) ...[
+                if (statWidgets.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: aggregateColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(children: statWidgets),
+                  ),
+                ],
+                if (d.motif.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: aggregateColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'APPRÉCIATION',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                            color: isDarkMode ? Colors.grey[500] : Colors.grey[500],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          d.motif,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: isDarkMode ? Colors.grey[300] : const Color(0xFF374151),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -9852,126 +10293,6 @@ class _ChildListScreenState extends State<ChildListScreen>
               color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
             ),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDifficultiesList() {
-    return _buildComingSoonContent();
-  }
-
-  Widget _buildDifficultyCard(
-    String subject,
-    String difficulty,
-    String action,
-    String status,
-    IconData icon,
-    Color color,
-  ) {
-    final isDarkMode = _themeService.isDarkMode;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.15), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      subject,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      difficulty,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[50],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Action mise en place:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  action,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: isDarkMode ? Colors.grey[400] : Colors.grey[400],
-              ),
-            ],
           ),
         ],
       ),
@@ -11101,9 +11422,9 @@ class _ChildListScreenState extends State<ChildListScreen>
     // pédagogiques mélangés (doc §2) : plus de groupement par matière, l'ordre
     // chronologique prime sur la matière contrairement à l'ancien /devoirs.
     final widgets = <Widget>[];
-    for (final devoir in _devoirs!) {
+    for (var i = 0; i < _devoirs!.length; i++) {
       if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 10));
-      widgets.add(_buildDevoirCard(devoir));
+      widgets.add(_buildDevoirCard(_devoirs![i], i));
     }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: widgets);
@@ -11118,15 +11439,181 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
-  Future<void> _openPieceJointe(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+  void _updateHomeworkState(VoidCallback fn) {
+    if (_homeworkModalSetState != null) {
+      _homeworkModalSetState!(fn);
+    } else if (mounted) {
+      setState(fn);
     }
   }
 
-  Widget _buildDevoirCard(TravailConsultation devoir) {
+  void _toggleDevoirExpanded(int index) {
+    _updateHomeworkState(() {
+      if (_expandedDevoirIndices.contains(index)) {
+        _expandedDevoirIndices.remove(index);
+      } else {
+        _expandedDevoirIndices.add(index);
+      }
+    });
+  }
+
+  bool _isImagePieceJointe(PieceJointe piece) {
+    final contentType = piece.contentType?.toLowerCase() ?? '';
+    if (contentType.startsWith('image/')) return true;
+    final name = (piece.fileName ?? '').toLowerCase();
+    return name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png');
+  }
+
+  bool _isPdfPieceJointe(PieceJointe piece) {
+    final contentType = piece.contentType?.toLowerCase() ?? '';
+    if (contentType == 'application/pdf') return true;
+    return (piece.fileName ?? '').toLowerCase().endsWith('.pdf');
+  }
+
+  /// Récupère les octets authentifiés d'une pièce jointe (doc recette
+  /// 05/10/2026, §2) — jamais une URL publique à passer telle quelle à un
+  /// lecteur, même logique que [_fetchBulletinPdfBytes].
+  Future<List<int>?> _fetchPieceJointeBytes(PieceJointe piece) async {
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty || piece.id == null) return null;
+
+    final schoolId = await _resolveConsultationSchoolId();
+    if (schoolId == null) {
+      throw Exception('Établissement introuvable dans l\'API de consultation');
+    }
+    final annees = await _consultationApi.getAnnees(schoolId);
+    if (annees.isEmpty) throw Exception('Aucune année scolaire disponible');
+    final annee = annees.firstWhere((a) => a.courante, orElse: () => annees.first);
+    final classeRef = await _resolveClasseRefForAnnee(schoolId, matricule, annee.ref);
+
+    // Accept: */* — contrairement à bulletin.pdf (route dédiée, doc exige
+    // Accept: application/pdf), cette route générique répond 406 si on lui
+    // demande de négocier sur le Content-Type réel de la pièce (vérifié en
+    // conditions réelles).
+    return _consultationApi.getContenuFichier(
+      schoolId,
+      matricule,
+      piece.id!,
+      anneeRef: annee.ref,
+      classeRef: classeRef,
+    );
+  }
+
+  Future<void> _consultPieceJointe(PieceJointe piece) async {
+    if (piece.id == null || _consultingPieceJointeIds.contains(piece.id)) return;
+
+    _updateHomeworkState(() => _consultingPieceJointeIds.add(piece.id!));
+    try {
+      final bytes = await _fetchPieceJointeBytes(piece);
+      if (bytes == null) throw Exception('Pièce jointe introuvable');
+      final fileName = piece.fileName?.isNotEmpty == true ? piece.fileName! : 'Document';
+
+      if (_isPdfPieceJointe(piece)) {
+        final filePath = await _savePieceJointeLocally(bytes, fileName);
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PDFViewerScreen(pdfUrl: filePath, title: fileName),
+          ),
+        );
+      } else if (_isImagePieceJointe(piece)) {
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => _PieceJointeImageViewerScreen(
+              bytes: Uint8List.fromList(bytes),
+              title: fileName,
+            ),
+          ),
+        );
+      } else {
+        throw Exception('Aperçu non disponible pour ce type de fichier');
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationHelper.showError(
+          'Impossible d\'ouvrir la pièce jointe : '
+          '${e.toString().replaceFirst('Exception: ', '')}',
+        );
+      }
+    } finally {
+      _updateHomeworkState(() => _consultingPieceJointeIds.remove(piece.id));
+    }
+  }
+
+  Future<String> _savePieceJointeLocally(List<int> bytes, String fileName) async {
+    Directory directory;
+    try {
+      directory = Platform.isAndroid
+          ? await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory()
+          : await getApplicationDocumentsDirectory();
+    } catch (_) {
+      directory = await getApplicationDocumentsDirectory();
+    }
+    final safeName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    final filePath = '${directory.path}/$safeName';
+    await File(filePath).writeAsBytes(bytes);
+    return filePath;
+  }
+
+  Future<void> _downloadPieceJointe(PieceJointe piece) async {
+    if (piece.id == null || _downloadingPieceJointeIds.contains(piece.id)) return;
+
+    _updateHomeworkState(() => _downloadingPieceJointeIds.add(piece.id!));
+    try {
+      final bytes = await _fetchPieceJointeBytes(piece);
+      if (bytes == null) throw Exception('Pièce jointe introuvable');
+      final fileName = piece.fileName?.isNotEmpty == true ? piece.fileName! : 'document';
+
+      if (_isImagePieceJointe(piece)) {
+        final hasAccess = await Gal.hasAccess(toAlbum: true);
+        if (!hasAccess) {
+          final granted = await Gal.requestAccess(toAlbum: true);
+          if (!granted) {
+            throw Exception(
+              'Accès à la galerie refusé. Autorisez l\'accès aux photos dans les réglages.',
+            );
+          }
+        }
+        await Gal.putImageBytes(
+          Uint8List.fromList(bytes),
+          album: 'Pouls',
+          name: 'pouls_${DateTime.now().millisecondsSinceEpoch}',
+        );
+        if (mounted) NotificationHelper.showSuccess('Image enregistrée dans la galerie.');
+      } else {
+        final filePath = await _savePieceJointeLocally(bytes, fileName);
+        final safeName = filePath.split('/').last;
+
+        if (!mounted) return;
+        if (Platform.isIOS) {
+          await Share.shareXFiles([XFile(filePath)], subject: fileName);
+          NotificationHelper.showSuccess('Option de sauvegarde affichée avec succès');
+        } else {
+          NotificationHelper.show(
+            message: 'Pièce jointe enregistrée avec succès :\n$safeName',
+            type: NotificationType.success,
+            actionText: 'Partager le fichier',
+            onActionPressed: () async {
+              await Share.shareXFiles([XFile(filePath)], subject: fileName);
+            },
+            duration: const Duration(seconds: 4),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationHelper.showError(
+          'Impossible de télécharger la pièce jointe : '
+          '${e.toString().replaceFirst('Exception: ', '')}',
+        );
+      }
+    } finally {
+      _updateHomeworkState(() => _downloadingPieceJointeIds.remove(piece.id));
+    }
+  }
+
+  Widget _buildDevoirCard(TravailConsultation devoir, int index) {
     final isDarkMode = _themeService.isDarkMode;
     final estContenu = devoir.estContenuPedagogique;
     final titre = estContenu
@@ -11135,8 +11622,10 @@ class _ChildListScreenState extends State<ChildListScreen>
     final corps = estContenu ? devoir.description : devoir.consigne;
     final donneLe = devoir.donneLe;
 
+    final hasAttachments = devoir.piecesJointes.isNotEmpty;
+    final isExpanded = _expandedDevoirIndices.contains(index);
+
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -11150,140 +11639,235 @@ class _ChildListScreenState extends State<ChildListScreen>
           ),
         ],
       ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: hasAttachments ? () => _toggleDevoirExpanded(index) : null,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _homeworkColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      estContenu ? Icons.article_outlined : Icons.menu_book_rounded,
+                      color: _homeworkColor,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (titre != null && titre.isNotEmpty)
+                          Text(
+                            titre,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                            ),
+                          ),
+                        if (devoir.matiere.isNotEmpty)
+                          Text(
+                            devoir.professeur.isNotEmpty
+                                ? '${devoir.matiere} · ${devoir.professeur}'
+                                : devoir.matiere,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (donneLe != null && donneLe.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _homeworkColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _formatDevoirDate(donneLe),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: _homeworkColor,
+                        ),
+                      ),
+                    ),
+                  if (hasAttachments) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                      size: 20,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
+                    ),
+                  ],
+                ],
+              ),
+              if (corps != null && corps.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  corps,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDarkMode ? Colors.grey[300] : const Color(0xFF374151),
+                  ),
+                ),
+              ],
+              if (devoir.aRendreLe != null && devoir.aRendreLe!.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.event_outlined, size: 14, color: _homeworkColor),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Pour la séance du ${_formatDevoirDate(devoir.aRendreLe!)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _homeworkColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (hasAttachments) ...[
+                const SizedBox(height: 12),
+                if (!isExpanded)
+                  Row(
+                    children: [
+                      Icon(Icons.attach_file_rounded, size: 14, color: _homeworkColor),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${devoir.piecesJointes.length} pièce${devoir.piecesJointes.length > 1 ? 's' : ''} jointe${devoir.piecesJointes.length > 1 ? 's' : ''}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _homeworkColor,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final piece in devoir.piecesJointes)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _buildPieceJointeRow(piece),
+                        ),
+                    ],
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPieceJointeRow(PieceJointe piece) {
+    final isDarkMode = _themeService.isDarkMode;
+    final isConsulting = piece.id != null && _consultingPieceJointeIds.contains(piece.id);
+    final isDownloading = piece.id != null && _downloadingPieceJointeIds.contains(piece.id);
+    final canPreview = piece.id != null && (_isImagePieceJointe(piece) || _isPdfPieceJointe(piece));
+    final canDownload = piece.id != null;
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _homeworkColor.withOpacity(0.2)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _homeworkColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  estContenu ? Icons.article_outlined : Icons.menu_book_rounded,
-                  color: _homeworkColor,
-                  size: 20,
-                ),
+              Icon(
+                _isImagePieceJointe(piece) ? Icons.image_outlined : Icons.attach_file_rounded,
+                size: 16,
+                color: _homeworkColor,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (titre != null && titre.isNotEmpty)
-                      Text(
-                        titre,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
-                        ),
-                      ),
-                    if (devoir.matiere.isNotEmpty)
-                      Text(
-                        devoir.professeur.isNotEmpty
-                            ? '${devoir.matiere} · ${devoir.professeur}'
-                            : devoir.matiere,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                        ),
-                      ),
-                  ],
+                child: Text(
+                  piece.fileName?.isNotEmpty == true ? piece.fileName! : 'Pièce jointe',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                  ),
                 ),
               ),
-              if (donneLe != null && donneLe.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _homeworkColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (canPreview) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isConsulting ? null : () => _consultPieceJointe(piece),
+                    icon: isConsulting
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.visibility_outlined, size: 16),
+                    label: const Text('Consulter', style: TextStyle(fontSize: 13)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _homeworkColor,
+                      side: BorderSide(color: _homeworkColor.withOpacity(0.5)),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
                   ),
-                  child: Text(
-                    _formatDevoirDate(donneLe),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: _homeworkColor,
+                ),
+                const SizedBox(width: 8),
+              ],
+              if (canDownload)
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: isDownloading ? null : () => _downloadPieceJointe(piece),
+                    icon: isDownloading
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.download_rounded, size: 16),
+                    label: const Text('Télécharger', style: TextStyle(fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _homeworkColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
                   ),
                 ),
             ],
           ),
-          if (corps != null && corps.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              corps,
-              style: TextStyle(
-                fontSize: 14,
-                color: isDarkMode ? Colors.grey[300] : const Color(0xFF374151),
-              ),
-            ),
-          ],
-          if (devoir.aRendreLe != null && devoir.aRendreLe!.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.event_outlined, size: 14, color: _homeworkColor),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Pour la séance du ${_formatDevoirDate(devoir.aRendreLe!)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: _homeworkColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (devoir.piecesJointes.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final piece in devoir.piecesJointes)
-                  if (piece.url != null && piece.url!.isNotEmpty)
-                    GestureDetector(
-                      onTap: () => _openPieceJointe(piece.url!),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _homeworkColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: _homeworkColor.withOpacity(0.25)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.attach_file_rounded, size: 14, color: _homeworkColor),
-                            const SizedBox(width: 6),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 160),
-                              child: Text(
-                                piece.nom?.isNotEmpty == true ? piece.nom! : 'Pièce jointe',
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: _homeworkColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -11337,23 +11921,33 @@ class _ChildListScreenState extends State<ChildListScreen>
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: widgets);
   }
 
-  Widget _buildDSInfoChip(IconData icon, String label) {
-    final isDarkMode = _themeService.isDarkMode;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isDarkMode ? Colors.grey[300] : const Color(0xFF374151),
-          ),
-        ),
-      ],
-    );
+  Color _devoirSurveilleStatutColor(String? statut) {
+    switch (statut) {
+      case DevoirSurveilleConsultation.statutTermine:
+        return Colors.grey;
+      case DevoirSurveilleConsultation.statutReporte:
+        return const Color(0xFFF57C00);
+      case DevoirSurveilleConsultation.statutAnnule:
+        return const Color(0xFFD32F2F);
+      case DevoirSurveilleConsultation.statutProgramme:
+      default:
+        return _devoirsSurveillesColor;
+    }
+  }
+
+  String _devoirSurveilleStatutLabel(String? statut) {
+    switch (statut) {
+      case DevoirSurveilleConsultation.statutTermine:
+        return 'Terminé';
+      case DevoirSurveilleConsultation.statutReporte:
+        return 'Reporté';
+      case DevoirSurveilleConsultation.statutAnnule:
+        return 'Annulé';
+      case DevoirSurveilleConsultation.statutProgramme:
+        return 'Programmé';
+      default:
+        return statut ?? '';
+    }
   }
 
   Widget _buildDevoirSurveilleCard(DevoirSurveilleConsultation ds) {
@@ -11361,8 +11955,28 @@ class _ChildListScreenState extends State<ChildListScreen>
     // salle/place ne sont jamais devinées : tant que la répartition n'est
     // pas faite, les deux restent `null` (doc §3) — on l'indique clairement
     // plutôt que de laisser un vide silencieux.
-    final repartitionFaite =
-        (ds.salle?.isNotEmpty ?? false) || (ds.place?.isNotEmpty ?? false);
+    final repartitionFaite = (ds.salle?.isNotEmpty ?? false) || ds.place != null;
+    final titre = ds.label.isNotEmpty ? ds.label : ds.matiere;
+    final statutColor = _devoirSurveilleStatutColor(ds.statut);
+    final aggregateColor = isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[50];
+    final dividerColor = isDarkMode ? Colors.grey[700] : Colors.grey[300];
+
+    final statTiles = <MapEntry<String, String>>[
+      if (ds.horaireLabel != null) MapEntry('Horaire', ds.horaireLabel!),
+      if (ds.dureeMinutes != null) MapEntry('Durée', '${ds.dureeMinutes} min'),
+      if (ds.salle != null && ds.salle!.isNotEmpty) MapEntry('Salle', ds.salle!),
+      if (ds.place != null) MapEntry('Place', '${ds.place}'),
+    ];
+
+    final statWidgets = <Widget>[];
+    for (final entry in statTiles) {
+      if (statWidgets.isNotEmpty) {
+        statWidgets.add(Container(width: 1, height: 30, color: dividerColor));
+      }
+      statWidgets.add(
+        _buildAggregateStatTile(entry.key, entry.value, isDarkMode: isDarkMode),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -11402,18 +12016,18 @@ class _ChildListScreenState extends State<ChildListScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (ds.matiere.isNotEmpty)
+                    if (titre.isNotEmpty)
                       Text(
-                        ds.matiere,
+                        titre,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
                         ),
                       ),
-                    if (ds.classe.isNotEmpty)
+                    if (ds.matiere.isNotEmpty || ds.classe.isNotEmpty)
                       Text(
-                        ds.classe,
+                        [ds.matiere, ds.classe].where((s) => s.isNotEmpty).join(' · '),
                         style: TextStyle(
                           fontSize: 12,
                           color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
@@ -11440,32 +12054,33 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
             ],
           ),
-          if ((ds.horaire?.isNotEmpty ?? false) || (ds.duree?.isNotEmpty ?? false)) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: [
-                if (ds.horaire != null && ds.horaire!.isNotEmpty)
-                  _buildDSInfoChip(Icons.schedule_outlined, ds.horaire!),
-                if (ds.duree != null && ds.duree!.isNotEmpty)
-                  _buildDSInfoChip(Icons.timer_outlined, ds.duree!),
-              ],
+          if (ds.statut != null && ds.statut!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statutColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _devoirSurveilleStatutLabel(ds.statut),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statutColor),
+              ),
             ),
           ],
-          const SizedBox(height: 10),
-          if (repartitionFaite)
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: [
-                if (ds.salle != null && ds.salle!.isNotEmpty)
-                  _buildDSInfoChip(Icons.meeting_room_outlined, 'Salle ${ds.salle}'),
-                if (ds.place != null && ds.place!.isNotEmpty)
-                  _buildDSInfoChip(Icons.event_seat_outlined, 'Place ${ds.place}'),
-              ],
-            )
-          else
+          if (statWidgets.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              decoration: BoxDecoration(
+                color: aggregateColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(children: statWidgets),
+            ),
+          ],
+          if (!repartitionFaite) ...[
+            const SizedBox(height: 10),
             Row(
               children: [
                 Icon(
@@ -11484,6 +12099,7 @@ class _ChildListScreenState extends State<ChildListScreen>
                 ),
               ],
             ),
+          ],
         ],
       ),
     );
@@ -13942,6 +14558,102 @@ class _ExtraScolaireSheetContentState
     } catch (_) {
       return dateStr;
     }
+  }
+}
+
+/// Visualisation plein écran d'une pièce jointe image, déjà téléchargée en
+/// mémoire (octets authentifiés via GET .../contenus/fichiers/{attachmentId},
+/// voir _fetchPieceJointeBytes) — jamais une URL publique passée telle quelle
+/// à un widget réseau, même logique que _ImageViewerScreen (messages_screen).
+class _PieceJointeImageViewerScreen extends StatefulWidget {
+  final Uint8List bytes;
+  final String title;
+
+  const _PieceJointeImageViewerScreen({required this.bytes, required this.title});
+
+  @override
+  State<_PieceJointeImageViewerScreen> createState() => _PieceJointeImageViewerScreenState();
+}
+
+class _PieceJointeImageViewerScreenState extends State<_PieceJointeImageViewerScreen> {
+  bool _isDownloading = false;
+
+  Future<void> _downloadImage() async {
+    if (_isDownloading) return;
+    setState(() => _isDownloading = true);
+
+    try {
+      final hasAccess = await Gal.hasAccess(toAlbum: true);
+      if (!hasAccess) {
+        final granted = await Gal.requestAccess(toAlbum: true);
+        if (!granted) {
+          if (mounted) {
+            _showSnackBar(
+              "Accès à la galerie refusé. Autorisez l'accès aux photos dans les réglages.",
+              isError: true,
+            );
+          }
+          return;
+        }
+      }
+
+      await Gal.putImageBytes(
+        widget.bytes,
+        album: 'Pouls',
+        name: 'pouls_${DateTime.now().millisecondsSinceEpoch}',
+      );
+
+      if (mounted) _showSnackBar('Image enregistrée dans la galerie.');
+    } catch (e) {
+      if (mounted) _showSnackBar("Impossible d'enregistrer l'image.", isError: true);
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : null,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+        title: Text(widget.title, style: const TextStyle(color: Colors.white, fontSize: 15)),
+        actions: [
+          IconButton(
+            icon: _isDownloading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.download),
+            tooltip: 'Télécharger',
+            onPressed: _isDownloading ? null : _downloadImage,
+          ),
+        ],
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Image.memory(widget.bytes, fit: BoxFit.contain),
+        ),
+      ),
+    );
   }
 }
 

@@ -3,18 +3,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_colors.dart';
 
 enum HomeBackgroundStyle {
-  black('Noir', null),
-  blue('Bleu', AppColors.homeBackgroundBlueGradient),
-  green('Vert', AppColors.homeBackgroundGreenGradient),
-  orange('Orange', AppColors.homeBackgroundOrangeGradient);
+  black('Noir', Colors.black),
+  blue('Bleu', AppColors.homeBackgroundBlueSolid);
 
-  const HomeBackgroundStyle(this.label, this.gradient);
+  const HomeBackgroundStyle(this.label, this.color);
   final String label;
-  final LinearGradient? gradient;
+  final Color color;
 }
 
-/// Style de fond de l'écran d'accueil, choisi par l'utilisateur (noir uni,
-/// ou dégradé bleu/vert/orange) — même schéma que [TextSizeService].
+/// Style de fond de l'écran d'accueil, choisi par l'utilisateur (noir uni ou
+/// bleu uni, sans dégradé) — même schéma que [TextSizeService].
 class HomeBackgroundService extends ChangeNotifier {
   static final HomeBackgroundService _instance =
       HomeBackgroundService._internal();
@@ -51,20 +49,9 @@ class HomeBackgroundService extends ChangeNotifier {
     }
   }
 
-  BoxDecoration get decoration => _style.gradient != null
-      ? BoxDecoration(gradient: _style.gradient)
-      : const BoxDecoration(color: Colors.black);
+  BoxDecoration get decoration => BoxDecoration(color: _style.color);
 
-  /// Couleur du dégradé au point le plus bas de l'écran (ou noir) : à
-  /// utiliser derrière l'en-tête (fond du Scaffold) pour que rien ne
-  /// transparaisse dans les coins arrondis de la feuille du bas. Le
-  /// dégradé va de `begin` à `end` : la couleur en bas dépend donc de
-  /// l'orientation (`begin`/`end` bottomCenter ↔ topCenter).
-  Color get seamColor {
-    final gradient = _style.gradient;
-    if (gradient == null) return Colors.black;
-    return gradient.begin == Alignment.bottomCenter
-        ? gradient.colors.first
-        : gradient.colors.last;
-  }
+  /// Couleur de fond, à utiliser derrière l'en-tête (fond du Scaffold) pour
+  /// que rien ne transparaisse dans les coins arrondis de la feuille du bas.
+  Color get seamColor => _style.color;
 }

@@ -240,7 +240,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
           height: 8,
           decoration: BoxDecoration(
             color: active
-                ? AppColors.success
+                ? AppColors.primary
                 : (isDark ? Colors.white24 : Colors.grey[300]),
             borderRadius: BorderRadius.circular(4),
           ),
@@ -286,7 +286,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
         CustomButton(
           text: _isSearchingEcole ? 'Recherche en cours...' : 'Rechercher l\'école',
           onPressed: _searchEcole,
-          color: AppColors.success,
+          color: AppColors.primary,
           icon: Icons.search_rounded,
           isLoading: _isSearchingEcole,
           isLight: true,
@@ -300,7 +300,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
           CustomButton(
             text: 'Continuer l\'inscription',
             onPressed: _goToMatriculeStep,
-            color: AppColors.success,
+            color: AppColors.primary,
             icon: Icons.arrow_forward_rounded,
             iconOnRight: true,
             height: 56,
@@ -432,7 +432,7 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
         CustomButton(
           text: _isSearchingEleve ? 'Recherche en cours...' : 'Rechercher l\'élève',
           onPressed: _searchEleve,
-          color: AppColors.success,
+          color: AppColors.primary,
           icon: Icons.search_rounded,
           isLoading: _isSearchingEleve,
           isLight: true,

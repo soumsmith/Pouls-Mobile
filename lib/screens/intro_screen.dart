@@ -21,7 +21,7 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
   // Données des slides avec icônes et couleurs
   final List<Map<String, dynamic>> _slides = [
     {
-      'title': 'Parent responsable',
+      'title': 'La Rochelle',
       'subtitle': 'Suivi scolaire simplifié',
       'description': 'Accédez à toutes les informations scolaires de votre enfant',
       'icon': Icons.school,

@@ -12,26 +12,9 @@ import '../config/app_dimensions.dart';
 const double kBottomNavBarHeight = 82;
 
 // ─── DESIGN TOKENS (identiques au CartScreen) ────────────────────────────────
-const _kOrange = Color(0xFFFF6B2C);
 const _kOrangeLight = Color(0xFFFFF0E8);
 const _kShadow = Color(0x0D000000);
 const _kTextPrimary = Color(0xFF1A1A1A);
-
-const _kOrangeGradient = LinearGradient(
-  colors: [Color(0xFFFF7A3C), _kOrange],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
-
-// ─── Couleurs spécifiques pour Astuces & Conseils ────────────────────────────
-const _kTipsBlue = Color(0xFF5B8DEF);
-const _kTipsBlueLight = Color(0xFF7DA8F5);
-
-const _kTipsBlueGradient = LinearGradient(
-  colors: [_kTipsBlueLight, _kTipsBlue],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
 
 // ─── Nav Items Definition ─────────────────────────────────────────────────────
 class _NavItem {
@@ -296,7 +279,7 @@ class _NavItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unselectedColor = AppColors.bottomNavUnselected(context);
-    final activeColor = item.label == 'Astuces' ? _kTipsBlue : _kOrange;
+    final activeColor = AppColors.brandCyan;
 
     return GestureDetector(
       onTap: onTap,
@@ -354,11 +337,7 @@ class _NavItemWidget extends StatelessWidget {
               width: isSelected ? 16 : 0,
               height: isSelected ? 3 : 0,
               decoration: BoxDecoration(
-                gradient: isSelected
-                    ? (item.label == 'Astuces'
-                          ? _kTipsBlueGradient
-                          : _kOrangeGradient)
-                    : null,
+                color: isSelected ? AppColors.brandCyan : null,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

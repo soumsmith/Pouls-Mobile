@@ -410,7 +410,7 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                 constraints: const BoxConstraints(maxWidth: 400),
                 child: CustomButton(
                   text: 'Procéder au paiement',
-                  color: AppColors.screenOrange,
+                  color: AppColors.primary,
                   icon: Icons.credit_card_rounded,
                   onPressed: _effectuerPaiement,
                   isLoading: isLoading,

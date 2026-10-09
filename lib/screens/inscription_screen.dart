@@ -1075,7 +1075,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
               value: (_currentPageIndex + 1) / steps.length,
               backgroundColor: dividerColor,
               valueColor: const AlwaysStoppedAnimation(
-                AppColors.integrationBlue,
+                AppColors.primary,
               ),
               minHeight: 4,
             ),
@@ -1103,12 +1103,12 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                         color: isCompleted
                             ? Colors.green
                             : isCurrent
-                            ? AppColors.integrationBlue
+                            ? AppColors.primary
                             : AppColors.screenDivider,
                         boxShadow: isCurrent
                             ? [
                                 BoxShadow(
-                                  color: AppColors.integrationBlue.withOpacity(
+                                  color: AppColors.primary.withOpacity(
                                     0.25,
                                   ),
                                   blurRadius: 6,
@@ -1146,7 +1146,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                             ? FontWeight.w600
                             : FontWeight.w400,
                         color: isCurrent
-                            ? AppColors.integrationBlue
+                            ? AppColors.primary
                             : isCompleted
                             ? Colors.green
                             : textSecondaryColor,
@@ -2363,7 +2363,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
                   ? 'Continuer'
                   : (isSecondToLast ? 'Récap' : 'Suivant'),
               onPressed: canNext ? _nextStep : null,
-              color: AppColors.integrationBlue,
+              color: AppColors.primary,
               icon: Icons.arrow_forward_rounded,
               iconOnRight: true,
               width: 120,
@@ -2374,7 +2374,7 @@ class _InscriptionWizardScreenState extends State<InscriptionWizardScreen>
             CustomButton(
               text: 'Confirmer',
               onPressed: _showPaymentChoiceBottomSheet,
-              color: AppColors.screenOrange,
+              color: AppColors.primary,
               icon: Icons.check_circle_rounded,
               width: 120,
               height: 40,

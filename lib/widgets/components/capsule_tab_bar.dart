@@ -46,10 +46,10 @@ class CapsuleTabBar extends StatelessWidget implements PreferredSizeWidget {
         indicatorPadding: const EdgeInsets.symmetric(horizontal: -12, vertical: 2),
         indicator: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          color: AppColors.screenOrange,
+          color: AppColors.primary,
           boxShadow: [
             BoxShadow(
-              color: AppColors.screenOrange.withOpacity(0.25),
+              color: AppColors.primary.withOpacity(0.25),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),

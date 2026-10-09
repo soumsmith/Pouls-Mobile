@@ -433,7 +433,9 @@ class _MessagesScreenState extends State<MessagesScreen>
         fontSize: 16,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
-        color: AppColors.screenTextPrimaryThemed(context),
+        // Fond par défaut de la SliverAppBar = AppColors.primary en light
+        // (fond sombre inchangé en dark) : titre blanc dans les deux cas.
+        color: Colors.white,
       ),
     );
   }

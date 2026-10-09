@@ -389,12 +389,12 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                         color: isCompleted
                             ? Colors.green
                             : isActive
-                            ? AppColors.integrationBlue
+                            ? AppColors.primary
                             : (isDark ? const Color(0xFF222222) : AppColors.screenSurface),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isActive
-                              ? AppColors.integrationBlue
+                              ? AppColors.primary
                               : isCompleted
                               ? Colors.green
                               : (isDark ? const Color(0xFF333333) : AppColors.screenDivider),
@@ -403,7 +403,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
-                                  color: AppColors.integrationBlue.withOpacity(0.25),
+                                  color: AppColors.primary.withOpacity(0.25),
                                   blurRadius: 4,
                                   spreadRadius: 1,
                                 ),
@@ -445,7 +445,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
                             ? FontWeight.w700
                             : FontWeight.w500,
                         color: isActive
-                            ? AppColors.integrationBlue
+                            ? AppColors.primary
                             : isCompleted
                             ? Colors.green
                             : (isDark ? Colors.white54 : AppColors.screenTextSecondary),
@@ -515,7 +515,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
         CustomButton(
           text: _isSearchingEcole ? 'Recherche en cours...' : 'Rechercher l\'école',
           onPressed: _isSearchingEcole ? null : _searchEcole,
-          color: AppColors.integrationBlue,
+          color: AppColors.primary,
           icon: Icons.search_rounded,
           isLoading: _isSearchingEcole,
         ),
@@ -907,7 +907,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
             CustomButton(
               text: 'Suivant',
               onPressed: canNext ? () => setState(() => _currentStep++) : null,
-              color: AppColors.integrationBlue,
+              color: AppColors.primary,
               icon: Icons.arrow_forward_rounded,
               iconOnRight: true,
               width: 120,
@@ -920,7 +920,7 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
               onPressed: canNext
                   ? () => widget.onConsultWithMatricule(_currentMatricule)
                   : null,
-              color: AppColors.screenOrange,
+              color: AppColors.primary,
               icon: Icons.search_rounded,
               iconOnRight: true,
               isLoading: widget.isLoadingRequest,

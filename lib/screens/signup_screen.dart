@@ -583,7 +583,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             onPressed: _acceptConditions ? _handleSignup : null,
                             isLoading: _isLoading,
                             backgroundColor: _acceptConditions
-                                ? Colors.green
+                                ? AppColors.primary
                                 : Colors.grey,
                           ),
                           SizedBox(

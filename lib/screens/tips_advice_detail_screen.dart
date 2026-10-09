@@ -560,7 +560,7 @@ class _TipsAdviceDetailScreenState extends State<TipsAdviceDetailScreen>
                 child: CustomButton(
                   text: 'Publier',
                   icon: Icons.send_rounded,
-                  color: _C.emerald,
+                  color: AppColors.primary,
                   onPressed: _submitComment,
                   isLoading: _isSubmittingComment,
                 ),

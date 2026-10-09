@@ -18,6 +18,7 @@ import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../utils/notification_helper.dart';
 import '../utils/html_helper.dart';
 import '../config/app_dimensions.dart';
+import '../config/app_colors.dart';
 import '../widgets/components/custom_button.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/components/bottom_spacer.dart';
@@ -1971,7 +1972,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                     child: Center(
                       child: CustomButton(
                         text: 'Envoyer la note',
-                        color: Colors.green,
+                        color: AppColors.primary,
                         onPressed: _currentRating > 0 ? _submitRating : null,
                         height: 48,
                         width: 300,

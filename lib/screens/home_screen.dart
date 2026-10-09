@@ -2076,12 +2076,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAppBar() {
-    final rawFirstName = AuthService.instance.getCurrentUser()?.firstName ?? '';
-    final isTablet = AppDimensions.isTablet(context);
-    final displayFirstName = (!isTablet && rawFirstName.length > 4)
-        ? '${rawFirstName.substring(0, 4)}...'
-        : rawFirstName;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
       child: Row(
@@ -2106,24 +2100,27 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _getFormattedDate(),
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(11),
-                    color: _kOrange,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${_getGreeting()}, $displayFirstName',
+                  'Groupe scolaire',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(18),
+                    fontSize: _textSizeService.getScaledFontSize(16),
+                    color: Colors.black,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                    height: 1.0,
+                  ),
+                ),
+                Text(
+                  'La Rochelle',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: _textSizeService.getScaledFontSize(16),
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: Colors.black,
                     letterSpacing: -0.5,
+                    height: 1.0,
                   ),
                 ),
               ],
@@ -2195,11 +2192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 36,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [_kOrange, _kOrangeDeep],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: Colors.black,
                     ),
                     child: Center(
                       child: AuthGuard.isLoggedIn()
@@ -2949,7 +2942,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: 'Partager l\'application',
         itemTitle: 'Invitez vos amis à suivre leurs enfants',
         shareText:
-            'Découvrez Parents Responsable, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\n'
+            'Découvrez La Rochelle, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\n'
             'Téléchargez l\'application ici :\n${AppConfig.storeUrl}',
       ),
     );
@@ -3750,54 +3743,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ─── DATE AND GREETING METHODS ─────────────────────────────────────────────
-  String _getFormattedDate() {
-    final now = DateTime.now();
-    final days = [
-      'Lundi',
-      'Mardi',
-      'Mercredi',
-      'Jeudi',
-      'Vendredi',
-      'Samedi',
-      'Dimanche',
-    ];
-    final months = [
-      'janvier',
-      'février',
-      'mars',
-      'avril',
-      'mai',
-      'juin',
-      'juillet',
-      'août',
-      'septembre',
-      'octobre',
-      'novembre',
-      'décembre',
-    ];
-
-    final dayName = days[now.weekday - 1];
-    final dayNumber = now.day;
-    final monthName = months[now.month - 1];
-
-    return '$dayName $dayNumber $monthName';
-  }
-
-  String _getGreeting() {
-    final now = DateTime.now();
-    final hour = now.hour;
-
-    if (hour >= 6 && hour < 12) {
-      return 'Bonjour';
-    } else if (hour >= 12 && hour < 18) {
-      return 'Bonjour';
-    } else if (hour >= 18 && hour < 22) {
-      return 'Bonsoir';
-    } else {
-      return 'Bonsoir';
-    }
-  }
 }
 
 class _PulsingNotificationButton extends StatefulWidget {

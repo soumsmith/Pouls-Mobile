@@ -189,7 +189,13 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.file_download_outlined),
+                    // Fond par défaut de la SliverAppBar = AppColors.primary
+                    // (bleu) en light (fond sombre inchangé en dark) :
+                    // icône blanche dans les deux cas pour le contraste.
+                    : const Icon(
+                        Icons.file_download_outlined,
+                        color: Colors.white,
+                      ),
                 onPressed: _isDownloading ? null : _downloadPdf,
                 tooltip: 'Télécharger',
               ),

@@ -60,9 +60,13 @@ class CustomSliverAppBar extends StatelessWidget {
                 TextStyle(
                   fontSize: textSizeService.getScaledFontSize(18),
                   fontWeight: FontWeight.w700,
+                  // Fond par défaut = AppColors.primary en light (et fond
+                  // sombre existant en dark) : texte blanc dans les deux cas
+                  // pour garder le contraste. Si un backgroundColor custom
+                  // est fourni par l'écran appelant, on garde son textColor.
                   color: backgroundColor != null
                       ? textColor
-                      : AppColors.screenTextPrimaryThemed(context),
+                      : Colors.white,
                   letterSpacing: -0.5,
                 ),
           );
@@ -71,7 +75,10 @@ class CustomSliverAppBar extends StatelessWidget {
         leading ??
         (automaticallyImplyLeading ? _buildDefaultLeading(context) : null);
     final resolvedBgColor =
-        backgroundColor ?? AppColors.screenSurfaceThemed(context);
+        backgroundColor ??
+        (AppColors.isDarkMode(context)
+            ? AppColors.screenSurfaceThemed(context)
+            : AppColors.primary);
     final resolvedSurfaceColor = surfaceTintColor ?? Colors.transparent;
 
     final List<Widget>? resolvedActions = actions != null && actions!.isNotEmpty
@@ -128,23 +135,28 @@ class CustomSliverAppBar extends StatelessWidget {
                     ? textColor.withOpacity(0.15)
                     : (useDarkStyle
                           ? const Color(0xFF262626)
-                          : AppColors.screenCardThemed(context))),
+                          // Fond par défaut en light = AppColors.primary
+                          // (bleu) : un cercle blanc translucide reste
+                          // visible dessus, comme le cercle sombre
+                          // translucide utilisé en dark.
+                          : Colors.white.withOpacity(0.18))),
           borderRadius: BorderRadius.circular(
             AppDimensions.getButtonBorderRadius(context),
           ),
-          boxShadow:
-              (useDarkStyle ||
-                  hasCustomBg ||
-                  actionButtonBackgroundColor != null)
-              ? null
-              : AppDimensions.getSettingsCardShadow(context),
+          // Plus de boxShadow : utilisé seulement dans l'ancien cas
+          // "light, pas de fond custom" (fond blanc), devenu un cercle
+          // translucide sur fond bleu qui n'a pas besoin d'ombre.
+          boxShadow: null,
         ),
         child: Icon(
           Icons.arrow_back_ios_new,
           size: 16,
           color: (hasCustomBg && textColor != Colors.black)
               ? textColor
-              : (useDarkStyle
+              // Pas de fond custom => fond par défaut (primary en light,
+              // fond sombre existant en dark) : icône blanche dans les
+              // deux cas pour le contraste.
+              : (useDarkStyle || !hasCustomBg
                     ? Colors.white
                     : AppColors.screenTextPrimaryThemed(context)),
         ),
@@ -212,20 +224,27 @@ class AppBarIconButton extends StatelessWidget {
                     ? (iconColor ?? Colors.black).withOpacity(0.15)
                     : (useDarkStyle
                           ? const Color(0xFF262626)
-                          : AppColors.screenCardThemed(context))),
+                          // Fond par défaut de la SliverAppBar en light =
+                          // AppColors.primary (bleu) : cercle blanc
+                          // translucide pour rester visible, comme en dark.
+                          : Colors.white.withOpacity(0.18))),
           borderRadius: BorderRadius.circular(
             AppDimensions.getButtonBorderRadius(context),
           ),
-          boxShadow: (useDarkStyle || hasCustomBg || backgroundColor != null)
-              ? null
-              : AppDimensions.getSettingsCardShadow(context),
+          // Plus de boxShadow : l'ancien cas "light, pas de fond custom"
+          // (fond blanc) est devenu un cercle translucide sur fond bleu,
+          // qui n'a pas besoin d'ombre.
+          boxShadow: null,
         ),
         child: Icon(
           icon,
           size: 18,
           color:
               iconColor ??
-              (useDarkStyle
+              // Pas de fond custom pour ce bouton => il vit sur le fond
+              // par défaut de la SliverAppBar (primary en light, fond
+              // sombre existant en dark) : icône blanche dans les deux cas.
+              (useDarkStyle || !hasCustomBg
                   ? Colors.white
                   : AppColors.screenTextPrimaryThemed(context)),
         ),

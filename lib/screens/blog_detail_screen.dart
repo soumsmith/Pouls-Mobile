@@ -887,7 +887,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen>
                 // Bouton envoyer
                 CustomButton(
                   text: 'Publier mon avis',
-                  color: _C.emerald,
+                  color: AppColors.primary,
                   icon: Icons.send_rounded,
                   onPressed: _submitComment,
                   isLoading: _isSubmittingComment,

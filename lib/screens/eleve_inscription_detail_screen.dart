@@ -233,7 +233,7 @@ class EleveInscriptionDetailScreen extends StatelessWidget {
           child: CustomButton(
             text: 'Commencer',
             onPressed: () => _startInscription(context),
-            color: AppColors.screenOrange,
+            color: AppColors.primary,
             icon: Icons.arrow_forward_rounded,
             iconOnRight: true,
             height: 54,

@@ -547,12 +547,21 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
             automaticallyImplyLeading: true,
             pinned: true,
             floating: false,
-            backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            backgroundColor: isDark
+                ? const Color(0xFF1E1E1E)
+                : AppColors.primary,
+            // Dark mode conserve exactement son comportement actuel
+            // (texte/icônes noirs sur fond sombre) ; en light, le fond
+            // devient bleu (AppColors.primary) donc le texte/icônes
+            // passent en blanc pour rester lisibles.
+            textColor: isDark ? Colors.black : Colors.white,
             actions: [
               PopupMenuButton<String>(
                 icon: Icon(
                   Icons.filter_list,
-                  color: AppColors.screenTextPrimaryThemed(context),
+                  color: isDark
+                      ? AppColors.screenTextPrimaryThemed(context)
+                      : Colors.white,
                 ),
                 onSelected: (value) {
                   // Filtres supplémentaires optionnels

@@ -1000,7 +1000,7 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                               Navigator.of(context).pop();
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.screenOrange,
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),

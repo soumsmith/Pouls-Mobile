@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   String _displayText = '';
   int _charIndex = 0;
-  final String _fullText = 'Parent responsable';
+  final String _fullText = 'La Rochelle';
   bool _showCursor = true;
   bool _showSubtitle = false;
   Timer? _cursorTimer;

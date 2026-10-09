@@ -19,6 +19,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../utils/notification_helper.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../config/app_dimensions.dart';
+import '../config/app_colors.dart';
 import '../widgets/components/custom_button.dart';
 import '../models/ecole.dart';
 import '../models/ecole_detail.dart';
@@ -1840,7 +1841,7 @@ class _CommentItem extends StatelessWidget {
             },
             child: const Text(
               'Enregistrer',
-              style: TextStyle(color: Colors.amber),
+              style: TextStyle(color: AppColors.primary),
             ),
           ),
         ],
@@ -2090,7 +2091,7 @@ class _RatingSheetState extends State<_RatingSheet> {
                 Center(
                   child: CustomButton(
                     text: 'Envoyer la note',
-                    color: Colors.green,
+                    color: AppColors.primary,
                     onPressed: _currentRating > 0 ? _submitRating : null,
                     height: 48,
                     width: 300,

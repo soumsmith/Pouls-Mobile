@@ -49,13 +49,15 @@ class FilterRowWidget extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    gradient: isSelected ? (selectedGradient ?? AppColors.screenOrangeGradient) : null,
-                    color: isSelected ? (selectedColor ?? null) : (unselectedColor ?? AppColors.screenSurfaceThemed(context)),
+                    gradient: isSelected ? selectedGradient : null,
+                    color: isSelected
+                        ? (selectedGradient == null ? (selectedColor ?? AppColors.primary) : null)
+                        : (unselectedColor ?? AppColors.screenSurfaceThemed(context)),
                     borderRadius: BorderRadius.circular(AppDimensions.getFilterBorderRadius(context)),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: (selectedColor ?? AppColors.screenOrange).withOpacity(0.30),
+                              color: (selectedColor ?? AppColors.primary).withOpacity(0.30),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),

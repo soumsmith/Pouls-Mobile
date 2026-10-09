@@ -3005,9 +3005,9 @@ class _ChildListScreenState extends State<ChildListScreen>
       titleTextStyle: TextStyle(
         fontSize: _textSizeService.getScaledFontSize(16),
         fontWeight: FontWeight.w700,
-        color: isDarkMode
-            ? Colors.white
-            : Theme.of(context).textTheme.titleLarge?.color,
+        // Fond par défaut de la SliverAppBar = AppColors.primary en light
+        // (fond sombre inchangé en dark) : titre blanc dans les deux cas.
+        color: Colors.white,
         letterSpacing: -0.5,
       ),
     );
@@ -3159,23 +3159,16 @@ class _ChildListScreenState extends State<ChildListScreen>
 
   Widget _buildModernProfileHeader() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: EdgeInsets.symmetric(
         horizontal: AppDimensions.getMainContainerPadding(context),
         vertical: 16,
       ),
       decoration: BoxDecoration(
-        gradient: AppColors.screenOrangeGradient,
+        color: Colors.black,
         borderRadius: BorderRadius.circular(
           AppDimensions.getMainContainerBorderRadius(context),
         ),
-        /*boxShadow: [
-          BoxShadow(
-            color: AppColors.screenOrange.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],*/
       ),
       child: Column(
         children: [
@@ -14732,7 +14725,7 @@ class _PulseAnimatedButtonState extends State<_PulseAnimatedButton>
                     'Plus d\'infos',
                     style: TextStyle(
                       fontSize: 12,
-                      color: const Color(0xFFFF6B2C),
+                      color: AppColors.brandCyan,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.1,
                     ),
@@ -14741,7 +14734,7 @@ class _PulseAnimatedButtonState extends State<_PulseAnimatedButton>
                   const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 10,
-                    color: Color(0xFFFF6B2C),
+                    color: AppColors.brandCyan,
                   ),
                 ],
               ),

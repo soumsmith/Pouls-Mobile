@@ -656,8 +656,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               _applyFilters();
             });
           },
-          selectedColor: AppColors.shopGreen,
-          selectedGradient: AppColors.shopGreenGradient,
+          selectedColor: AppColors.primary,
           selectedTextColor: Colors.white,
         ),
         if (_subFilters.isNotEmpty) ...[
@@ -671,7 +670,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                 _applyFilters();
               });
             },
-            selectedColor: AppColors.shopBlue,
+            selectedColor: AppColors.primary,
             selectedTextColor: Colors.white,
             unselectedColor: AppColors.grey100Adaptive(context),
           ),

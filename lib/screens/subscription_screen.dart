@@ -513,7 +513,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     : 'Valider et Payer (${selectedIds.length} enfant${selectedIds.length > 1 ? "s" : ""})',
                 backgroundColor: selectedIds.isEmpty
                     ? (isDark ? Colors.white12 : const Color(0xFFCBD5E1))
-                    : const Color(0xFFF59E0B),
+                    : AppColors.primary,
                 textColor: selectedIds.isEmpty
                     ? (isDark ? Colors.white38 : const Color(0xFF64748B))
                     : Colors.white,

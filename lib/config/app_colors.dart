@@ -5,11 +5,14 @@ class AppColors {
   AppColors._();
 
   // ================= PRINCIPALES =================
+  // Couleur de marque La Rochelle (#02ADE4) — boutons de soumission/suivant
+  // de toute l'application (GradientSubmitButton, CustomButton par défaut,
+  // etc. s'appuient sur AppColors.primary).
 
-  static const Color primary = Color(0xFF1976D2);
-  static const Color primaryLight = Color(0xFF42A5F5);
-  static const Color primaryDark = Color(0xFF1565C0);
-  static const Color primarySurface = Color(0xFFE3F2FD);
+  static const Color primary = Color(0xFF02ADE4);
+  static const Color primaryLight = Color(0xFF5BCAED);
+  static const Color primaryDark = Color(0xFF0287B2);
+  static const Color primarySurface = Color(0xFFE6F7FC);
 
   static const Color secondary = Color(0xFF2196F3);
   static const Color secondaryLight = Color(0xFF64B5F6);
@@ -489,27 +492,15 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
+  // ================= COULEURS DE MARQUE — LA ROCHELLE =================
+
+  static const Color brandCyan = Color(0xFF02ADE4);
+  static const Color brandBlack = Color(0xFF000000);
+
   // ================= FOND D'ÉCRAN PERSONNALISABLE (ACCUEIL) =================
-  // Deux teintes de la même couleur (clair → foncé), sans virer au noir —
-  // voir HomeBackgroundService.
+  // Couleurs unies (sans dégradé) — voir HomeBackgroundService.
 
-  static const LinearGradient homeBackgroundBlueGradient = LinearGradient(
-    colors: [Color(0xFF1E6FE0), Color(0xFF0A2E6B)],
-    begin: Alignment.bottomCenter,
-    end: Alignment.topCenter,
-  );
-
-  static const LinearGradient homeBackgroundGreenGradient = LinearGradient(
-    colors: [Color(0xFF3FA35B), Color(0xFF0F3D1F)],
-    begin: Alignment.bottomCenter,
-    end: Alignment.topCenter,
-  );
-
-  static const LinearGradient homeBackgroundOrangeGradient = LinearGradient(
-    colors: [Color(0xFFE85D1F), Color(0xFF5C1B02)],
-    begin: Alignment.bottomCenter,
-    end: Alignment.topCenter,
-  );
+  static const Color homeBackgroundBlueSolid = brandCyan;
 
   // ================= GRADIENTS POUR LES ÉCRANS DE BOUTIQUE =================
 

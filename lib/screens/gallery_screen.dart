@@ -100,7 +100,10 @@ class _GalleryScreenState extends State<GalleryScreen> {
               pinned: true,
               floating: false,
               elevation: 0,
-              backgroundColor: Colors.white,
+              // Écran toujours en mode clair ici : fond bleu de marque,
+              // texte/icônes blancs pour le contraste.
+              backgroundColor: AppColors.primary,
+              textColor: Colors.white,
               surfaceTintColor: Colors.transparent,
             ),
             ..._buildBodySlivers(),

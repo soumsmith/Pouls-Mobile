@@ -1761,7 +1761,7 @@ class _TicketBottomSheetState extends State<_TicketBottomSheet> {
                       ? widget.onPurchase
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _AppColors.indigo,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: isDark
                         ? const Color(0xFF333333)
@@ -2145,7 +2145,7 @@ class _ConfirmTicketDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: onConfirm,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _AppColors.indigo,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(

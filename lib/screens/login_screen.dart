@@ -508,7 +508,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Bouton connexion minimaliste
                       CustomButton(
                         text: 'Connexion',
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.primary,
                         onPressed: _handleLogin,
                         isLoading: _isLoading,
                       ),

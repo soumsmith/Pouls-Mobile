@@ -852,7 +852,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 // CTA
                 CustomButton(
                   text: 'Commander',
-                  color: AppColors.screenOrange,
+                  color: AppColors.primary,
                   icon: Icons.shopping_bag_outlined,
                   onPressed: product.isAvailable && !_isLoading
                       ? () => _addToCart(product)
@@ -894,7 +894,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             ),
             CustomButton(
               text: 'Accéder au service',
-              color: AppColors.screenOrange,
+              color: AppColors.primary,
               icon: Icons.open_in_new_rounded,
               onPressed: () => _accessFreeService(product),
               height: 48,

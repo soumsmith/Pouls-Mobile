@@ -325,12 +325,12 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                         color: isCompleted
                             ? Colors.green
                             : isActive
-                                ? AppColors.shopBlue
+                                ? AppColors.primary
                                 : AppColors.screenSurfaceThemed(context),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isActive
-                              ? AppColors.shopBlue
+                              ? AppColors.primary
                               : isCompleted
                                   ? Colors.green
                                   : AppColors.screenDividerThemed(context),
@@ -339,7 +339,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
-                                  color: AppColors.shopBlue.withOpacity(0.25),
+                                  color: AppColors.primary.withOpacity(0.25),
                                   blurRadius: 4,
                                   spreadRadius: 1,
                                 ),
@@ -375,7 +375,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                         fontSize: 10,
                         fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                         color: isActive
-                            ? AppColors.shopBlue
+                            ? AppColors.primary
                             : isCompleted
                                 ? Colors.green
                                 : AppColors.screenTextSecondaryThemed(context),
@@ -473,8 +473,8 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                   gradient: canNext
                       ? const LinearGradient(
                           colors: [
-                            AppColors.shopBlueLight,
-                            AppColors.shopBlue,
+                            AppColors.primaryLight,
+                            AppColors.primary,
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -489,7 +489,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                   boxShadow: canNext
                       ? [
                           BoxShadow(
-                            color: AppColors.shopBlue.withOpacity(0.25),
+                            color: AppColors.primary.withOpacity(0.25),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -528,7 +528,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                 decoration: BoxDecoration(
                   gradient: canNext && !_isSubmitting
                       ? const LinearGradient(
-                          colors: [AppColors.shopBlueLight, AppColors.shopBlue],
+                          colors: [AppColors.primaryLight, AppColors.primary],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
@@ -542,7 +542,7 @@ class _OrderWizardBottomSheetState extends State<OrderWizardBottomSheet>
                   boxShadow: canNext && !_isSubmitting
                       ? [
                           BoxShadow(
-                            color: AppColors.shopBlue.withOpacity(0.25),
+                            color: AppColors.primary.withOpacity(0.25),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),

@@ -361,7 +361,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
         CustomButton(
           text: 'Continuer',
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.primary,
           onPressed: _handlePhoneSubmit,
           isLoading: _isLoading,
         ),
@@ -418,7 +418,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
         CustomButton(
           text: 'Vérifier',
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.primary,
           onPressed: _handleAnswerSubmit,
           isLoading: _isLoading,
         ),
@@ -472,7 +472,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         SizedBox(height: AppDimensions.getAdaptiveSpacing(context)),
         CustomButton(
           text: 'Réinitialiser le mot de passe',
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.primary,
           onPressed: _handleResetPassword,
           isLoading: _isLoading,
         ),
@@ -591,7 +591,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     const SizedBox(height: 20),
                     CustomButton(
                       text: 'Envoyer',
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.primary,
                       onPressed: () async {
                         final String userEmail = emailController.text.trim();
                         final String subjectText = subjectController.text.trim();

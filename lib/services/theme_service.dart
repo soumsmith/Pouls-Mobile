@@ -41,7 +41,7 @@ class ThemeService extends ChangeNotifier {
     useMaterial3: true,
     brightness: Brightness.light,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF2196F3),
+      seedColor: const Color(0xFF02ADE4),
       brightness: Brightness.light,
     ),
     textTheme: TextTheme(
@@ -136,7 +136,7 @@ class ThemeService extends ChangeNotifier {
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF2196F3),
+      seedColor: const Color(0xFF02ADE4),
       brightness: Brightness.dark,
     ),
     textTheme: TextTheme(

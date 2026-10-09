@@ -88,7 +88,7 @@ class AdvancedFiltersForm extends StatelessWidget {
                       const SizedBox(width: 8),
                       CustomButton(
                         text: 'Appliquer',
-                        color: AppColors.screenOrange,
+                        color: AppColors.primary,
                         borderRadius: 8,
                         width: 110,
                         height: 48,

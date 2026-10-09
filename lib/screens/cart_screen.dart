@@ -232,7 +232,13 @@ class _CartScreenState extends State<CartScreen>
               child: IconButton(
                 icon: Icon(
                   Icons.delete_outline_rounded,
-                  color: AppColors.screenTextSecondaryThemed(context),
+                  // Fond par défaut de la SliverAppBar = AppColors.primary
+                  // (bleu) en light (fond sombre inchangé en dark) : on
+                  // reprend la même teinte claire que le dark mode pour
+                  // rester visible sur ce fond.
+                  color: isDark
+                      ? AppColors.screenTextSecondaryThemed(context)
+                      : Colors.white70,
                 ),
                 onPressed: null, // Disabled when cart is empty
               ),
@@ -580,7 +586,7 @@ class _CartScreenState extends State<CartScreen>
   Widget _buildModernCheckoutButton() {
     return CustomButton(
       text: 'Commander maintenant',
-      color: AppColors.shopBlue,
+      color: AppColors.primary,
       icon: Icons.arrow_forward_rounded,
       iconOnRight: true,
       onPressed: _proceedToCheckout,

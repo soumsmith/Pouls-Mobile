@@ -188,7 +188,7 @@ class _MyAppState extends State<MyApp> {
             return MaterialApp(
               navigatorKey: navigatorKey,
               scaffoldMessengerKey: scaffoldMessengerKey,
-              title: 'Parents Responsable',
+              title: 'La Rochelle',
               debugShowCheckedModeBanner: false,
               theme: _themeService.lightTheme,
               darkTheme: _themeService.darkTheme,

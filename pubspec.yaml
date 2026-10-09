@@ -134,6 +134,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/icons/
+    - assets/images/app_icon/
     - assets/document/
     - assets/images/icons/reservation_en_ligne.png
     - assets/images/icons/historique.png
@@ -164,11 +165,11 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# Flutter Launcher Icons configuration
+# Flutter Launcher Icons configuration — logo La Rochelle (#02ADE4 + noir)
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/appIcone.jpg"
-  adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "assets/images/appIcone.jpg"
+  image_path: "assets/images/app_icon/icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/app_icon/icon_foreground.png"
   remove_alpha_ios: true

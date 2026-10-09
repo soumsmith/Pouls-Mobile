@@ -187,7 +187,7 @@ class AppShareService {
       title: video.titre,
       description: video.description,
       link: link,
-      hashtags: '#CoulissesExcellence #Éducation #ParentResponsable',
+      hashtags: '#CoulissesExcellence #Éducation #LaRochelle',
     );
   }
 
@@ -203,7 +203,7 @@ class AppShareService {
       title: title,
       description: description,
       link: link,
-      hashtags: '#VisiteGuidée #Éducation #ParentResponsable',
+      hashtags: '#VisiteGuidée #Éducation #LaRochelle',
       action: '🎬 Regarde cette vidéo incroyable :',
     );
   }
@@ -217,7 +217,7 @@ class AppShareService {
       title: title,
       description: description,
       link: link,
-      hashtags: '#Blog #Éducation #ParentResponsable',
+      hashtags: '#Blog #Éducation #LaRochelle',
       action: '📰 Lisez cet article intéressant :',
     );
   }
@@ -231,7 +231,7 @@ class AppShareService {
       title: title,
       description: description,
       link: link,
-      hashtags: '#Événement #École #ParentResponsable',
+      hashtags: '#Événement #École #LaRochelle',
       action: '📅 Découvrez cet événement à venir :',
     );
   }
@@ -245,7 +245,7 @@ class AppShareService {
       title: title,
       description: description,
       link: link,
-      hashtags: '#Astuce #Conseil #ParentResponsable',
+      hashtags: '#Astuce #Conseil #LaRochelle',
       action: '💡 Découvrez ce conseil utile :',
     );
   }
@@ -259,7 +259,7 @@ class AppShareService {
       title: title,
       description: description,
       link: link,
-      hashtags: '#Boutique #MatérielScolaire #ParentResponsable',
+      hashtags: '#Boutique #MatérielScolaire #LaRochelle',
       action: '🛍️ Découvrez ce produit :',
     );
   }
@@ -300,7 +300,7 @@ class AppShareService {
     buffer.writeln('▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
     buffer.writeln();
     buffer.writeln(
-      '📲 Pour aller plus loin, téléchargez "Parent Responsable" : '
+      '📲 Pour aller plus loin, téléchargez "La Rochelle" : '
       'encore plus de contenus pédagogiques comme celui-ci, et le suivi '
       'complet de la scolarité de votre enfant, en toute sérénité.',
     );

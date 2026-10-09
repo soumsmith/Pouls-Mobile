@@ -1125,26 +1125,28 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.grey.withOpacity(0.1),
+                // La SliverAppBar a maintenant un fond AppColors.primary
+                // (bleu) en light (fond sombre inchangé en dark) : on
+                // reprend le même traitement translucide blanc que le dark
+                // mode pour rester lisible sur ce fond.
+                color: Colors.white.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.rate_review_outlined,
                     size: 18,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: Colors.white,
                   ),
                   const SizedBox(width: 5),
-                  Text(
+                  const Text(
                     'Votre avis',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -3702,7 +3704,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         ),
         CustomFormButton(
           text: 'Envoyer la recommandation',
-          color: AppColors.screenOrange,
+          color: AppColors.primary,
           icon: Icons.recommend_rounded,
           onPressed: () async {
             // Validation AVANT d'afficher le loader
@@ -5032,7 +5034,7 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
               NotificationHelper.showSuccess('Ticket acheté avec succès!');
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.screenOrange,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(

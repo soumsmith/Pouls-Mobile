@@ -281,8 +281,7 @@ class _BottomSheetMenuState extends State<BottomSheetMenu> {
                         height: 26,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          gradient: style.gradient,
-                          color: style.gradient == null ? Colors.black : null,
+                          color: style.color,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isSelected

@@ -880,6 +880,7 @@ class _AddChildScreenState extends State<AddChildScreen>
             onTap: _isSearchingEcole ? null : _searchEcole,
             isLoading: _isSearchingEcole,
             icon: Icons.search_rounded,
+            color: AppColors.primary,
           )
         else
           Row(
@@ -898,7 +899,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                   onTap: _isSearching ? null : _searchEleve,
                   isLoading: _isSearching,
                   icon: Icons.arrow_forward_rounded,
-                  color: AppColors.success,
+                  color: AppColors.primary,
                 ),
               ),
             ],

@@ -2084,143 +2084,160 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            padding: const EdgeInsets.all(4),
-            child: Image.asset(
-              'assets/images/logo-app.png',
-              fit: BoxFit.contain,
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getFormattedDate(),
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(11),
-                    color: _kOrange,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${_getGreeting()}, $displayFirstName',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: _textSizeService.getScaledFontSize(18),
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Bouton recherche
-              _darkIconButton(
-                icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                onTap: _toggleSearch,
-              ),
-              const SizedBox(width: 8),
-              // Bouton partage
-              _darkIconButton(
-                icon: Icons.share_outlined,
-                onTap: _showShareMenu,
-              ),
-              const SizedBox(width: 8),
-              // Bouton notifications
-              ConditionalShowcase(
-                showcaseKey: _four,
-                description: 'Consultez les dernières alertes ici.',
-                child: _PulsingNotificationButton(
-                  icon: Icons.notifications_outlined,
-                  onTap: _showNotificationsMenu,
-                  showBadge:
-                      _unreadNotificationsCount > 0 ||
-                      _hasUpdateNotification ||
-                      _unreadMessagesTotal > 0,
-                  badgeCount:
-                      _unreadNotificationsCount +
-                      (_hasUpdateNotification ? 1 : 0) +
-                      _unreadMessagesTotal,
-                  isPulsing: _hasUpdateNotification,
+              Container(
+                width: 44,
+                height: 44,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Image.asset(
+                  'assets/images/logo-app.png',
+                  fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(width: 8),
-              // User avatar
-              ConditionalShowcase(
-                showcaseKey: _one,
-                description: 'Accédez à votre profil et paramètres depuis ici.',
-                child: GestureDetector(
-                  onTap: () {
-                    if (AuthGuard.isLoggedIn()) {
-                      MainScreenWrapper.of(
-                        context,
-                      ).navigateToExtraScreen(const ProfileScreen());
-                    } else {
-                      // Après connexion depuis ce bouton, on reste sur l'accueil
-                      // plutôt que de naviguer vers le profil.
-                      AuthGuard.ensureLoggedIn(
-                        context,
-                        reason: 'Connectez-vous pour accéder à votre profil',
-                        onAuthenticatedAsync: () async {
-                          // Rafraîchit l'avatar (initiales) et recharge les
-                          // enfants du compte qui vient de se connecter
-                          // (sinon la liste reste vide jusqu'au redémarrage
-                          // de l'app, cet écran n'étant pas recréé après une
-                          // connexion depuis ce bouton).
-                          if (mounted) await _loadChildren();
-                        },
-                      );
-                    }
-                  },
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [_kOrange, _kOrangeDeep],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Univers écoles',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(14),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
                       ),
                     ),
-                    child: Center(
-                      child: AuthGuard.isLoggedIn()
-                          ? Text(
-                              _getUserInitials(),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: _textSizeService.getScaledFontSize(13),
-                              ),
-                            )
-                          : const Icon(
-                              Icons.person_outline_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_getGreeting()}, $displayFirstName',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(15),
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
+              const SizedBox(width: 12),
+              Row(
+                children: [
+                  // Bouton recherche
+                  _darkIconButton(
+                    icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                    onTap: _toggleSearch,
+                  ),
+                  const SizedBox(width: 8),
+                  // Bouton partage
+                  _darkIconButton(
+                    icon: Icons.share_outlined,
+                    onTap: _showShareMenu,
+                  ),
+                  const SizedBox(width: 8),
+                  // Bouton notifications
+                  ConditionalShowcase(
+                    showcaseKey: _four,
+                    description: 'Consultez les dernières alertes ici.',
+                    child: _PulsingNotificationButton(
+                      icon: Icons.notifications_outlined,
+                      onTap: _showNotificationsMenu,
+                      showBadge:
+                          _unreadNotificationsCount > 0 ||
+                          _hasUpdateNotification ||
+                          _unreadMessagesTotal > 0,
+                      badgeCount:
+                          _unreadNotificationsCount +
+                          (_hasUpdateNotification ? 1 : 0) +
+                          _unreadMessagesTotal,
+                      isPulsing: _hasUpdateNotification,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // User avatar
+                  ConditionalShowcase(
+                    showcaseKey: _one,
+                    description: 'Accédez à votre profil et paramètres depuis ici.',
+                    child: GestureDetector(
+                      onTap: () {
+                        if (AuthGuard.isLoggedIn()) {
+                          MainScreenWrapper.of(
+                            context,
+                          ).navigateToExtraScreen(const ProfileScreen());
+                        } else {
+                          // Après connexion depuis ce bouton, on reste sur l'accueil
+                          // plutôt que de naviguer vers le profil.
+                          AuthGuard.ensureLoggedIn(
+                            context,
+                            reason: 'Connectez-vous pour accéder à votre profil',
+                            onAuthenticatedAsync: () async {
+                              // Rafraîchit l'avatar (initiales) et recharge les
+                              // enfants du compte qui vient de se connecter
+                              // (sinon la liste reste vide jusqu'au redémarrage
+                              // de l'app, cet écran n'étant pas recréé après une
+                              // connexion depuis ce bouton).
+                              if (mounted) await _loadChildren();
+                            },
+                          );
+                        }
+                      },
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [_kOrange, _kOrangeDeep],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Center(
+                          child: AuthGuard.isLoggedIn()
+                              ? Text(
+                                  _getUserInitials(),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: _textSizeService.getScaledFontSize(13),
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.person_outline_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _getFormattedDate(),
+            style: TextStyle(
+              fontSize: _textSizeService.getScaledFontSize(11),
+              color: Colors.white.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
           ),
         ],
       ),
@@ -2949,7 +2966,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: 'Partager l\'application',
         itemTitle: 'Invitez vos amis à suivre leurs enfants',
         shareText:
-            'Découvrez Parents Responsable, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\n'
+            'Découvrez Univers écoles, l\'application qui vous permet de suivre le parcours scolaire de vos enfants en temps réel !\n\n'
             'Téléchargez l\'application ici :\n${AppConfig.storeUrl}',
       ),
     );

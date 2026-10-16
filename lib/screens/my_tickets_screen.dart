@@ -37,6 +37,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   List<UserTicket> _myTickets = [];
   UserTicketStats _stats = UserTicketStats(nombreCommandes: 0, nonUtilise: 0, utilise: 0, annule: 0);
   String _searchQuery = '';
+  String _statusFilter = 'all';
 
   final ScrollController _mainScrollController = ScrollController();
 
@@ -208,13 +209,27 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   }
 
   List<UserTicket> _getFilteredTickets() {
-    if (_searchQuery.isEmpty) {
-      return _myTickets;
-    }
     return _myTickets.where((ticket) {
-      final name = ticket.eventName.toLowerCase();
-      final school = ticket.establishment.toLowerCase();
-      return name.contains(_searchQuery) || school.contains(_searchQuery);
+      if (_searchQuery.isNotEmpty) {
+        final name = ticket.eventName.toLowerCase();
+        final school = ticket.establishment.toLowerCase();
+        if (!name.contains(_searchQuery) && !school.contains(_searchQuery)) {
+          return false;
+        }
+      }
+
+      if (_statusFilter == 'all') return true;
+
+      final statusLower = ticket.status.toLowerCase();
+      if (_statusFilter == 'valid') {
+        return statusLower == 'valide' ||
+            statusLower == 'non_utilise' ||
+            statusLower == 'non_utilisé';
+      }
+      if (_statusFilter == 'used') {
+        return statusLower == 'utilise' || statusLower == 'utilisé';
+      }
+      return true;
     }).toList();
   }
 
@@ -547,30 +562,64 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
             automaticallyImplyLeading: true,
             pinned: true,
             floating: false,
-            backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             actions: [
               PopupMenuButton<String>(
-                icon: Icon(
-                  Icons.filter_list,
-                  color: AppColors.screenTextPrimaryThemed(context),
-                ),
+                initialValue: _statusFilter,
                 onSelected: (value) {
-                  // Filtres supplémentaires optionnels
+                  setState(() => _statusFilter = value);
                 },
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 itemBuilder: (BuildContext context) => [
-                  const PopupMenuItem(
+                  CheckedPopupMenuItem(
                     value: 'all',
-                    child: Text('Tous les tickets'),
+                    checked: _statusFilter == 'all',
+                    child: const Text(
+                      'Tous les tickets',
+                      style: TextStyle(color: Colors.black87),
+                    ),
                   ),
-                  const PopupMenuItem(
+                  CheckedPopupMenuItem(
                     value: 'valid',
-                    child: Text('Tickets valides'),
+                    checked: _statusFilter == 'valid',
+                    child: const Text(
+                      'Tickets valides',
+                      style: TextStyle(color: Colors.black87),
+                    ),
                   ),
-                  const PopupMenuItem(
+                  CheckedPopupMenuItem(
                     value: 'used',
-                    child: Text('Tickets utilisés'),
+                    checked: _statusFilter == 'used',
+                    child: const Text(
+                      'Tickets utilisés',
+                      style: TextStyle(color: Colors.black87),
+                    ),
                   ),
                 ],
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF262626) : Colors.white,
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.getButtonBorderRadius(context),
+                    ),
+                    border: isDark
+                        ? null
+                        : Border.all(color: AppColors.screenDividerThemed(context)),
+                    boxShadow: isDark ? null : AppDimensions.getSettingsCardShadow(context),
+                  ),
+                  child: Icon(
+                    Icons.filter_list,
+                    size: 18,
+                    color: _statusFilter != 'all'
+                        ? AppColors.screenOrange
+                        : AppColors.screenTextPrimaryThemed(context),
+                  ),
+                ),
               ),
             ],
           ),

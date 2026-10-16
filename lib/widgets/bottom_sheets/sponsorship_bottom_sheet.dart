@@ -457,7 +457,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Recommandez l\'application Parents Responsable à vos proches et recevez des récompenses exceptionnelles.',
+          'Recommandez l\'application Univers écoles à vos proches et recevez des récompenses exceptionnelles.',
           style: TextStyle(
             fontSize: _textSizeService.getScaledFontSize(11),
             color: isDark ? Colors.white70 : const Color(0xFF6B7280),
@@ -1050,7 +1050,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         imagePath: 'assets/images/icons/whatsapp.png',
         onTap: () async {
           final message = 'Salut !\n\n'
-              'J\'utilise l\'application PARENT RESPONSABLE et je voulais partager mon code de parrainage avec toi : *$codeParrainage*.\n\n'
+              'J\'utilise l\'application UNIVERS ÉCOLES et je voulais partager mon code de parrainage avec toi : *$codeParrainage*.\n\n'
               'Télécharge l\'application ici :\n$storeUrl\n\n'
               'Utilise ce code lors de ton inscription pour bénéficier de plusieurs avantages !';
           final whatsappUrl =
@@ -1085,7 +1085,7 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         iconColor: const Color(0xFF2196F3),
         onTap: () async {
           final message = 'Salut !\n\n'
-              'J\'utilise l\'application Parent responsable et je voulais partager mon code de parrainage avec toi : $codeParrainage.\n\n'
+              'J\'utilise l\'application Univers écoles et je voulais partager mon code de parrainage avec toi : $codeParrainage.\n\n'
               'Télécharge l\'application ici :\n$storeUrl\n\n'
               'Utilise ce code lors de ton inscription pour bénéficier de plusieurs avantages !';
           final smsUrl = 'sms:?body=${Uri.encodeComponent(message)}';
@@ -1107,9 +1107,9 @@ class _SponsorshipBottomSheetState extends State<SponsorshipBottomSheet> {
         icon: Icons.email_rounded,
         iconColor: const Color(0xFFEA4335),
         onTap: () async {
-          final subject = 'Code de parrainage Parent responsable';
+          final subject = 'Code de parrainage Univers écoles';
           final body = 'Salut !\n\n'
-              'J\'utilise l\'application Parent responsable et je voulais partager mon code de parrainage avec toi : $codeParrainage.\n\n'
+              'J\'utilise l\'application Univers écoles et je voulais partager mon code de parrainage avec toi : $codeParrainage.\n\n'
               'Télécharge l\'application et utilise ce code pour vous inscrire et bénéficier d\'avantages !\n\n'
               'Lien de téléchargement :\n$storeUrl\n\n'
               'À bientôt !';

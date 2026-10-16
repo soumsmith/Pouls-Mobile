@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   String _displayText = '';
   int _charIndex = 0;
-  final String _fullText = 'Parent responsable';
+  final String _fullText = 'Univers écoles';
   bool _showCursor = true;
   bool _showSubtitle = false;
   Timer? _cursorTimer;
@@ -252,7 +252,7 @@ class _SplashScreenState extends State<SplashScreen>
                         opacity: _showSubtitle ? 1.0 : 0.0,
                         duration: const Duration(milliseconds: 800),
                         child: Text(
-                          'La vie scolaire simplifiée.',
+                          "l'histoire des écoles entre vos mains",
                           style: Theme.of(context).textTheme.bodyLarge
                               ?.copyWith(
                                 color: Theme.of(

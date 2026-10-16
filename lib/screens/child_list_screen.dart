@@ -2999,6 +2999,36 @@ class _ChildListScreenState extends State<ChildListScreen>
 
     return CustomSliverAppBar(
       title: widget.child.fullName,
+      titleWidget: Transform.translate(
+        offset: const Offset(-12, 0),
+        child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            'assets/images/logo-app-parent-responsable.png',
+            width: 36,
+            height: 36,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              'Parent responsable',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: _textSizeService.getScaledFontSize(16),
+                fontWeight: FontWeight.w700,
+                color: isDarkMode
+                    ? Colors.white
+                    : Theme.of(context).textTheme.titleLarge?.color,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+        ],
+        ),
+      ),
       isDark: isDarkMode,
       expandedHeight: 70,
       actions: [_buildNotificationButton(), _buildMoreButton()], //,

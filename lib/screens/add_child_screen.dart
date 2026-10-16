@@ -889,16 +889,25 @@ class _AddChildScreenState extends State<AddChildScreen>
                   label: 'Retour',
                   onTap: _resetEcoleSearch,
                   icon: Icons.arrow_back_rounded,
+                  height: 46,
+                  outlined: true,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildOrangeButton(
-                  label: _isSearching ? 'Recherche en cours...' : 'Continuer',
-                  onTap: _isSearching ? null : _searchEleve,
-                  isLoading: _isSearching,
-                  icon: Icons.arrow_forward_rounded,
-                  color: AppColors.success,
+                child: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _matriculeController,
+                  builder: (context, value, _) {
+                    final hasMatricule = value.text.trim().isNotEmpty;
+                    return _buildOrangeButton(
+                      label: _isSearching ? 'Recherche en cours...' : 'Continuer',
+                      onTap: (_isSearching || !hasMatricule) ? null : _searchEleve,
+                      isLoading: _isSearching,
+                      icon: Icons.arrow_forward_rounded,
+                      color: AppColors.success,
+                      height: 46,
+                    );
+                  },
                 ),
               ),
             ],
@@ -1371,19 +1380,34 @@ class _AddChildScreenState extends State<AddChildScreen>
     IconData? icon,
     Color color = AppColors.screenOrange,
     Color? shadowColor,
+    double height = 54,
+    bool outlined = false,
   }) {
+    final bool isDisabled = onTap == null && !isLoading;
+    final Color contentColor = outlined
+        ? (isDisabled ? AppColors.grey400 : AppColors.grey600)
+        : Colors.white;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: double.infinity,
-      height: 54,
+      height: height,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: color == AppColors.screenOrange
-              ? const [Color(0xFFFF7A3C), AppColors.screenOrange]
-              : [color.withOpacity(0.85), color],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: outlined
+            ? null
+            : LinearGradient(
+                colors: color == AppColors.screenOrange
+                    ? const [Color(0xFFFF7A3C), AppColors.screenOrange]
+                    : [color.withOpacity(0.85), color],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        color: outlined ? Colors.transparent : null,
+        border: outlined
+            ? Border.all(
+                color: isDisabled ? AppColors.grey300 : AppColors.grey400,
+              )
+            : null,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Material(
@@ -1394,19 +1418,19 @@ class _AddChildScreenState extends State<AddChildScreen>
           onTap: isLoading ? null : onTap,
           child: Center(
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(contentColor),
                     ),
                   )
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (icon != null) ...[
-                        Icon(icon, color: Colors.white, size: 18),
+                        Icon(icon, color: contentColor, size: 18),
                         const SizedBox(width: 8),
                       ],
                       Text(
@@ -1414,7 +1438,7 @@ class _AddChildScreenState extends State<AddChildScreen>
                         style: TextStyle(
                           fontSize: _textSizeService.getScaledFontSize(14),
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: contentColor,
                           letterSpacing: 0.1,
                         ),
                       ),

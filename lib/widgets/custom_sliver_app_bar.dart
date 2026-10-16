@@ -7,6 +7,7 @@ import 'package:parents_responsable/services/text_size_service.dart';
 /// Widget SliverAppBar réutilisable avec personnalisation des actions
 class CustomSliverAppBar extends StatelessWidget {
   final String title;
+  final Widget? titleWidget;
   final bool isDark;
   final List<Widget>? actions;
   final VoidCallback? onBackTap;
@@ -28,6 +29,7 @@ class CustomSliverAppBar extends StatelessWidget {
   const CustomSliverAppBar({
     super.key,
     required this.title,
+    this.titleWidget,
     this.isDark = false, // Gardé pour compatibilité mais ne sera plus utilisé
     this.actions,
     this.onBackTap,
@@ -51,21 +53,23 @@ class CustomSliverAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final textSizeService = TextSizeService();
 
-    final titleWidget = title.isEmpty
-        ? null
-        : Text(
-            title,
-            style:
-                titleTextStyle ??
-                TextStyle(
-                  fontSize: textSizeService.getScaledFontSize(18),
-                  fontWeight: FontWeight.w700,
-                  color: backgroundColor != null
-                      ? textColor
-                      : AppColors.screenTextPrimaryThemed(context),
-                  letterSpacing: -0.5,
-                ),
-          );
+    final resolvedTitle =
+        titleWidget ??
+        (title.isEmpty
+            ? null
+            : Text(
+                title,
+                style:
+                    titleTextStyle ??
+                    TextStyle(
+                      fontSize: textSizeService.getScaledFontSize(18),
+                      fontWeight: FontWeight.w700,
+                      color: backgroundColor != null
+                          ? textColor
+                          : AppColors.screenTextPrimaryThemed(context),
+                      letterSpacing: -0.5,
+                    ),
+              ));
 
     final resolvedLeading =
         leading ??
@@ -89,7 +93,7 @@ class CustomSliverAppBar extends StatelessWidget {
         surfaceTintColor: resolvedSurfaceColor,
         backgroundColor: resolvedBgColor,
         leading: resolvedLeading,
-        title: titleWidget,
+        title: resolvedTitle,
         actions: resolvedActions,
         flexibleSpace: flexibleSpace,
         centerTitle: false,
@@ -105,7 +109,7 @@ class CustomSliverAppBar extends StatelessWidget {
       surfaceTintColor: resolvedSurfaceColor,
       backgroundColor: resolvedBgColor,
       leading: resolvedLeading,
-      title: titleWidget,
+      title: resolvedTitle,
       actions: resolvedActions,
       flexibleSpace: flexibleSpace,
     );

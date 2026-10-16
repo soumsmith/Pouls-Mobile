@@ -21,8 +21,8 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
   // Données des slides avec icônes et couleurs
   final List<Map<String, dynamic>> _slides = [
     {
-      'title': 'Parent responsable',
-      'subtitle': 'Suivi scolaire simplifié',
+      'title': 'Univers écoles',
+      'subtitle': "l'histoire des écoles entre vos mains",
       'description': 'Accédez à toutes les informations scolaires de votre enfant',
       'icon': Icons.school,
       'color': AppColors.primary,
@@ -222,7 +222,7 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
 
   Widget _buildSlide(BuildContext context, Map<String, dynamic> slide) {
     final hasFeatures = slide['hasFeatures'] as bool;
-    final iconSize = AppDimensions.getAdaptiveIconSize(context);
+    final iconSize = AppDimensions.getAdaptiveIconSize(context) * 1.5;
 
     return SingleChildScrollView(
       child: Column(

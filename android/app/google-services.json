@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:832531255681:android:40b4e0084af6bb0bde9880",
+        "android_client_info": {
+          "package_name": "com.groupegain.larochelle"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALU97qctkzyVNspROCcx1mtj4UryjpoKk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:832531255681:android:564b53c0ef5a853bde9880",
         "android_client_info": {
           "package_name": "com.groupegain.parents_responsable"

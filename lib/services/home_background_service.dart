@@ -3,8 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_colors.dart';
 
 enum HomeBackgroundStyle {
-  black('Noir', Colors.black),
-  blue('Bleu', AppColors.homeBackgroundBlueSolid);
+  blue('Bleu', AppColors.homeBackgroundBlueSolid),
+  black('Noir', Colors.black);
 
   const HomeBackgroundStyle(this.label, this.color);
   final String label;
@@ -19,7 +19,7 @@ class HomeBackgroundService extends ChangeNotifier {
   factory HomeBackgroundService() => _instance;
   HomeBackgroundService._internal();
 
-  HomeBackgroundStyle _style = HomeBackgroundStyle.black;
+  HomeBackgroundStyle _style = HomeBackgroundStyle.blue;
   HomeBackgroundStyle get style => _style;
 
   static const String _prefsKey = 'home_background_style';

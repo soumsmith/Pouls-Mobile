@@ -51,18 +51,17 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyALU97qctkzyVNspROCcx1mtj4UryjpoKk',
-    appId: '1:832531255681:android:564b53c0ef5a853bde9880',
+    appId: '1:832531255681:android:40b4e0084af6bb0bde9880',
     messagingSenderId: '832531255681',
     projectId: 'parent-responsable-8fc40',
     storageBucket: 'parent-responsable-8fc40.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCTfuoDpbSU6B2kHmQl9AZ4z8UR7fEpQk0',
-    appId: '1:832531255681:ios:7a411184b9faa467de9880',
+    appId: '1:832531255681:ios:120feebd71021720de9880',
     messagingSenderId: '832531255681',
     projectId: 'parent-responsable-8fc40',
     storageBucket: 'parent-responsable-8fc40.firebasestorage.app',
-    iosBundleId: 'com.groupegain.parentsresponsable',
+    iosBundleId: 'com.groupegain.larochelle',
   );
 }

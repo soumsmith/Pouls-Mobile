@@ -1,4 +1,4 @@
-package com.groupegain.parents_responsable
+package com.groupegain.larochelle
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

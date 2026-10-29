@@ -33,6 +33,8 @@ import '../widgets/bottom_sheets/school_event_bottom_sheet.dart';
 import 'all_events_screen.dart';
 import 'all_blogs_screen.dart';
 import 'gallery_screen.dart';
+import 'ecole_histoire_timeline_screen.dart';
+import 'ecole_histoire_detail_screen.dart' show kHistoireAccentColor;
 import 'blog_detail_screen.dart';
 import '../models/video.dart';
 import 'all_videos_screen.dart';
@@ -2750,6 +2752,21 @@ class _EstablishmentDetailScreenState extends State<EstablishmentDetailScreen>
         actionText: 'Voir galeries',
         onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(
           GalleryScreen(
+            ecoleCode: widget.ecole.parametreCode ?? 'gainhs',
+            ecoleNom: widget.ecole.parametreNom,
+          ),
+        ),
+      ),
+      EstablishmentAction(
+        key: 'memoire_ecole',
+        overtitle: 'SOUVENIRS',
+        title: 'Mémoire de l\'école',
+        subtitle: 'Les moments marquants de notre histoire',
+        iconData: Icons.auto_stories_rounded,
+        color: kHistoireAccentColor,
+        actionText: 'Voir l\'histoire',
+        onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(
+          EcoleHistoireTimelineScreen(
             ecoleCode: widget.ecole.parametreCode ?? 'gainhs',
             ecoleNom: widget.ecole.parametreNom,
           ),

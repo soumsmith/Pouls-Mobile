@@ -7,6 +7,7 @@ import 'signup_screen.dart';
 import '../app.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import '../widgets/components/custom_text_input.dart';
+import '../widgets/country_selector_chip.dart';
 import 'forgot_password_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/notification_helper.dart';
@@ -204,6 +205,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       SizedBox(
                         height: AppDimensions.getAdaptiveSpacing(context) * 1.5,
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: CountrySelectorChip(),
+                      ),
+                      SizedBox(
+                        height: AppDimensions.getAdaptiveSpacing(context) * 0.5,
                       ),
                       // Logo minimaliste
                       Center(

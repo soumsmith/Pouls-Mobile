@@ -15,6 +15,7 @@ import '../models/travail_consultation.dart';
 import '../models/devoir_surveille_consultation.dart';
 import '../models/difficulte_consultation.dart';
 import '../models/progression_consultation.dart';
+import '../models/conduite_consultation.dart';
 import '../utils/api_exception_handler.dart';
 import 'pedagogie_auth_service.dart';
 
@@ -693,6 +694,44 @@ class ConsultationApiService {
     } catch (e) {
       _logException('pièce jointe', e);
       ApiExceptionHandler.handle(e, context: 'le téléchargement de la pièce jointe');
+      rethrow;
+    }
+  }
+
+  /// GET /consultation/etablissements/{schoolId}/eleves/{matricule}/conduite
+  ///
+  /// Un objet par trimestre, dans l'ordre de l'année : note de conduite,
+  /// appréciations et, pour chaque période, les incidents consignés et les
+  /// sanctions effectivement appliquées. Sans [periodeRef], toutes les
+  /// périodes de l'année.
+  Future<List<ConduitePeriode>> getConduite(
+    String schoolId,
+    String matricule, {
+    required String anneeRef,
+    String? periodeRef,
+    bool showNotification = true,
+  }) async {
+    try {
+      final queryParams = {
+        'annee': anneeRef,
+        if (periodeRef != null) 'periode': periodeRef,
+      };
+      final uri = Uri.parse(
+        '$_baseUrl/consultation/etablissements/$schoolId/eleves/$matricule/conduite',
+      ).replace(queryParameters: queryParams);
+      final response = await _getWithRetry(uri, 'conduite');
+      if (response.statusCode != 200) _throwForStatus('la conduite', response);
+      final List<dynamic> data = json.decode(response.body);
+      return data
+          .map((e) => ConduitePeriode.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      _logException('conduite', e);
+      ApiExceptionHandler.handle(
+        e,
+        context: 'la récupération de la conduite',
+        showNotification: showNotification,
+      );
       rethrow;
     }
   }

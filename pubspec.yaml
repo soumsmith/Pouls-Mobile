@@ -3,7 +3,7 @@ description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 1.0.16+26
+version: 1.0.17+27
 
 environment:
   sdk: ^3.10.7
@@ -81,6 +81,12 @@ dependencies:
 
   # Google Maps
   google_maps_flutter: ^2.9.0
+
+  # Carte "écoles à proximité" (tuiles OpenStreetMap, pas de clé API requise)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^14.0.2
+  permission_handler: ^11.3.1
 
   # QR Code
   qr_flutter: ^4.1.0

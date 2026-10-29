@@ -16,6 +16,9 @@ class Ecole {
   final String? codedren;
   final double? longitude;
   final double? latitude;
+  /// Distance (en km) par rapport au point passé en paramètre lors d'une
+  /// recherche géolocalisée (`latitude`/`longitude`/`rayon`) — `null` sinon.
+  final double? distance;
 
   // Champs pour la compatibilité avec le code existant
   int get ecoleid => _ecoleid ?? parametreCode.hashCode;
@@ -47,6 +50,7 @@ class Ecole {
     this.codedren,
     this.longitude,
     this.latitude,
+    this.distance,
     int? ecoleid,
     String? ecocode,
   }) : _ecoleid = ecoleid, _ecolecode = ecocode;
@@ -77,8 +81,9 @@ class Ecole {
       imagefond: json['imagefond'] as String?,
       paramecole: json['paramecole'] as String?,
       codedren: json['codedren'] as String?,
-      longitude: json['longitude'] as double?,
-      latitude: json['latitude'] as double?,
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      distance: (json['distance'] as num?)?.toDouble(),
       ecoleid: json['ecoleid'] as int?,
       ecocode: json['ecolecode'] as String?,
     );
@@ -102,6 +107,7 @@ class Ecole {
       'codedren': codedren,
       'longitude': longitude,
       'latitude': latitude,
+      'distance': distance,
     };
   }
 

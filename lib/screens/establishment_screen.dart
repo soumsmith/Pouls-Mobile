@@ -33,6 +33,7 @@ import '../widgets/image_menu_card_external_title.dart';
 import '../widgets/image_menu_card.dart';
 import '../widgets/app_loader.dart';
 import '../widgets/recommendation_bottom_sheet.dart';
+import 'nearby_schools_map_screen.dart';
 import 'all_events_screen.dart';
 import 'coulisse_video_feed_screen.dart';
 import 'establishment_detail_screen.dart';
@@ -990,7 +991,37 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const NearbySchoolsMapScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.near_me_rounded, size: 20),
+                            label: const Text(
+                              'Écoles à proximité',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.screenOrange,
+                              side: const BorderSide(color: AppColors.screenOrange),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
                           height: 50,

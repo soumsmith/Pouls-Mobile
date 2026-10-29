@@ -476,7 +476,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (tag != null)
+                if (tag != null && tag!.trim().isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(left: 4),
                     padding: const EdgeInsets.symmetric(
@@ -496,7 +496,7 @@ class ImageMenuCardExternalTitle extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (tag2 != null)
+                if (tag2 != null && tag2!.trim().isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(left: 4),
                     padding: const EdgeInsets.symmetric(

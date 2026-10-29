@@ -14,6 +14,7 @@ import 'models/child.dart';
 import 'services/theme_service.dart';
 import 'services/database_service.dart';
 import 'services/auth_service.dart';
+import 'services/country_service.dart';
 import 'services/notification_service.dart';
 import 'services/onesignal_service.dart';
 import 'services/connectivity_service.dart';
@@ -42,6 +43,12 @@ void main() async {
 
     await DatabaseService.instance.database;
     print('✅ Base de données initialisée');
+
+    // Doit être chargé avant tout appel API : détermine l'URL de base
+    // (AppConfig.VIE_ECOLES_API_BASE_URL) selon le pays choisi par
+    // l'utilisateur.
+    await CountryService.instance.init();
+    print('✅ Pays/serveur sélectionné chargé');
 
     // Recharger la session sauvegardée si elle existe (mode invité sinon)
     await AuthService.instance.loadSavedSession();

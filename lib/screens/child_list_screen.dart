@@ -103,6 +103,7 @@ import '../models/travail_consultation.dart';
 import '../models/devoir_surveille_consultation.dart';
 import '../models/difficulte_consultation.dart';
 import '../models/progression_consultation.dart';
+import '../models/conduite_consultation.dart';
 import '../models/etablissement_consultation.dart';
 import 'pdf_viewer_screen.dart';
 import 'dart:io';
@@ -333,6 +334,10 @@ class ChildListScreen extends StatefulWidget {
 class _ChildListScreenState extends State<ChildListScreen>
     with TickerProviderStateMixin
     implements MainScreenChild {
+  // Masqué pour le moment (section Services) : Fournitures, Kits Scolaires
+  // et Commandes, en attendant que ces fonctionnalités soient prêtes.
+  static const bool _kShowSuppliesServiceActions = false;
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -535,6 +540,13 @@ class _ChildListScreenState extends State<ChildListScreen>
   bool _isLoadingProgressions = false;
   StateSetter? _progressionsModalSetState;
   String? _expandedProgressionMatiereCode;
+
+  // Conduite / sanctions de l'élève (API de consultation)
+  List<ConduitePeriode>? _conduites;
+  bool _isLoadingConduite = false;
+  StateSetter? _conduiteModalSetState;
+  String? _conduiteErrorMessage;
+  final Set<String> _expandedConduitePeriodeRefs = {};
 
   @override
   void initState() {
@@ -1893,6 +1905,12 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   void _showSanctionsBottomSheet() {
+    _conduites = null;
+    _isLoadingConduite = false;
+    _conduiteErrorMessage = null;
+    _expandedConduitePeriodeRefs.clear();
+    bool hasAttemptedLoad = false;
+
     ReusableBottomSheet.show(
       context: context,
       title: 'Sanctions',
@@ -1904,9 +1922,74 @@ class _ChildListScreenState extends State<ChildListScreen>
       initialChildSize: 0.8,
       minChildSize: 0.5,
       maxChildSize: 0.95,
-      contentPadding: EdgeInsets.zero,
-      content: _buildSanctionsTab(),
-    );
+      contentPadding: const EdgeInsets.all(16),
+      content: StatefulBuilder(
+        builder: (context, setModalState) {
+          _conduiteModalSetState = setModalState;
+          if (!hasAttemptedLoad) {
+            hasAttemptedLoad = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadConduite(setModalState);
+            });
+          }
+          return _buildSanctionsTab();
+        },
+      ),
+    ).whenComplete(() {
+      _conduiteModalSetState = null;
+    });
+  }
+
+  Future<void> _loadConduite([StateSetter? setModalState]) async {
+    if (_isLoadingConduite) return;
+
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) return;
+
+    final effectiveModalSetState = setModalState ?? _conduiteModalSetState;
+    void updateState(VoidCallback fn) {
+      if (effectiveModalSetState != null) effectiveModalSetState(fn);
+      if (mounted) setState(fn);
+    }
+
+    updateState(() {
+      _isLoadingConduite = true;
+      _conduiteErrorMessage = null;
+    });
+
+    try {
+      final schoolId = await _resolveConsultationSchoolId();
+      if (schoolId == null) {
+        throw Exception('Établissement introuvable dans l\'API de consultation');
+      }
+
+      final annees = await _consultationApi.getAnnees(schoolId);
+      if (annees.isEmpty) {
+        throw Exception('Aucune année scolaire disponible');
+      }
+      final annee = annees.firstWhere(
+        (a) => a.courante,
+        orElse: () => annees.first,
+      );
+
+      final conduites = await _consultationApi.getConduite(
+        schoolId,
+        matricule,
+        anneeRef: annee.ref,
+      );
+
+      updateState(() {
+        _conduites = conduites;
+        _isLoadingConduite = false;
+      });
+    } catch (e) {
+      updateState(() {
+        _conduites = [];
+        _isLoadingConduite = false;
+        _conduiteErrorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+      print('❌ Erreur lors du chargement de la conduite: $e');
+    }
   }
 
   void _showMessagesBottomSheet() {
@@ -5009,48 +5092,50 @@ class _ChildListScreenState extends State<ChildListScreen>
         SectionRow(title: 'Services'),
         EstablishmentActionSection(
           actions: [
-            EstablishmentAction(
-              key: 'niveaux',
-              title: 'Fournitures',
-              subtitle: 'Voir liste',
-              imagePath: 'assets/images/icons/fournitures.png',
-              iconData: Icons.inventory_2_rounded,
-              color: const Color(0xFF795548),
-              actionText: 'Voir liste',
-              moduleIdentifiant: _getModuleIdentifiant('supplies'),
-              onTap: () => _showSuppliesBottomSheet(),
-            ),
-            EstablishmentAction(
-              key: 'kits_scolaires',
-              title: 'Kits Scolaires',
-              subtitle: 'Voir les kits',
-              imagePath:
-                  'assets/images/icons/kitscolaite.png', // Or another icon
-              iconData: Icons.backpack_rounded,
-              color: const Color(
-                0xFF673AB7,
-              ), // Violet color matching kits_bottom_sheet
-              actionText: 'Voir kits',
-              moduleIdentifiant: _getModuleIdentifiant('kits_scolaires'),
-              onTap: () {
-                showChildKitsBottomSheet(
-                  context,
-                  schoolId: _ecoleCode ?? '',
-                  niveau: widget.child.grade,
-                  childName: widget.child.firstName,
-                );
-              },
-            ),
-            EstablishmentAction(
-              key: 'consult_requests',
-              title: 'Commandes',
-              subtitle: 'Voir commandes',
-              imagePath: 'assets/images/icons/mes_commandes.png',
-              iconData: Icons.shopping_cart_rounded,
-              color: const Color(0xFF00ACC1),
-              actionText: 'Voir commandes',
-              onTap: () => _showOrdersBottomSheet(),
-            ),
+            if (_kShowSuppliesServiceActions) ...[
+              EstablishmentAction(
+                key: 'niveaux',
+                title: 'Fournitures',
+                subtitle: 'Voir liste',
+                imagePath: 'assets/images/icons/fournitures.png',
+                iconData: Icons.inventory_2_rounded,
+                color: const Color(0xFF795548),
+                actionText: 'Voir liste',
+                moduleIdentifiant: _getModuleIdentifiant('supplies'),
+                onTap: () => _showSuppliesBottomSheet(),
+              ),
+              EstablishmentAction(
+                key: 'kits_scolaires',
+                title: 'Kits Scolaires',
+                subtitle: 'Voir les kits',
+                imagePath:
+                    'assets/images/icons/kitscolaite.png', // Or another icon
+                iconData: Icons.backpack_rounded,
+                color: const Color(
+                  0xFF673AB7,
+                ), // Violet color matching kits_bottom_sheet
+                actionText: 'Voir kits',
+                moduleIdentifiant: _getModuleIdentifiant('kits_scolaires'),
+                onTap: () {
+                  showChildKitsBottomSheet(
+                    context,
+                    schoolId: _ecoleCode ?? '',
+                    niveau: widget.child.grade,
+                    childName: widget.child.firstName,
+                  );
+                },
+              ),
+              EstablishmentAction(
+                key: 'consult_requests',
+                title: 'Commandes',
+                subtitle: 'Voir commandes',
+                imagePath: 'assets/images/icons/mes_commandes.png',
+                iconData: Icons.shopping_cart_rounded,
+                color: const Color(0xFF00ACC1),
+                actionText: 'Voir commandes',
+                onTap: () => _showOrdersBottomSheet(),
+              ),
+            ],
             EstablishmentAction(
               key: 'tickets',
               title: 'Tickets',
@@ -13255,12 +13340,389 @@ class _ChildListScreenState extends State<ChildListScreen>
     }
   }
 
+  static const Color _conduiteColor = Color(0xFFD32F2F);
+
   Widget _buildSanctionsTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    if (_isLoadingConduite) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            CustomLoader(
+              message: 'Chargement de la conduite...',
+              loaderColor: _conduiteColor,
+              backgroundColor: Colors.transparent,
+              showBackground: false,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_conduites == null || _conduites!.isEmpty) {
+      final hasError = _conduiteErrorMessage != null;
+      return CustomErrorState(
+        title: hasError ? 'Impossible de charger la conduite' : 'Aucune donnée de conduite',
+        message: hasError
+            ? _conduiteErrorMessage!
+            : 'Aucune information de conduite n\'est disponible pour le moment.',
+        icon: hasError ? Icons.warning_amber_rounded : Icons.verified_user_outlined,
+        iconColor: _conduiteColor,
+        onRetry: hasError
+            ? () {
+                setState(() {
+                  _conduites = null;
+                  _conduiteErrorMessage = null;
+                });
+                _loadConduite();
+              }
+            : null,
+      );
+    }
+
+    final widgets = <Widget>[];
+    for (final periode in _conduites!) {
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 10));
+      widgets.add(_buildConduitePeriodeCard(periode));
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: widgets);
+  }
+
+  void _toggleConduitePeriodeExpanded(String periodeRef) {
+    if (_conduiteModalSetState != null) {
+      _conduiteModalSetState!(() {
+        if (_expandedConduitePeriodeRefs.contains(periodeRef)) {
+          _expandedConduitePeriodeRefs.remove(periodeRef);
+        } else {
+          _expandedConduitePeriodeRefs.add(periodeRef);
+        }
+      });
+    } else if (mounted) {
+      setState(() {
+        if (_expandedConduitePeriodeRefs.contains(periodeRef)) {
+          _expandedConduitePeriodeRefs.remove(periodeRef);
+        } else {
+          _expandedConduitePeriodeRefs.add(periodeRef);
+        }
+      });
+    }
+  }
+
+  Color _graviteColor(String? gravite) {
+    switch (gravite?.toUpperCase()) {
+      case 'HAUTE':
+      case 'ELEVEE':
+        return const Color(0xFFD32F2F);
+      case 'MOYENNE':
+        return const Color(0xFFF57C00);
+      case 'BASSE':
+      case 'FAIBLE':
+        return const Color(0xFF1976D2);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildConduitePeriodeCard(ConduitePeriode periode) {
+    final isDarkMode = _themeService.isDarkMode;
+    final key = periode.periodeRef.isNotEmpty ? periode.periodeRef : periode.periode;
+    final isExpanded = _expandedConduitePeriodeRefs.contains(key);
+    final color = periode.sanction ? _conduiteColor : const Color(0xFF2E7D32);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _toggleConduitePeriodeExpanded(key),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      periode.sanction
+                          ? Icons.warning_amber_rounded
+                          : Icons.verified_user_outlined,
+                      color: color,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          periode.periode,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            if (periode.statut != null)
+                              Text(
+                                periode.estDefinitive ? 'Définitive' : periode.statut!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                ),
+                              ),
+                            if (periode.sanction) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _conduiteColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'Sanction',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: _conduiteColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (periode.note != null)
+                    Text(
+                      '${_formatNote(periode.note)}/${_formatNote(periode.noteDeBase) == '—' ? '20' : _formatNote(periode.noteDeBase)}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
+                  ),
+                ],
+              ),
+              if (isExpanded) ...[
+                const SizedBox(height: 12),
+                Divider(height: 1, color: isDarkMode ? Colors.grey[700] : Colors.grey[200]),
+                const SizedBox(height: 12),
+                if (periode.appreciation != null && periode.appreciation!.isNotEmpty)
+                  _buildConduiteAppreciation(
+                    'Appréciation',
+                    periode.appreciation!,
+                    isDarkMode: isDarkMode,
+                  ),
+                if (periode.appreciationDuConseil != null &&
+                    periode.appreciationDuConseil!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _buildConduiteAppreciation(
+                    'Appréciation du conseil',
+                    periode.appreciationDuConseil!,
+                    isDarkMode: isDarkMode,
+                  ),
+                ],
+                if (periode.incidents.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Incidents',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  for (final incident in periode.incidents)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: _buildConduiteIncidentRow(incident, isDarkMode: isDarkMode),
+                    ),
+                ],
+                if (periode.sanctions.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Sanctions appliquées',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  for (final sanction in periode.sanctions)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: _buildConduiteSanctionRow(sanction, isDarkMode: isDarkMode),
+                    ),
+                ],
+                if (periode.incidents.isEmpty && periode.sanctions.isEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Aucun incident ni sanction sur cette période.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConduiteAppreciation(
+    String label,
+    String value, {
+    required bool isDarkMode,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConduiteIncidentRow(ConduiteIncident incident, {required bool isDarkMode}) {
+    final color = _graviteColor(incident.gravite);
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(10),
+        border: Border(left: BorderSide(color: color, width: 3)),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [const SizedBox(height: 20), _buildSanctionsList()],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  incident.libelle ?? incident.type ?? 'Incident',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                  ),
+                ),
+              ),
+              if (incident.date != null)
+                Text(
+                  incident.date!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+            ],
+          ),
+          if (incident.description != null && incident.description!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              incident.description!,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+              ),
+            ),
+          ],
+          if (incident.points != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${incident.points! > 0 ? '+' : ''}${_formatNote(incident.points)} point(s)',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConduiteSanctionRow(ConduiteSanction sanction, {required bool isDarkMode}) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(10),
+        border: Border(left: BorderSide(color: _conduiteColor, width: 3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  sanction.libelle ?? sanction.type ?? 'Sanction',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                  ),
+                ),
+              ),
+              if (sanction.date != null)
+                Text(
+                  sanction.date!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+            ],
+          ),
+          if (sanction.description != null && sanction.description!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              sanction.description!,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -13290,10 +13752,6 @@ class _ChildListScreenState extends State<ChildListScreen>
         ),
       ],
     );
-  }
-
-  Widget _buildSanctionsList() {
-    return _buildComingSoonContent();
   }
 
   // Section pour les notifications d'échéance

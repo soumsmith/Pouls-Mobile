@@ -23,6 +23,9 @@ class EcoleApiService {
     String? statut,
     String? ordreEnseignement,
     String? programmesEnseignement,
+    double? latitude,
+    double? longitude,
+    double? rayon,
   }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
@@ -52,6 +55,9 @@ class EcoleApiService {
       queryParams['ordre_enseignement'] = ordreEnseignement;
     if (programmesEnseignement != null && programmesEnseignement.isNotEmpty)
       queryParams['programmes_enseignement'] = programmesEnseignement;
+    if (latitude != null) queryParams['latitude'] = latitude.toString();
+    if (longitude != null) queryParams['longitude'] = longitude.toString();
+    if (rayon != null) queryParams['rayon'] = rayon.toString();
 
     final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
     print('🔗 URL: $uri');

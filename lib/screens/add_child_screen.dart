@@ -331,7 +331,19 @@ class _AddChildScreenState extends State<AddChildScreen>
         errorString.contains('Network is unreachable') ||
         errorString.contains('Software caused connection abort');
     if (isNetworkError) return 'Vérifiez votre connexion internet';
-    return errorString.replaceFirst('Exception: ', '');
+
+    if (errorString.contains('Aucune donnée d\'élève trouvée')) {
+      return 'Aucun élève ne correspond à ce matricule dans cet établissement. '
+          'Vérifiez le matricule saisi et réessayez.';
+    }
+    if (errorString.contains('Erreur HTTP')) {
+      return 'Le service est momentanément indisponible. Veuillez réessayer dans quelques instants.';
+    }
+
+    // Repli générique : on retire les préfixes techniques ("Exception: ",
+    // éventuellement dupliqués par un ré-emballage côté service) pour ne
+    // jamais afficher de message brut à l'utilisateur.
+    return errorString.replaceAll('Exception: ', '');
   }
 
   Future<void> _handleAddChild(StateSetter setModalState) async {

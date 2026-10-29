@@ -71,6 +71,10 @@ import '../widgets/see_more_card.dart';
 import '../services/coulisse_excellence_service.dart';
 import '../models/coulisse_excellence.dart';
 import 'coulisse_video_feed_screen.dart';
+import '../services/ecole_histoire_service.dart';
+import '../models/ecole_histoire.dart';
+import 'all_histoires_screen.dart';
+import 'ecole_histoire_detail_screen.dart';
 import 'visite_guidee_video_feed_screen.dart';
 import '../models/visite_guidee_video.dart';
 import '../services/event_service.dart';
@@ -373,6 +377,15 @@ class _HomeScreenState extends State<HomeScreen> {
       _coulisseVideosError == null &&
       _filteredCoulisseVideos.isNotEmpty;
 
+  // Variables pour la section "Mémoire des écoles" (histoires)
+  List<EcoleHistoire> _histoires = [];
+  int _histoiresTotal = 0;
+  bool _histoiresLoading = true;
+  String? _histoiresError;
+
+  bool get _hasHistoiresData =>
+      !_histoiresLoading && _histoiresError == null && _histoires.isNotEmpty;
+
   // Variables pour les événements
   List<Event> _events = [];
   List<Event> _filteredEvents = [];
@@ -427,6 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkAppUpdate();
     _loadChildrenNotifications(); // Charger les notifications pour chaque enfant
     _loadCoulisseVideos(); // Charger les vidéos Coulisses de l'Excellence
+    _loadHistoires(); // Charger la section "Mémoire des écoles"
     _loadEvents(); // Charger les événements
     _loadBlogs(); // Charger les blogs/actualités
     _loadVisiteGuideeVideos(); // Ajouter cette ligne
@@ -444,6 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadUnreadNotificationsCount(),
       _checkAppUpdate(),
       _loadCoulisseVideos(),
+      _loadHistoires(),
       _loadEvents(),
       _loadVisiteGuideeVideos(), // Ajouter cette ligne
       _loadBlogs(),
@@ -953,6 +968,34 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _coulisseVideosLoading = false;
           _coulisseVideosError = e.toString();
+        });
+      }
+    }
+  }
+
+  // Charger la section "Mémoire des écoles" (histoires, toutes écoles)
+  Future<void> _loadHistoires() async {
+    if (mounted) {
+      setState(() {
+        _histoiresLoading = true;
+        _histoiresError = null;
+      });
+    }
+    try {
+      final response = await EcoleHistoireService.getHistoires(page: 1, perPage: 6);
+      if (mounted) {
+        setState(() {
+          _histoires = response.data;
+          _histoiresTotal = response.total;
+          _histoiresLoading = false;
+          _histoiresError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _histoiresLoading = false;
+          _histoiresError = e.toString();
         });
       }
     }
@@ -1660,6 +1703,104 @@ class _HomeScreenState extends State<HomeScreen> {
           subtitle: 'de vidéos',
           onTap: _handleSeeMoreVideos,
           icon: Icons.play_arrow,
+          width: cardWidth,
+          height: imageHeight * 1.15,
+        ),
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Section "Mémoire des écoles" (histoires) — même disposition horizontale
+  // que la section Coulisses de l'Excellence ci-dessus.
+  // ════════════════════════════════════════════════════════════════════════
+  Widget _buildHistoiresSection() {
+    if (_histoires.isEmpty) return const SizedBox.shrink();
+
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.9;
+    final double imageHeight = cardWidth * imageRatio;
+    final double textHeight = AppDimensions.getScaledSize(context, 85.0);
+    final double containerHeight = imageHeight + textHeight;
+    final bool showSeeMore = _histoiresTotal > _histoires.length;
+
+    return Container(
+      height: containerHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _histoires.length + (showSeeMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index < _histoires.length) {
+            return _buildHistoireCard(_histoires[index]);
+          }
+          return _buildSeeMoreHistoiresCard();
+        },
+      ),
+    );
+  }
+
+  Widget _buildHistoireCard(EcoleHistoire histoire) {
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.9;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: ImageMenuCardExternalTitle(
+        index: 0,
+        cardKey: 'histoire_${histoire.id}',
+        title: histoire.title.isNotEmpty ? histoire.title : 'Mémoire de l\'école',
+        subtitle: histoire.etablissement,
+        overtitle: histoire.yearLabel.isNotEmpty ? histoire.yearLabel : null,
+        overtitleColor: kHistoireAccentColor,
+        imagePath: histoire.image,
+        iconData: Icons.auto_stories_rounded,
+        isDark: Theme.of(context).brightness == Brightness.dark,
+        color: kHistoireAccentColor,
+        titleMaxLines: 2,
+        externalTitleSpacing: 4,
+        titleFontSize: isTablet ? 16.0 : null,
+        subtitleFontSize: isTablet ? 14.0 : null,
+        height: null,
+        imageHeight: cardWidth * imageRatio,
+        width: cardWidth,
+        allowLineBreak: true,
+        centerTitle: false,
+        onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(
+          EcoleHistoireDetailScreen(histoire: histoire),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeeMoreHistoiresCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isTablet =
+        AppDimensions.isTablet(context) || AppDimensions.isLargeTablet(context);
+    final double cardWidth = _getCardWidth(context, 16.0);
+    final double imageRatio = isTablet ? 0.62 : 0.9;
+    final double imageHeight = cardWidth * imageRatio;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SeeMoreCard(
+          cardColor: isDarkMode ? const Color.fromARGB(255, 0, 0, 0) : Colors.white,
+          borderColor: kHistoireAccentColor,
+          iconColor: Colors.white,
+          textColor: kHistoireAccentColor,
+          subtitleColor: isDarkMode ? Colors.grey[400]! : Colors.grey[600]!,
+          title: 'Voir+',
+          subtitle: 'd\'histoires',
+          onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(
+            const AllHistoiresScreen(),
+          ),
+          icon: Icons.auto_stories_rounded,
           width: cardWidth,
           height: imageHeight * 1.15,
         ),
@@ -3552,6 +3693,22 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 16),
         _buildCoulisseSection(),
+      ],
+      // Section Mémoire des écoles (histoires)
+      if (_hasHistoiresData) ...[
+        const SizedBox(height: 24),
+        SectionRow(
+          title: 'MÉMOIRE DES ÉCOLES',
+          onSeeMore: _histoiresTotal > _histoires.length
+              ? () {
+                  MainScreenWrapper.of(
+                    context,
+                  ).navigateToExtraScreen(const AllHistoiresScreen());
+                }
+              : null,
+        ),
+        const SizedBox(height: 16),
+        _buildHistoiresSection(),
       ],
       // Section Publicitaire (Bannière)
       const HomeAdBanner(),

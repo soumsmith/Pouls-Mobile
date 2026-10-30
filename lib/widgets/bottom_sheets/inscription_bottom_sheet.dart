@@ -12,6 +12,7 @@ import '../../widgets/components/custom_button.dart';
 import '../../utils/notification_helper.dart';
 import '../../config/app_colors.dart';
 import '../../screens/eleve_inscription_detail_screen.dart';
+import '../code_dren_ecole_picker.dart';
 import 'reusable_bottom_sheet.dart';
 
 /// Wizard "Nouvelle Inscription" en 2 étapes :
@@ -98,7 +99,11 @@ class _InscriptionBottomSheetState extends State<InscriptionBottomSheet> {
     });
 
     try {
-      final ecole = await EcoleEleveService.rechercherParCodeDren(codeDren);
+      final ecoles = await EcoleEleveService.rechercherParCodeDren(codeDren);
+      final ecole = ecoles.length == 1
+          ? ecoles.first
+          : (mounted ? await pickCodeDrenEcole(context, ecoles) : null);
+      if (ecole == null) return;
       if (mounted) {
         setState(() => _foundEcole = ecole);
       }

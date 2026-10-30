@@ -87,10 +87,11 @@ class ConsultationApiService {
     return response;
   }
 
-  void _logRequest(String label, Uri uri) {
+  void _logRequest(String label, Uri uri, {String method = 'GET'}) {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('🔌 API CONSULTATION — $label');
+    print('📨 Méthode: $method');
     print('🔗 URL: ${uri.replace(query: null)}');
     print('📋 Paramètres: ${uri.queryParameters}');
     print('⏱️  ${DateTime.now().toIso8601String()}');
@@ -224,9 +225,26 @@ class ConsultationApiService {
   /// insensible à la casse/aux espaces) parmi les établissements partageant
   /// ce code — sinon on refuse de choisir au hasard et on retourne `null`.
   Future<String?> findSchoolIdByCode(String code, {String? expectedName}) async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('🔎 RÉSOLUTION SCHOOLID PAR CODE LEGACY (sans appel HTTP dédié :');
+    print('   filtre en mémoire le résultat déjà loggué de getEtablissements)');
+    print('🏷️ Code recherché: $code');
+    print('📛 Nom attendu: ${expectedName ?? "(aucun)"}');
+
     final etablissements = await getEtablissements();
     final candidates = etablissements.where((e) => e.code == code).toList();
-    if (candidates.isEmpty) return null;
+    print('📋 Candidats trouvés pour ce code: ${candidates.length}');
+    for (final c in candidates) {
+      print('   - ${c.nom} (schoolId: ${c.schoolId})');
+    }
+
+    if (candidates.isEmpty) {
+      print('⚠️ Aucun établissement ne correspond à ce code');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      return null;
+    }
 
     if (expectedName != null) {
       // Toujours vérifier le nom quand on l'a, même s'il n'y a qu'un seul
@@ -236,14 +254,30 @@ class ConsultationApiService {
       // précise — un candidat unique n'est pas une preuve de correspondance.
       final normalizedExpected = _normalizeName(expectedName);
       for (final c in candidates) {
-        if (_normalizeName(c.nom) == normalizedExpected) return c.schoolId;
+        if (_normalizeName(c.nom) == normalizedExpected) {
+          print('✅ schoolId résolu (nom vérifié): ${c.schoolId}');
+          print('═══════════════════════════════════════════════════════════');
+          print('');
+          return c.schoolId;
+        }
       }
+      print('⚠️ Aucun candidat ne correspond au nom attendu');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
       return null;
     }
 
     // Pas de nom pour vérifier : ne faire confiance au code que s'il est
     // sans ambiguïté côté API de consultation.
-    return candidates.length == 1 ? candidates.first.schoolId : null;
+    final result = candidates.length == 1 ? candidates.first.schoolId : null;
+    print(
+      result != null
+          ? '✅ schoolId résolu (candidat unique, pas de nom à vérifier): $result'
+          : '⚠️ Code ambigu (${candidates.length} candidats) et aucun nom fourni pour trancher',
+    );
+    print('═══════════════════════════════════════════════════════════');
+    print('');
+    return result;
   }
 
   String _normalizeName(String name) =>

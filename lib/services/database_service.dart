@@ -434,6 +434,20 @@ class DatabaseService {
     );
   }
 
+  /// Renseigne a posteriori le `schoolId` (API de consultation) d'un enfant
+  /// ajouté avant que celui-ci n'ait pu être résolu à l'ajout (voir
+  /// ChildListScreen._healMissingSchoolIdIfNeeded) sans toucher au reste de
+  /// la fiche.
+  Future<void> updateChildSchoolId(String childId, String schoolId) async {
+    final db = await database;
+    await db.update(
+      'children',
+      {'schoolId': schoolId, 'updatedAt': DateTime.now().millisecondsSinceEpoch},
+      where: 'id = ?',
+      whereArgs: [childId],
+    );
+  }
+
   /// Récupère tous les enfants d'un parent
   Future<List<Child>> getChildrenByParent(String parentId) async {
     final db = await database;

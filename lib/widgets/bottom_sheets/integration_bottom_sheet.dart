@@ -9,6 +9,7 @@ import 'package:parents_responsable/services/ecole_eleve_service.dart';
 import 'package:parents_responsable/services/text_size_service.dart';
 import 'package:parents_responsable/utils/auth_guard.dart';
 import 'package:parents_responsable/widgets/bottom_sheets/reusable_bottom_sheet.dart';
+import 'package:parents_responsable/widgets/code_dren_ecole_picker.dart';
 import 'package:parents_responsable/widgets/components/custom_date_input.dart';
 import 'package:parents_responsable/widgets/components/custom_select_input.dart';
 import 'package:parents_responsable/widgets/components/custom_button.dart';
@@ -282,7 +283,11 @@ class _IntegrationFormContentState extends State<IntegrationFormContent> {
     });
 
     try {
-      final ecole = await EcoleEleveService.rechercherParCodeDren(codeDren);
+      final ecoles = await EcoleEleveService.rechercherParCodeDren(codeDren);
+      final ecole = ecoles.length == 1
+          ? ecoles.first
+          : (mounted ? await pickCodeDrenEcole(context, ecoles) : null);
+      if (ecole == null) return;
       if (mounted) {
         setState(() => _foundEcoleDren = ecole);
       }

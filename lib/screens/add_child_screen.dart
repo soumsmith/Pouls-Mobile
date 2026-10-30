@@ -15,6 +15,7 @@ import '../widgets/recommendation_bottom_sheet.dart';
 import '../utils/notification_helper.dart';
 import '../services/recommendation_service.dart';
 import '../widgets/main_screen_wrapper.dart';
+import '../widgets/code_dren_ecole_picker.dart';
 import '../utils/auth_guard.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
@@ -230,17 +231,29 @@ class _AddChildScreenState extends State<AddChildScreen>
     });
 
     try {
-      final ecole = await EcoleEleveService.rechercherParCodeDren(codeDren);
+      final ecoles = await EcoleEleveService.rechercherParCodeDren(codeDren);
+
+      // Un même code DREN peut correspondre à plusieurs établissements
+      // distincts (ex. deux écoles d'un même groupe scolaire) : on laisse
+      // l'utilisateur choisir la sienne dans ce cas, sélection automatique
+      // s'il n'y a qu'un seul résultat.
+      final ecole = ecoles.length == 1
+          ? ecoles.first
+          : (mounted ? await pickCodeDrenEcole(context, ecoles) : null);
+      if (ecole == null) return;
 
       // Best-effort, non bloquant : résout aussi le `schoolId` de l'API de
-      // consultation (par le code DREN, qui correspond au `code` de
-      // GET /consultation/etablissements) pour que l'enfant garde notes,
-      // bulletins et années une fois ajouté. `null` si l'établissement n'y
+      // consultation à partir du code legacy vie-ecoles (`ecole.code`, ex.
+      // "marshall") — PAS du code DREN, qui n'a rien à voir avec le `code`
+      // de GET /consultation/etablissements (bug corrigé : passait
+      // auparavant le code DREN, ce qui ne matchait jamais aucun
+      // établissement et laissait schoolId `null` en permanence, bloquant
+      // notes/bulletins pour l'enfant ajouté). `null` si l'établissement n'y
       // figure pas (encore) — n'empêche pas l'ajout.
       String? schoolId;
       try {
         schoolId = await _consultationApi.findSchoolIdByCode(
-          ecole.codeDren ?? codeDren,
+          ecole.code,
           expectedName: ecole.nom,
         );
       } catch (_) {
@@ -335,6 +348,9 @@ class _AddChildScreenState extends State<AddChildScreen>
     if (errorString.contains('Aucune donnée d\'élève trouvée')) {
       return 'Aucun élève ne correspond à ce matricule dans cet établissement. '
           'Vérifiez le matricule saisi et réessayez.';
+    }
+    if (errorString.contains('Aucune école ne correspond à ce code DREN')) {
+      return 'Aucune école ne correspond à ce code DREN. Vérifiez le code saisi et réessayez.';
     }
     if (errorString.contains('Erreur HTTP')) {
       return 'Le service est momentanément indisponible. Veuillez réessayer dans quelques instants.';

@@ -29,6 +29,7 @@ class EcoleEleveService {
 
     final url = '$baseUrl/vie-ecoles/parametre/ecole?ecole=$paramEcole';
     print('🔗 URL: $url');
+    print('📨 Méthode: GET');
     print('📡 Envoi de la requête...');
 
     try {
@@ -155,31 +156,33 @@ class EcoleEleveService {
     };
   }
 
-  /// Recherche une école par son code DREN (POST, pas GET malgré l'usage
-  /// d'un paramètre `code`). Retourne l'école (avec son code legacy
-  /// vie-ecoles à réutiliser comme `paramEcole`) ou lève une [Exception]
-  /// avec le message renvoyé par l'API (ex: "Aucune école ne correspond
-  /// au code ...").
-  static Future<CodeDrenEcole> rechercherParCodeDren(String codeDren) async {
+  /// Recherche les écoles correspondant à un code DREN (GET, paramètre
+  /// `code` en query string). Un code DREN peut être partagé par plusieurs
+  /// établissements distincts (ex. deux écoles d'un même groupe scolaire) :
+  /// l'API renvoie donc toujours une LISTE dans `data`, jamais un objet
+  /// unique — à l'appelant de désambiguïser si elle contient plus d'un
+  /// élément. Lève une [Exception] si la liste est vide, avec le message
+  /// renvoyé par l'API (ex: "Aucune école ne correspond au code ...").
+  static Future<List<CodeDrenEcole>> rechercherParCodeDren(String codeDren) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('🏫 RECHERCHE ÉCOLE PAR CODE DREN');
     print('═══════════════════════════════════════════════════════════');
     print('🎫 Code DREN: $codeDren');
 
-    final url = '$baseUrl/vie-ecoles/recherche/code-dren';
-    print('🔗 URL: $url');
+    final uri = Uri.parse(
+      '$baseUrl/vie-ecoles/recherche/code-dren',
+    ).replace(queryParameters: {'code': codeDren});
+    print('🔗 URL: $uri');
+    print('📨 Méthode: GET');
+    print('📋 Paramètres: ${uri.queryParameters}');
     print('📡 Envoi de la requête...');
 
     try {
       final response = await http
-          .post(
-            Uri.parse(url),
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: json.encode({'code': codeDren}),
+          .get(
+            uri,
+            headers: {'Accept': 'application/json'},
           )
           .timeout(const Duration(seconds: 30));
 
@@ -190,21 +193,29 @@ class EcoleEleveService {
       final Map<String, dynamic> data = json.decode(response.body);
       final bool status = data['status'] == true;
       final String message = data['message']?.toString() ?? '';
+      final dynamic rawData = data['data'];
 
-      if (status && data['data'] is Map) {
-        final ecole = CodeDrenEcole.fromJson(data['data'] as Map<String, dynamic>);
-        print('✅ École trouvée: ${ecole.nom} (code: ${ecole.code})');
+      // `data` est normalement une liste ; on accepte aussi un objet unique
+      // par robustesse si l'API change de forme un jour.
+      final List<Map<String, dynamic>> rawEcoles = rawData is List
+          ? rawData.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList()
+          : (rawData is Map ? [rawData.cast<String, dynamic>()] : const []);
+
+      if (status && rawEcoles.isNotEmpty) {
+        final ecoles = rawEcoles.map((e) => CodeDrenEcole.fromJson(e)).toList();
+        print('✅ ${ecoles.length} école(s) trouvée(s): ${ecoles.map((e) => '${e.nom} (${e.code})').join(', ')}');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        return ecole;
+        return ecoles;
       }
 
-      print('⚠️ Aucune école trouvée: $message');
+      print('⚠️ Aucune école trouvée (message API: "$message")');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      throw Exception(
-        message.isNotEmpty ? message : 'Aucune école ne correspond à ce code DREN',
-      );
+      // `message` reflète le succès de l'appel HTTP ("Écoles récupérées avec
+      // succès"), pas la présence d'un résultat : ne jamais le réutiliser ici,
+      // sous peine d'afficher un message de succès dans la bannière d'erreur.
+      throw Exception('Aucune école ne correspond à ce code DREN "$codeDren"');
     } on Exception {
       rethrow;
     } catch (e) {
@@ -229,6 +240,7 @@ class EcoleEleveService {
 
     final url = '$baseUrl/vie-ecoles/eleve/detail/$matricule?ecole=$ecoleCode';
     print('🔗 URL: $url');
+    print('📨 Méthode: GET');
     print('📡 Envoi de la requête...');
 
     try {

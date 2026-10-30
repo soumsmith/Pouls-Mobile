@@ -13,6 +13,7 @@ import '../../services/theme_service.dart';
 import '../../widgets/components/custom_text_input.dart';
 import '../../widgets/components/custom_button.dart';
 import '../../utils/notification_helper.dart';
+import '../code_dren_ecole_picker.dart';
 import 'integration_result_dialog.dart';
 import 'reusable_bottom_sheet.dart';
 
@@ -277,7 +278,11 @@ class _IntegrationRequestFormState extends State<_IntegrationRequestForm> {
     });
 
     try {
-      final ecole = await EcoleEleveService.rechercherParCodeDren(codeDren);
+      final ecoles = await EcoleEleveService.rechercherParCodeDren(codeDren);
+      final ecole = ecoles.length == 1
+          ? ecoles.first
+          : (mounted ? await pickCodeDrenEcole(context, ecoles) : null);
+      if (ecole == null) return;
       widget.onEcoleChanged(ecole.code, ecole.nom);
     } catch (e) {
       if (mounted) {

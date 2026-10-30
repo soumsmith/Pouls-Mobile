@@ -1050,6 +1050,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         // ligne, etc.) — voir _healLegacyParamEcoleIfNeeded ci-dessous.
         if (_persistedSchoolId != null) {
           _healLegacyParamEcoleIfNeeded(childInfo['paramEcole'] as String?);
+        } else {
+          // Enfant ajouté pendant que l'ajout résolvait le schoolId avec le
+          // mauvais code (bug corrigé dans add_child_screen) : notes et
+          // bulletins restaient bloqués en permanence, faute de retentative.
+          // Best-effort, non bloquant.
+          _healMissingSchoolIdIfNeeded();
         }
 
         print(' Informations de l\'enfant récupérées:');
@@ -9107,12 +9113,17 @@ class _ChildListScreenState extends State<ChildListScreen>
   }
 
   /// Retourne le `schoolId` (référence opaque) de l'API de consultation pour
-  /// l'établissement de l'enfant courant, persisté en base à l'ajout de
-  /// l'enfant (add_child_screen). Plus de résolution via l'ancienne API
-  /// `/connecte/ecole` : tous les enfants sont désormais ajoutés via l'API
-  /// de consultation, qui fournit directement ce `schoolId`.
+  /// l'établissement de l'enfant courant, normalement persisté en base à
+  /// l'ajout de l'enfant (add_child_screen). Si cette résolution avait
+  /// échoué à l'ajout (bug corrigé depuis, voir
+  /// `_healMissingSchoolIdIfNeeded`), on la retente ici à la demande — tous
+  /// les appelants (notes, bulletins, devoirs...) passent déjà par cette
+  /// méthode, donc la retentative profite à tous sans dupliquer la logique
+  /// ni dépendre d'une résolution en arrière-plan non attendue (qui créait
+  /// une course avec le premier appel).
   Future<String?> _resolveConsultationSchoolId() async {
-    return _consultationSchoolId;
+    if (_consultationSchoolId != null) return _consultationSchoolId;
+    return _healMissingSchoolIdIfNeeded();
   }
 
   /// La classe de l'élève pour l'année donnée (doc §4.7) : plus fiable que
@@ -9187,6 +9198,73 @@ class _ChildListScreenState extends State<ChildListScreen>
       }
     } catch (e) {
       print('⚠️ Correction paramEcole ignorée: $e');
+    }
+  }
+
+  /// Future partagée tant qu'une résolution est en cours, pour que les
+  /// appels concurrents à `_resolveConsultationSchoolId` (notes, bulletins,
+  /// devoirs... chargés en parallèle à l'ouverture de l'écran) attendent le
+  /// même résultat au lieu de déclencher chacun leur propre résolution.
+  Future<String?>? _schoolIdResolutionInFlight;
+
+  /// Résout à la demande le `schoolId` (API de consultation) d'un enfant
+  /// ajouté alors que cette résolution avait échoué (bug corrigé dans
+  /// add_child_screen : passait le code DREN au lieu du code legacy
+  /// vie-ecoles à `findSchoolIdByCode`) — sans quoi notes et bulletins
+  /// restaient bloqués en permanence pour cet enfant, faute de retentative.
+  /// Retourne `null` (en le loggant) si le code legacy n'est pas encore
+  /// connu ou si la résolution échoue à nouveau.
+  Future<String?> _healMissingSchoolIdIfNeeded() {
+    return _schoolIdResolutionInFlight ??= _doHealMissingSchoolId().whenComplete(
+      () => _schoolIdResolutionInFlight = null,
+    );
+  }
+
+  Future<String?> _doHealMissingSchoolId() async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('🩹 RÉSOLUTION TARDIVE DU SCHOOLID (enfant: ${widget.child.id})');
+    try {
+      final paramEcole = _ecoleCode;
+      print('🏷️ paramEcole (code legacy) connu: ${paramEcole ?? "(aucun)"}');
+      print('📛 Nom établissement attendu: ${widget.child.establishment}');
+      if (paramEcole == null || paramEcole.isEmpty) {
+        print('⚠️ Abandon: aucun code legacy connu pour cet enfant pour le moment');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
+        return null;
+      }
+
+      final schoolId = await _consultationApi.findSchoolIdByCode(
+        paramEcole,
+        expectedName: widget.child.establishment,
+      );
+      if (schoolId == null) {
+        print('⚠️ Toujours introuvable — voir le détail ci-dessus (findSchoolIdByCode)');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
+        return null;
+      }
+
+      await DatabaseService.instance.updateChildSchoolId(widget.child.id, schoolId);
+      print('✅ schoolId résolu a posteriori pour ${widget.child.id}: $schoolId');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      if (mounted) {
+        setState(() {
+          _persistedSchoolId = schoolId;
+          _consultationSchoolId = schoolId;
+        });
+      } else {
+        _persistedSchoolId = schoolId;
+        _consultationSchoolId = schoolId;
+      }
+      return schoolId;
+    } catch (e) {
+      print('⚠️ Résolution tardive du schoolId ignorée: $e');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+      return null;
     }
   }
 

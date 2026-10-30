@@ -11,7 +11,6 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/searchable_dropdown.dart';
 import '../widgets/components/custom_text_input.dart';
 import '../widgets/components/custom_select_input.dart';
-import '../widgets/country_selector_chip.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
 /// Écran de création de compte avec formulaire téléphone
@@ -227,12 +226,6 @@ class _SignupScreenState extends State<SignupScreen> {
               floating: false,
               expandedHeight: 0,
               //backgroundColor: Colors.transparent,
-              actions: const [
-                Padding(
-                  padding: EdgeInsets.only(right: 12),
-                  child: CountrySelectorChip(),
-                ),
-              ],
             ),
 
             // Contenu principal

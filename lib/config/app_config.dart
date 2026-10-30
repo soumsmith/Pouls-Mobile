@@ -1,7 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
-import '../services/country_service.dart';
-
 /// Configuration de l'application
 ///
 /// MOCK_MODE : Active le mode mock (données statiques)
@@ -42,16 +38,14 @@ class AppConfig {
       'admin-koffi@pedagogie.pouls-scolaire.net';
   static const String PEDAGOGIE_AUTH_PASSWORD = 'admin!Pedago!2026';
 
-  /// URL de base pour l'API Vie-Ecoles. Dépend du pays choisi par
-  /// l'utilisateur (connexion/inscription, modifiable dans les paramètres)
-  /// — voir [CountryService]. La variable d'environnement
+  /// URL de base pour l'API Vie-Ecoles. La variable d'environnement
   /// VIE_ECOLES_API_BASE_URL reste prioritaire si définie (utile en dev).
   static String get VIE_ECOLES_API_BASE_URL {
     const envVar = String.fromEnvironment('VIE_ECOLES_API_BASE_URL');
     if (envVar.isNotEmpty) {
       return envVar;
     }
-    return CountryService.instance.baseUrl;
+    return 'https://api2.vie-ecoles.com/api';
   }
 
   // API Africa

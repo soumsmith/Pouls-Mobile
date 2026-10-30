@@ -1,5 +1,7 @@
-/// École retournée par la recherche par code DREN
-/// (`POST /vie-ecoles/recherche/code-dren`). Le champ [code] est le code
+/// Une des écoles retournées par la recherche par code DREN
+/// (`GET /vie-ecoles/recherche/code-dren`) — un même code DREN peut être
+/// partagé par plusieurs établissements, voir
+/// `EcoleEleveService.rechercherParCodeDren`. Le champ [code] est le code
 /// legacy vie-ecoles (ex: "gainhs") à réutiliser comme `paramEcole` pour
 /// tous les appels ultérieurs (recherche élève, inscription, paiement...).
 class CodeDrenEcole {

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import '../services/auth_service.dart';
 import '../services/theme_service.dart';
 import '../services/text_size_service.dart';
 import '../config/app_config.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
-import '../screens/login_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/help_support_screen.dart';
 import '../screens/text_size_screen.dart';
@@ -18,7 +16,6 @@ import '../widgets/scroll_to_top_fab.dart';
 import '../utils/notification_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../app.dart';
-import '../services/country_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 // ─── DESIGN TOKENS (centralisés dans AppColors) ────────────────────────────────
@@ -139,23 +136,6 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 color: AppColors.settingsBlue,
                                 onTap: _navigateToProfile,
                               ),
-                              _SettingsItem(
-                                title: 'Pays',
-                                subtitle:
-                                    '${CountryService.instance.selectedCountry.flag} ${CountryService.instance.selectedCountry.name}',
-                                icon: Icons.public_outlined,
-                                color: AppColors.settingsCyan,
-                                onTap: _showCountrySettings,
-                              ),
-                              if (kDebugMode)
-                                _SettingsItem(
-                                  title: 'Redétecter le pays (debug)',
-                                  subtitle:
-                                      'Efface le choix et relance la détection IP',
-                                  icon: Icons.bug_report_outlined,
-                                  color: AppColors.settingsGrey,
-                                  onTap: _forceRedetectCountryDebug,
-                                ),
                               /*
                               _SettingsItem(
                                 title: 'Sécurité',
@@ -590,116 +570,6 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
 
   void _navigateToProfile() {
     MainScreenWrapper.of(context).navigateToExtraScreen(const ProfileScreen());
-  }
-
-  Future<void> _showCountrySettings() async {
-    final currentCode = CountryService.instance.selectedCountry.code;
-
-    final selectedCode = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 12),
-                Text(
-                  'Choisissez votre pays',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...CountryService.supportedCountries.map((c) {
-                  return ListTile(
-                    leading: Text(c.flag, style: const TextStyle(fontSize: 24)),
-                    title: Text(
-                      c.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    trailing: c.code == currentCode
-                        ? const Icon(Icons.check_circle, color: AppColors.screenOrange)
-                        : null,
-                    onTap: () => Navigator.of(sheetContext).pop(c.code),
-                  );
-                }),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (selectedCode == null || selectedCode == currentCode || !mounted) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Changer de pays ?',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-        ),
-        content: const Text(
-          'Ce changement nécessite de vous reconnecter : vous allez être '
-          'déconnecté et redirigé vers l\'écran de connexion.',
-          style: TextStyle(color: AppColors.screenTextSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuler',
-                style: TextStyle(color: AppColors.screenTextSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Continuer',
-                style: TextStyle(
-                    color: AppColors.screenOrange, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    await CountryService.instance.setCountry(selectedCode);
-    await AuthService.instance.logout();
-
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
-  }
-
-  /// Debug uniquement : permet de tester la détection automatique par IP
-  /// (ex: avec un VPN) sans avoir à désinstaller l'app pour effacer le
-  /// choix de pays déjà mémorisé.
-  Future<void> _forceRedetectCountryDebug() async {
-    NotificationHelper.showInfo('Redétection du pays en cours...');
-    await CountryService.instance.forceRedetect();
-    if (!mounted) return;
-    final country = CountryService.instance.selectedCountry;
-    setState(() {});
-    NotificationHelper.showSuccess(
-      'Pays détecté : ${country.flag} ${country.name} (${country.baseUrl})',
-    );
   }
 
   void _navigateToHelpSupport() {

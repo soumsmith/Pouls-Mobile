@@ -5,8 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import '../models/ecole.dart';
 import '../services/ecole_api_service.dart';
 import '../services/location_permission_service.dart';
-import '../services/country_service.dart';
-import '../widgets/main_screen_wrapper.dart';
+import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
 import '../config/app_colors.dart';
 import '../services/text_size_service.dart';
@@ -42,6 +41,13 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
   List<Ecole> _schools = [];
   bool _isLoadingSchools = false;
   String? _schoolsError;
+
+  /// Centre géographique utilisé pour la dernière recherche d'écoles —
+  /// initialement la position GPS, puis le centre de la carte lorsque
+  /// l'utilisateur déplace la carte et relance une recherche sur la zone.
+  LatLng? _searchCenter;
+  LatLng? _pendingSearchCenter;
+  bool _showSearchAreaButton = false;
 
   @override
   void initState() {
@@ -82,6 +88,7 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
       if (!mounted) return;
       setState(() {
         _userPosition = position;
+        _searchCenter = LatLng(position.latitude, position.longitude);
         _flowState = _LocationFlowState.ready;
       });
       _loadNearbySchools();
@@ -91,22 +98,23 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
     }
   }
 
-  Future<void> _loadNearbySchools() async {
-    final position = _userPosition;
-    if (position == null) return;
+  Future<void> _loadNearbySchools({LatLng? center}) async {
+    final searchCenter = center ?? _searchCenter;
+    if (searchCenter == null) return;
 
     setState(() {
       _isLoadingSchools = true;
       _schoolsError = null;
+      _searchCenter = searchCenter;
+      _showSearchAreaButton = false;
     });
 
     try {
-      final countryCode = CountryService.instance.selectedCountry.code.toLowerCase();
       final schools = await EcoleApiService.getEcoles(
         perPage: 100,
-        pays: countryCode,
-        latitude: position.latitude,
-        longitude: position.longitude,
+        pays: 'ci',
+        latitude: searchCenter.latitude,
+        longitude: searchCenter.longitude,
         rayon: _radiusKm,
       );
       if (!mounted) return;
@@ -132,7 +140,47 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
   void _recenterOnMe() {
     final position = _userPosition;
     if (position == null) return;
-    _mapController.move(LatLng(position.latitude, position.longitude), 14);
+    final userLatLng = LatLng(position.latitude, position.longitude);
+    _mapController.move(userLatLng, 14);
+    _loadNearbySchools(center: userLatLng);
+  }
+
+  /// Appelé à chaque déplacement/zoom de la carte. Lorsque l'utilisateur a
+  /// déplacé la carte à la main (`hasGesture`) suffisamment loin du dernier
+  /// centre de recherche, on propose un bouton "Rechercher dans cette zone"
+  /// plutôt que de relancer l'appel API à chaque pixel déplacé.
+  void _onMapPositionChanged(MapCamera camera, bool hasGesture) {
+    if (!hasGesture) return;
+    final lastCenter = _searchCenter;
+    if (lastCenter == null) return;
+
+    final movedMeters = const Distance().as(
+      LengthUnit.Meter,
+      lastCenter,
+      camera.center,
+    );
+    final thresholdMeters = (_radiusKm * 1000 * 0.3).clamp(300, 5000);
+
+    _pendingSearchCenter = camera.center;
+    final shouldShow = movedMeters > thresholdMeters;
+    if (shouldShow != _showSearchAreaButton) {
+      setState(() => _showSearchAreaButton = shouldShow);
+    }
+  }
+
+  void _searchInCurrentArea() {
+    final center = _pendingSearchCenter ?? _mapController.camera.center;
+    _loadNearbySchools(center: center);
+  }
+
+  void _zoomIn() {
+    final camera = _mapController.camera;
+    _mapController.move(camera.center, (camera.zoom + 1).clamp(1, 18));
+  }
+
+  void _zoomOut() {
+    final camera = _mapController.camera;
+    _mapController.move(camera.center, (camera.zoom - 1).clamp(1, 18));
   }
 
   @override
@@ -262,6 +310,7 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
   Widget _buildMap() {
     final position = _userPosition!;
     final userLatLng = LatLng(position.latitude, position.longitude);
+    final searchCenter = _searchCenter ?? userLatLng;
 
     return Stack(
       children: [
@@ -270,6 +319,7 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
           options: MapOptions(
             initialCenter: userLatLng,
             initialZoom: 13,
+            onPositionChanged: _onMapPositionChanged,
           ),
           children: [
             TileLayer(
@@ -279,7 +329,7 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
             CircleLayer(
               circles: [
                 CircleMarker(
-                  point: userLatLng,
+                  point: searchCenter,
                   radius: _radiusKm * 1000,
                   useRadiusInMeter: true,
                   color: AppColors.screenOrange.withOpacity(0.08),
@@ -314,7 +364,7 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.screenOrange,
+                          color: Colors.green,
                           border: Border.all(color: Colors.white, width: 2),
                           boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4)],
                         ),
@@ -328,9 +378,63 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
           ],
         ),
         _buildRadiusSelector(),
+        if (_showSearchAreaButton)
+          Positioned(
+            top: 64,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                elevation: 0,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: _searchInCurrentArea,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.search_rounded, color: AppColors.screenOrange, size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'Rechercher dans cette zone',
+                          style: TextStyle(
+                            color: AppColors.screenOrange,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         Positioned(
           right: 16,
-          bottom: 16,
+          bottom: 150,
+          child: Column(
+            children: [
+              _buildMapIconButton(
+                heroTag: 'zoom_in',
+                icon: Icons.add_rounded,
+                onPressed: _zoomIn,
+              ),
+              const SizedBox(height: 8),
+              _buildMapIconButton(
+                heroTag: 'zoom_out',
+                icon: Icons.remove_rounded,
+                onPressed: _zoomOut,
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          right: 16,
+          bottom: 90,
           child: FloatingActionButton(
             heroTag: 'recenter_on_me',
             backgroundColor: Colors.white,
@@ -420,8 +524,7 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.screenOrange : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '${km.toStringAsFixed(km.truncateToDouble() == km ? 0 : 1)} km',
@@ -435,6 +538,25 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildMapIconButton({
+    required String heroTag,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: FloatingActionButton(
+        heroTag: heroTag,
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.screenOrange,
+        elevation: 2,
+        onPressed: onPressed,
+        child: Icon(icon),
       ),
     );
   }
@@ -490,11 +612,17 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.of(sheetContext).pop();
-                      MainScreenWrapper.of(context).navigateToEstablishmentDetail(school);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => EstablishmentDetailScreen(ecole: school),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.screenOrange,
+                      backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),

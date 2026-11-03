@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/ecole_histoire.dart';
+import '../models/visite_guidee_video.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
+import '../widgets/main_screen_wrapper.dart';
 import '../config/app_colors.dart';
 import '../services/text_size_service.dart';
 import '../utils/html_helper.dart';
+import 'visite_guidee_video_feed_screen.dart';
 
 /// Couleur d'accent de la fonctionnalité "Mémoire des écoles" (ton sépia,
 /// évocateur de souvenirs/archives).
@@ -18,10 +21,42 @@ class EcoleHistoireDetailScreen extends StatelessWidget {
 
   const EcoleHistoireDetailScreen({super.key, required this.histoire});
 
+  void _playVideo(BuildContext context) {
+    if (!histoire.isVideo ||
+        histoire.youtubeUrl == null ||
+        histoire.youtubeUrl!.isEmpty) return;
+    final video = VisiteGuideeVideo(
+      id: histoire.id,
+      typeVideo: 'histoire',
+      youtubeUrl: histoire.youtubeUrl!,
+      title: histoire.title,
+      description: histoire.content,
+      code: histoire.codeEcole,
+      etablissement: histoire.etablissement,
+    );
+    final wrapper = MainScreenWrapper.maybeOf(context);
+    if (wrapper != null) {
+      wrapper.navigateToExtraScreen(
+        VisiteGuideeVideoFeedScreen(videos: [video], initialIndex: 0),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VisiteGuideeVideoFeedScreen(
+            videos: [video],
+            initialIndex: 0,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textSizeService = TextSizeService();
     final plainContent = HtmlHelper.stripHtmlTags(histoire.content);
+    final displayImage = histoire.displayImage;
 
     return Scaffold(
       backgroundColor: AppColors.screenSurfaceThemed(context),
@@ -35,17 +70,45 @@ class EcoleHistoireDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (histoire.image != null && histoire.image!.isNotEmpty)
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Image.network(
-                      histoire.image!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: kHistoireAccentColor.withOpacity(0.15),
-                        child: const Center(
-                          child: Icon(Icons.auto_stories_rounded, size: 48, color: kHistoireAccentColor),
-                        ),
+                if (displayImage != null && displayImage.isNotEmpty)
+                  GestureDetector(
+                    onTap: histoire.isVideo ? () => _playVideo(context) : null,
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.network(
+                            displayImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: kHistoireAccentColor.withOpacity(0.15),
+                              child: const Center(
+                                child: Icon(Icons.auto_stories_rounded, size: 48, color: kHistoireAccentColor),
+                              ),
+                            ),
+                          ),
+                          if (histoire.isVideo)
+                            Center(
+                              child: Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.6),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.85),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.play_arrow_rounded,
+                                  color: Colors.white,
+                                  size: 38,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),

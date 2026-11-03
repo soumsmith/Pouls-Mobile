@@ -32,6 +32,7 @@ import '../widgets/ad_video_page.dart';
 
 import 'all_visite_guidee_videos_screen.dart';
 import 'tips_advice_screen.dart';
+import 'all_histoires_screen.dart';
 import '../models/video.dart';
 
 class VisiteGuideeVideoFeedScreen extends StatefulWidget {
@@ -737,6 +738,19 @@ class _VisiteGuideeVideoFeedScreenState
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => const TipsAdviceScreen(),
+                                      ),
+                                    );
+                                  }
+                                } else if (item.typeVideo == 'histoire') {
+                                  if (MainScreenWrapper.maybeOf(context) != null) {
+                                    MainScreenWrapper.of(context).navigateToExtraScreen(
+                                      const AllHistoiresScreen(),
+                                    );
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const AllHistoiresScreen(),
                                       ),
                                     );
                                   }

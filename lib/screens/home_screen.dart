@@ -1757,7 +1757,7 @@ class _HomeScreenState extends State<HomeScreen> {
         subtitle: histoire.etablissement,
         overtitle: histoire.yearLabel.isNotEmpty ? histoire.yearLabel : null,
         overtitleColor: kHistoireAccentColor,
-        imagePath: histoire.image,
+        imagePath: histoire.displayImage,
         iconData: Icons.auto_stories_rounded,
         isDark: Theme.of(context).brightness == Brightness.dark,
         color: kHistoireAccentColor,
@@ -1770,11 +1770,50 @@ class _HomeScreenState extends State<HomeScreen> {
         width: cardWidth,
         allowLineBreak: true,
         centerTitle: false,
-        onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(
-          EcoleHistoireDetailScreen(histoire: histoire),
-        ),
+        showPlayIcon: histoire.isVideo,
+        onTap: () => _handleHistoireAction(histoire),
       ),
     );
+  }
+
+  void _handleHistoireAction(EcoleHistoire histoire) {
+    if (histoire.isVideo &&
+        histoire.youtubeUrl != null &&
+        histoire.youtubeUrl!.isNotEmpty) {
+      final allVideoHistoires = _histoires
+          .where(
+            (h) =>
+                h.isVideo &&
+                h.youtubeUrl != null &&
+                h.youtubeUrl!.isNotEmpty,
+          )
+          .toList();
+      final allVideos = allVideoHistoires
+          .map(
+            (h) => VisiteGuideeVideo(
+              id: h.id,
+              typeVideo: 'histoire',
+              youtubeUrl: h.youtubeUrl!,
+              title: h.title,
+              description: h.content,
+              code: h.codeEcole,
+              etablissement: h.etablissement,
+            ),
+          )
+          .toList();
+      final tappedIndex =
+          allVideoHistoires.indexWhere((h) => h.id == histoire.id);
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        VisiteGuideeVideoFeedScreen(
+          videos: allVideos,
+          initialIndex: tappedIndex >= 0 ? tappedIndex : 0,
+        ),
+      );
+    } else {
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        EcoleHistoireDetailScreen(histoire: histoire),
+      );
+    }
   }
 
   Widget _buildSeeMoreHistoiresCard() {

@@ -91,14 +91,73 @@ class EcoleHistoire {
           ? json['history_order']
           : int.tryParse(json['history_order']?.toString() ?? '') ?? 0,
       typeDeContenu: json['typedecontenu']?.toString() ?? 'image',
-      youtubeUrl: json['youtube_url']?.toString(),
+      youtubeUrl: json['youtube_url']?.toString() ?? json['video_youtube']?.toString(),
       validationStatus: json['validation_status']?.toString() ?? 'approved',
       displayOnHome: json['display_on_home'] == 1 || json['display_on_home'] == true,
       createdAt: json['created_at']?.toString(),
     );
   }
 
-  bool get isVideo => typeDeContenu.toLowerCase() == 'video' && (youtubeUrl?.isNotEmpty ?? false);
+  /// Extrait l'identifiant unique de la vidéo YouTube (11 caractères).
+  /// Supporte les formats : watch?v=, shorts/, embed/, youtu.be/, etc.
+  String get youtubeVideoId {
+    if (youtubeUrl == null || youtubeUrl!.trim().isEmpty) return '';
+    var raw = youtubeUrl!.trim();
+    if (!raw.contains('://')) {
+      raw = 'https://$raw';
+    }
+
+    Uri? url;
+    try {
+      url = Uri.parse(raw);
+    } catch (_) {
+      url = null;
+    }
+
+    if (url != null) {
+      final host = url.host.toLowerCase();
+      if (host.contains('youtube.com')) {
+        if (url.pathSegments.contains('embed')) {
+          final embedIndex = url.pathSegments.indexOf('embed');
+          if (embedIndex + 1 < url.pathSegments.length) {
+            return url.pathSegments[embedIndex + 1];
+          }
+        }
+        if (url.pathSegments.contains('shorts')) {
+          final shortsIndex = url.pathSegments.indexOf('shorts');
+          if (shortsIndex + 1 < url.pathSegments.length) {
+            return url.pathSegments[shortsIndex + 1];
+          }
+        }
+        final v = url.queryParameters['v'];
+        if (v != null && v.isNotEmpty) return v;
+      } else if (host.contains('youtu.be')) {
+        if (url.pathSegments.isNotEmpty) return url.pathSegments.last;
+      }
+    }
+
+    final match = RegExp(
+      r'(?:v=|/embed/|/shorts/|youtu\.be/)([a-zA-Z0-9_-]{11})',
+    ).firstMatch(raw);
+    return match?.group(1) ?? '';
+  }
+
+  /// Indique s'il s'agit d'une vidéo
+  bool get isVideo =>
+      typeDeContenu.toLowerCase() == 'video' ||
+      youtubeVideoId.isNotEmpty ||
+      (youtubeUrl != null && youtubeUrl!.trim().isNotEmpty);
+
+  /// Image de couverture ou miniature vidéo YouTube
+  String? get displayImage {
+    if (image != null && image!.trim().isNotEmpty) {
+      return image!.trim();
+    }
+    if (youtubeVideoId.isNotEmpty) {
+      return 'https://img.youtube.com/vi/$youtubeVideoId/hqdefault.jpg';
+    }
+    return null;
+  }
 
   /// Libellé d'année à afficher : priorité à `history_period` (texte libre
   /// saisi côté admin, ex. "2010" ou "pause de la première pierre"), sinon

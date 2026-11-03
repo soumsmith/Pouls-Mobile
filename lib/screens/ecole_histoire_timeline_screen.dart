@@ -12,6 +12,8 @@ import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
 import '../services/text_size_service.dart';
 import '../utils/html_helper.dart';
+import '../models/visite_guidee_video.dart';
+import 'visite_guidee_video_feed_screen.dart';
 import 'ecole_histoire_detail_screen.dart';
 
 const int _kTimelinePerPage = 10;
@@ -282,14 +284,55 @@ class _EcoleHistoireTimelineScreenState extends State<EcoleHistoireTimelineScree
     );
   }
 
+  void _handleHistoireAction(EcoleHistoire histoire) {
+    if (histoire.isVideo &&
+        histoire.youtubeUrl != null &&
+        histoire.youtubeUrl!.isNotEmpty) {
+      final allVideoHistoires = _histoires
+          .where(
+            (h) =>
+                h.isVideo &&
+                h.youtubeUrl != null &&
+                h.youtubeUrl!.isNotEmpty,
+          )
+          .toList();
+      final allVideos = allVideoHistoires
+          .map(
+            (h) => VisiteGuideeVideo(
+              id: h.id,
+              typeVideo: 'histoire',
+              youtubeUrl: h.youtubeUrl!,
+              title: h.title,
+              description: h.content,
+              code: h.codeEcole,
+              etablissement: h.etablissement.isNotEmpty
+                  ? h.etablissement
+                  : widget.ecoleNom,
+            ),
+          )
+          .toList();
+      final tappedIndex =
+          allVideoHistoires.indexWhere((h) => h.id == histoire.id);
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        VisiteGuideeVideoFeedScreen(
+          videos: allVideos,
+          initialIndex: tappedIndex >= 0 ? tappedIndex : 0,
+        ),
+      );
+    } else {
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        EcoleHistoireDetailScreen(histoire: histoire),
+      );
+    }
+  }
+
   Widget _buildHistoireCard(EcoleHistoire histoire) {
     final textSizeService = TextSizeService();
     final excerpt = HtmlHelper.stripHtmlTags(histoire.content);
+    final displayImage = histoire.displayImage;
 
     return GestureDetector(
-      onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(
-        EcoleHistoireDetailScreen(histoire: histoire),
-      ),
+      onTap: () => _handleHistoireAction(histoire),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.screenCardThemed(context),
@@ -300,16 +343,41 @@ class _EcoleHistoireTimelineScreenState extends State<EcoleHistoireTimelineScree
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (histoire.image != null && histoire.image!.isNotEmpty)
+            if (displayImage != null && displayImage.isNotEmpty)
               AspectRatio(
                 aspectRatio: 16 / 9,
-                child: Image.network(
-                  histoire.image!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: kHistoireAccentColor.withOpacity(0.12),
-                    child: const Icon(Icons.auto_stories_rounded, color: kHistoireAccentColor, size: 32),
-                  ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      displayImage,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: kHistoireAccentColor.withOpacity(0.12),
+                        child: const Icon(Icons.auto_stories_rounded, color: kHistoireAccentColor, size: 32),
+                      ),
+                    ),
+                    if (histoire.isVideo)
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.8),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             Padding(

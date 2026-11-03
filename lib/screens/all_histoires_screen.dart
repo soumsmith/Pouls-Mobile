@@ -14,6 +14,8 @@ import '../widgets/components/custom_error_state.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../config/app_colors.dart';
 import '../config/app_dimensions.dart';
+import '../models/visite_guidee_video.dart';
+import 'visite_guidee_video_feed_screen.dart';
 import 'ecole_histoire_detail_screen.dart';
 
 const int _kHistoiresPerPage = 20;
@@ -258,7 +260,7 @@ class _AllHistoiresScreenState extends State<AllHistoiresScreen> {
       subtitle: histoire.etablissement,
       overtitle: histoire.yearLabel.isNotEmpty ? histoire.yearLabel : null,
       overtitleColor: kHistoireAccentColor,
-      imagePath: histoire.image,
+      imagePath: histoire.displayImage,
       iconData: Icons.auto_stories_rounded,
       color: kHistoireAccentColor,
       height: AppDimensions.getEcoleCardHeight(context),
@@ -267,9 +269,48 @@ class _AllHistoiresScreenState extends State<AllHistoiresScreen> {
       centerTitle: false,
       allowLineBreak: true,
       titleMaxLines: 2,
-      onTap: () => MainScreenWrapper.of(context).navigateToExtraScreen(
-        EcoleHistoireDetailScreen(histoire: histoire),
-      ),
+      showPlayIcon: histoire.isVideo,
+      onTap: () => _handleHistoireAction(histoire),
     );
+  }
+
+  void _handleHistoireAction(EcoleHistoire histoire) {
+    if (histoire.isVideo &&
+        histoire.youtubeUrl != null &&
+        histoire.youtubeUrl!.isNotEmpty) {
+      final allVideoHistoires = _histoires
+          .where(
+            (h) =>
+                h.isVideo &&
+                h.youtubeUrl != null &&
+                h.youtubeUrl!.isNotEmpty,
+          )
+          .toList();
+      final allVideos = allVideoHistoires
+          .map(
+            (h) => VisiteGuideeVideo(
+              id: h.id,
+              typeVideo: 'histoire',
+              youtubeUrl: h.youtubeUrl!,
+              title: h.title,
+              description: h.content,
+              code: h.codeEcole,
+              etablissement: h.etablissement,
+            ),
+          )
+          .toList();
+      final tappedIndex =
+          allVideoHistoires.indexWhere((h) => h.id == histoire.id);
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        VisiteGuideeVideoFeedScreen(
+          videos: allVideos,
+          initialIndex: tappedIndex >= 0 ? tappedIndex : 0,
+        ),
+      );
+    } else {
+      MainScreenWrapper.of(context).navigateToExtraScreen(
+        EcoleHistoireDetailScreen(histoire: histoire),
+      );
+    }
   }
 }

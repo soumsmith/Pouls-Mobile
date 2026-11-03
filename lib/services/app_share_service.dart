@@ -107,13 +107,14 @@ class AppShareService {
     }
 
     final isAstuce = video.typeVideo == 'astuce';
-    final type = isAstuce ? 'tip' : 'visite';
+    final isHistoire = video.typeVideo == 'histoire';
+    final type = isAstuce ? 'tip' : (isHistoire ? 'histoire' : 'visite');
     var link = '$_baseUrl/share/index.php?type=$type&id=${video.id}';
 
     // Le paramètre ecole n'est utile que pour la résolution "visite guidée"
     // scopée par école (_loadVisiteGuideeVideo) — les astuces sont résolues
     // par pagination globale (_loadTip), inutile de l'ajouter dans ce cas.
-    if (!isAstuce) {
+    if (!isAstuce && !isHistoire) {
       if (video.code.isNotEmpty) {
         link += '&ecole=${Uri.encodeQueryComponent(video.code)}';
       } else {
@@ -126,11 +127,14 @@ class AppShareService {
     }
 
     link += _previewParams(
-      title: video.title ?? (isAstuce ? 'Astuce & Conseil' : 'Visite Guidée'),
+      title: video.title ??
+          (isAstuce
+              ? 'Astuce & Conseil'
+              : (isHistoire ? 'Mémoire de l\'école' : 'Visite Guidée')),
       desc: video.description,
       img: _youtubeThumbnail(video.youtubeVideoId),
     );
-    print('🔗 [AppShareService] Lien ${isAstuce ? "astuce/conseil" : "visite guidée"} généré: $link');
+    print('🔗 [AppShareService] Lien ${isAstuce ? "astuce/conseil" : (isHistoire ? "mémoire d'école" : "visite guidée")} généré: $link');
     return link;
   }
 
@@ -197,14 +201,30 @@ class AppShareService {
   static String? buildVisiteGuideeShareText(VisiteGuideeVideo video) {
     final link = buildVisiteGuideeLink(video);
     if (link == null) return null;
-    final title = video.title ?? 'Visite Guidée';
+    final isAstuce = video.typeVideo == 'astuce';
+    final isHistoire = video.typeVideo == 'histoire';
+    final defaultTitle = isAstuce
+        ? 'Astuce & Conseil'
+        : (isHistoire ? 'Mémoire de l\'école' : 'Visite Guidée');
+    final title = video.title ?? defaultTitle;
     final description = video.description ?? '';
+    final hashtags = isHistoire
+        ? '#MémoireDesÉcoles #Éducation #UniversEcoles'
+        : (isAstuce
+            ? '#Astuce #Conseil #UniversEcoles'
+            : '#VisiteGuidée #Éducation #UniversEcoles');
+    final action = isHistoire
+        ? '🌳 Découvrez cette mémoire d\'école en vidéo :'
+        : (isAstuce
+            ? '💡 Découvrez ce conseil utile :'
+            : '🎬 Regarde cette vidéo incroyable :');
+
     return _buildShareText(
       title: title,
       description: description,
       link: link,
-      hashtags: '#VisiteGuidée #Éducation #UniversEcoles',
-      action: '🎬 Regarde cette vidéo incroyable :',
+      hashtags: hashtags,
+      action: action,
     );
   }
 

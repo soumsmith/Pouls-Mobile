@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http_pkg;
 // Export de tous les objets utiles de la librairie http (MultipartRequest, Response, etc.)
@@ -6,18 +5,35 @@ import 'package:http/http.dart' as http_pkg;
 export 'package:http/http.dart'
     hide get, post, put, delete, patch, head, read, readBytes;
 
-import '../services/connectivity_service.dart';
+import '../services/app_log_service.dart';
 
-/// La vérification est désactivée suite à votre demande
 void _checkConnection() {
-  // if (ConnectivityService().isOnline == false) {
-  //   throw const SocketException('Aucune connexion internet (Requête bloquée par AppHttp)');
-  // }
+  // Optionnellement activable
 }
 
-Future<http_pkg.Response> get(Uri url, {Map<String, String>? headers}) {
+Future<http_pkg.Response> get(Uri url, {Map<String, String>? headers}) async {
   _checkConnection();
-  return http_pkg.get(url, headers: headers);
+  final stopwatch = Stopwatch()..start();
+  try {
+    final response = await http_pkg.get(url, headers: headers);
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'GET',
+      url: url.toString(),
+      statusCode: response.statusCode,
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
+    return response;
+  } catch (e) {
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'GET',
+      url: url.toString(),
+      durationMs: stopwatch.elapsedMilliseconds,
+      error: e.toString(),
+    );
+    rethrow;
+  }
 }
 
 Future<http_pkg.Response> post(
@@ -25,9 +41,34 @@ Future<http_pkg.Response> post(
   Map<String, String>? headers,
   Object? body,
   Encoding? encoding,
-}) {
+}) async {
   _checkConnection();
-  return http_pkg.post(url, headers: headers, body: body, encoding: encoding);
+  final stopwatch = Stopwatch()..start();
+  try {
+    final response = await http_pkg.post(
+      url,
+      headers: headers,
+      body: body,
+      encoding: encoding,
+    );
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'POST',
+      url: url.toString(),
+      statusCode: response.statusCode,
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
+    return response;
+  } catch (e) {
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'POST',
+      url: url.toString(),
+      durationMs: stopwatch.elapsedMilliseconds,
+      error: e.toString(),
+    );
+    rethrow;
+  }
 }
 
 Future<http_pkg.Response> put(
@@ -35,9 +76,34 @@ Future<http_pkg.Response> put(
   Map<String, String>? headers,
   Object? body,
   Encoding? encoding,
-}) {
+}) async {
   _checkConnection();
-  return http_pkg.put(url, headers: headers, body: body, encoding: encoding);
+  final stopwatch = Stopwatch()..start();
+  try {
+    final response = await http_pkg.put(
+      url,
+      headers: headers,
+      body: body,
+      encoding: encoding,
+    );
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'PUT',
+      url: url.toString(),
+      statusCode: response.statusCode,
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
+    return response;
+  } catch (e) {
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'PUT',
+      url: url.toString(),
+      durationMs: stopwatch.elapsedMilliseconds,
+      error: e.toString(),
+    );
+    rethrow;
+  }
 }
 
 Future<http_pkg.Response> delete(
@@ -45,9 +111,34 @@ Future<http_pkg.Response> delete(
   Map<String, String>? headers,
   Object? body,
   Encoding? encoding,
-}) {
+}) async {
   _checkConnection();
-  return http_pkg.delete(url, headers: headers, body: body, encoding: encoding);
+  final stopwatch = Stopwatch()..start();
+  try {
+    final response = await http_pkg.delete(
+      url,
+      headers: headers,
+      body: body,
+      encoding: encoding,
+    );
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'DELETE',
+      url: url.toString(),
+      statusCode: response.statusCode,
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
+    return response;
+  } catch (e) {
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'DELETE',
+      url: url.toString(),
+      durationMs: stopwatch.elapsedMilliseconds,
+      error: e.toString(),
+    );
+    rethrow;
+  }
 }
 
 Future<http_pkg.Response> patch(
@@ -55,20 +146,82 @@ Future<http_pkg.Response> patch(
   Map<String, String>? headers,
   Object? body,
   Encoding? encoding,
-}) {
+}) async {
   _checkConnection();
-  return http_pkg.patch(url, headers: headers, body: body, encoding: encoding);
+  final stopwatch = Stopwatch()..start();
+  try {
+    final response = await http_pkg.patch(
+      url,
+      headers: headers,
+      body: body,
+      encoding: encoding,
+    );
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'PATCH',
+      url: url.toString(),
+      statusCode: response.statusCode,
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
+    return response;
+  } catch (e) {
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'PATCH',
+      url: url.toString(),
+      durationMs: stopwatch.elapsedMilliseconds,
+      error: e.toString(),
+    );
+    rethrow;
+  }
 }
 
-Future<http_pkg.Response> head(Uri url, {Map<String, String>? headers}) {
+Future<http_pkg.Response> head(Uri url, {Map<String, String>? headers}) async {
   _checkConnection();
-  return http_pkg.head(url, headers: headers);
+  final stopwatch = Stopwatch()..start();
+  try {
+    final response = await http_pkg.head(url, headers: headers);
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'HEAD',
+      url: url.toString(),
+      statusCode: response.statusCode,
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
+    return response;
+  } catch (e) {
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'HEAD',
+      url: url.toString(),
+      durationMs: stopwatch.elapsedMilliseconds,
+      error: e.toString(),
+    );
+    rethrow;
+  }
 }
 
-Future<String> read(Uri url, {Map<String, String>? headers}) {
+Future<String> read(Uri url, {Map<String, String>? headers}) async {
   _checkConnection();
-  return http_pkg.read(url, headers: headers);
+  final stopwatch = Stopwatch()..start();
+  try {
+    final response = await http_pkg.read(url, headers: headers);
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'READ',
+      url: url.toString(),
+      statusCode: 200,
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
+    return response;
+  } catch (e) {
+    stopwatch.stop();
+    AppLogService.logApi(
+      method: 'READ',
+      url: url.toString(),
+      durationMs: stopwatch.elapsedMilliseconds,
+      error: e.toString(),
+    );
+    rethrow;
+  }
 }
-
-// Pour les MultipartRequests, la vérification sera effectuée soit à l'instanciation,
-// soit en amont dans le service, car request.send() n'est pas une méthode top-level.

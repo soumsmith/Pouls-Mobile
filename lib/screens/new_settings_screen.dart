@@ -49,6 +49,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
   @override
   void initState() {
     super.initState();
+    CountryService.instance.addListener(_onCountryChanged);
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -58,6 +59,10 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
     _fadeController.forward();
     _loadAppVersion();
     _loadPreferences();
+  }
+
+  void _onCountryChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadPreferences() async {
@@ -84,6 +89,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
 
   @override
   void dispose() {
+    CountryService.instance.removeListener(_onCountryChanged);
     _scrollController.dispose();
     _fadeController.dispose();
     super.dispose();
@@ -140,22 +146,14 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
                                 onTap: _navigateToProfile,
                               ),
                               _SettingsItem(
-                                title: 'Pays',
-                                subtitle:
-                                    '${CountryService.instance.selectedCountry.flag} ${CountryService.instance.selectedCountry.name}',
+                                title: 'Pays d\'utilisation',
+                                subtitle: CountryService.instance.currentCountryDisplay.isNotEmpty
+                                    ? CountryService.instance.currentCountryDisplay
+                                    : 'Vérification en cours...',
                                 icon: Icons.public_outlined,
                                 color: AppColors.settingsCyan,
-                                onTap: _showCountrySettings,
+                                onTap: _showCountryCheckingSheet,
                               ),
-                              if (kDebugMode)
-                                _SettingsItem(
-                                  title: 'Redétecter le pays (debug)',
-                                  subtitle:
-                                      'Efface le choix et relance la détection IP',
-                                  icon: Icons.bug_report_outlined,
-                                  color: AppColors.settingsGrey,
-                                  onTap: _forceRedetectCountryDebug,
-                                ),
                               /*
                               _SettingsItem(
                                 title: 'Sécurité',
@@ -592,6 +590,157 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
     MainScreenWrapper.of(context).navigateToExtraScreen(const ProfileScreen());
   }
 
+  /// Affiche la feuille d'information et de vérification dynamique du pays par IP
+  Future<void> _showCountryCheckingSheet() async {
+    final countryService = CountryService.instance;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
+        bool isChecking = false;
+
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      countryService.detectedCountryFlag,
+                      style: const TextStyle(fontSize: 52),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      countryService.detectedCountryName,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Code ISO : ${countryService.detectedCountryCode}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white60 : Colors.black54,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.06)
+                            : Colors.black.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle_outline_rounded,
+                            size: 20,
+                            color: AppColors.settingsGreen,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Détecté dynamiquement via les APIs de géolocalisation IP',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.white70 : Colors.black87,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: isChecking
+                            ? null
+                            : () async {
+                                setSheetState(() => isChecking = true);
+                                final ok = await countryService.forceRedetect();
+                                if (mounted) {
+                                  setState(() {});
+                                }
+                                setSheetState(() => isChecking = false);
+                                if (sheetContext.mounted) {
+                                  Navigator.pop(sheetContext);
+                                }
+                                if (ok) {
+                                  NotificationHelper.showSuccess(
+                                    'Pays actualisé : ${countryService.currentCountryDisplay}',
+                                  );
+                                } else {
+                                  NotificationHelper.showInfo(
+                                    'Pays actuel : ${countryService.currentCountryDisplay}',
+                                  );
+                                }
+                              },
+                        icon: isChecking
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.refresh_rounded, size: 20),
+                        label: Text(
+                          isChecking
+                              ? 'Vérification en cours...'
+                              : 'Vérifier / Actualiser le pays',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.screenOrange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /*
+  // ANCIEN CODE : Sélecteur manuel de pays de l'API (avec déconnexion obligatoire)
   Future<void> _showCountrySettings() async {
     final currentCode = CountryService.instance.selectedCountry.code;
 
@@ -687,20 +836,7 @@ class _NewSettingsScreenState extends State<NewSettingsScreen>
       (route) => false,
     );
   }
-
-  /// Debug uniquement : permet de tester la détection automatique par IP
-  /// (ex: avec un VPN) sans avoir à désinstaller l'app pour effacer le
-  /// choix de pays déjà mémorisé.
-  Future<void> _forceRedetectCountryDebug() async {
-    NotificationHelper.showInfo('Redétection du pays en cours...');
-    await CountryService.instance.forceRedetect();
-    if (!mounted) return;
-    final country = CountryService.instance.selectedCountry;
-    setState(() {});
-    NotificationHelper.showSuccess(
-      'Pays détecté : ${country.flag} ${country.name} (${country.baseUrl})',
-    );
-  }
+  */
 
   void _navigateToHelpSupport() {
     MainScreenWrapper.of(context).navigateToExtraScreen(const HelpSupportScreen());

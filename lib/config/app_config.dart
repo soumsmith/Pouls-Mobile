@@ -64,8 +64,17 @@ class AppConfig {
 
   // ─── Configuration de Vérification de Paiement ───────────────────────────
   static const int PAYMENT_VERIFICATION_INTERVAL_SECONDS = 5;
-  static const int PAYMENT_VERIFICATION_MAX_ATTEMPTS = 14; // 5s × 14 = 70s (1min10)
+  static const int PAYMENT_VERIFICATION_MAX_ATTEMPTS =
+      14; // 5s × 14 = 70s (1min10)
 
+  // ─── Logs globaux de l'application (API & Actions) ──────────────────────
+  /// URL du script PHP en ligne pour la journalisation des actions et appels API.
+  /// Modifiez cette URL avec l'adresse finale où vous hébergerez votre script .php.
+  static const String APP_LOG_URL =
+      'https://br-immobilier.ci/server_scripts/log_child_add.php';
+
+  /// Rétrocompatibilité pour les ajouts d'enfants
+  static const String CHILD_ADD_LOG_URL = APP_LOG_URL;
   // ─── External URLs ───────────────────────────────────────────────────────
   static const String TUTEUR_ADOM_URL =
       'https://tuteur-adom.pouls-scolaire.net/';

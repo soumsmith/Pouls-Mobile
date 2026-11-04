@@ -14,6 +14,7 @@ import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/recommendation_bottom_sheet.dart';
 import '../utils/notification_helper.dart';
 import '../services/recommendation_service.dart';
+import '../services/child_log_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/code_dren_ecole_picker.dart';
 import '../utils/auth_guard.dart';
@@ -435,6 +436,17 @@ class _AddChildScreenState extends State<AddChildScreen>
         childId,
       );
       if (existingChild != null && existingChild.parentId == parentId) {
+        // Journalisation de la tentative de doublon
+        ChildLogService.logChildAddFailed(
+          currentUser: currentUser,
+          matricule: matricule,
+          nom: nom,
+          prenoms: prenoms,
+          grade: _eleveGrade,
+          ecole: ecole,
+          errorMessage: 'Cet élève est déjà ajouté pour ce parent',
+          status: 'already_exists',
+        );
         setState(() => _isLoading = false);
         if (_isFoundStudentSheetOpen) setModalState(() {});
         if (mounted) {
@@ -486,6 +498,17 @@ class _AddChildScreenState extends State<AddChildScreen>
         schoolId: _resolvedSchoolId,
       );
 
+      // Journalisation distante vers le serveur PHP
+      ChildLogService.logChildAdded(
+        currentUser: currentUser,
+        matricule: matricule,
+        nom: nom,
+        prenoms: prenoms,
+        grade: grade,
+        ecole: ecole,
+        resolvedSchoolId: _resolvedSchoolId,
+      );
+
       setState(() => _isLoading = false);
       if (_isFoundStudentSheetOpen) setModalState(() {});
       if (mounted) {
@@ -501,6 +524,16 @@ class _AddChildScreenState extends State<AddChildScreen>
         );
       }
     } catch (e) {
+      // Journalisation de l'échec vers le serveur PHP
+      ChildLogService.logChildAddFailed(
+        currentUser: currentUser,
+        matricule: _eleveField(eleve, 'matricule'),
+        nom: _eleveField(eleve, 'nom'),
+        prenoms: _eleveField(eleve, 'prenoms'),
+        grade: _eleveGrade,
+        ecole: ecole,
+        errorMessage: e.toString(),
+      );
       setState(() => _isLoading = false);
       if (_isFoundStudentSheetOpen) setModalState(() {});
       if (mounted) _showSnackbar('Erreur : $e', isError: true);

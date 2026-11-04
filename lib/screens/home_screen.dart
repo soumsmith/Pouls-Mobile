@@ -42,6 +42,7 @@ import '../utils/auth_guard.dart';
 import '../utils/notification_helper.dart';
 import '../utils/unicode_style_normalizer.dart';
 import '../services/recommendation_service.dart';
+import '../services/country_service.dart';
 import '../widgets/main_screen_wrapper.dart';
 import '../widgets/custom_loader.dart';
 import '../widgets/search_bar_widget.dart';
@@ -2410,14 +2411,48 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            _getFormattedDate(),
-            style: TextStyle(
-              fontSize: _textSizeService.getScaledFontSize(11),
-              color: Colors.white.withOpacity(0.7),
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.3,
-            ),
+          ListenableBuilder(
+            listenable: CountryService.instance,
+            builder: (context, _) {
+              final countryDisplay =
+                  CountryService.instance.currentCountryDisplay;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    _getFormattedDate(),
+                    style: TextStyle(
+                      fontSize: _textSizeService.getScaledFontSize(11),
+                      color: Colors.white.withOpacity(0.75),
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  if (countryDisplay.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(
+                        '•',
+                        style: TextStyle(
+                          fontSize: _textSizeService.getScaledFontSize(11),
+                          color: Colors.white.withOpacity(0.5),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      countryDisplay,
+                      style: TextStyle(
+                        fontSize: _textSizeService.getScaledFontSize(11),
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -3967,27 +4002,27 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getFormattedDate() {
     final now = DateTime.now();
     final days = [
-      'Lundi',
-      'Mardi',
-      'Mercredi',
-      'Jeudi',
-      'Vendredi',
-      'Samedi',
-      'Dimanche',
+      'Lun.',
+      'Mar.',
+      'Mer.',
+      'Jeu.',
+      'Ven.',
+      'Sam.',
+      'Dim.',
     ];
     final months = [
-      'janvier',
-      'février',
-      'mars',
-      'avril',
+      'jan.',
+      'fév.',
+      'mar.',
+      'avr.',
       'mai',
-      'juin',
-      'juillet',
-      'août',
-      'septembre',
-      'octobre',
-      'novembre',
-      'décembre',
+      'jui.',
+      'jui.',
+      'aoû.',
+      'sep.',
+      'oct.',
+      'nov.',
+      'déc.',
     ];
 
     final dayName = days[now.weekday - 1];

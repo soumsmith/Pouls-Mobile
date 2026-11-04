@@ -19,6 +19,7 @@ import 'services/notification_service.dart';
 import 'services/onesignal_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/deep_link_service.dart';
+import 'services/app_log_service.dart';
 import 'utils/notification_helper.dart';
 
 // NavigatorKey global pour accéder au contexte depuis n'importe quel écran
@@ -195,6 +196,7 @@ class _MyAppState extends State<MyApp> {
             return MaterialApp(
               navigatorKey: navigatorKey,
               scaffoldMessengerKey: scaffoldMessengerKey,
+              navigatorObservers: [AppLogRouteObserver()],
               title: 'Univers écoles',
               debugShowCheckedModeBanner: false,
               theme: _themeService.lightTheme,

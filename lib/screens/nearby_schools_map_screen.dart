@@ -7,6 +7,7 @@ import '../services/ecole_api_service.dart';
 import '../services/location_permission_service.dart';
 import 'establishment_detail_screen.dart';
 import '../widgets/bottom_sheets/bottom_sheet_header.dart';
+import '../widgets/custom_sliver_app_bar.dart';
 import '../config/app_colors.dart';
 import '../services/text_size_service.dart';
 
@@ -187,11 +188,12 @@ class _NearbySchoolsMapScreenState extends State<NearbySchoolsMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.screenSurfaceThemed(context),
-      appBar: AppBar(
-        title: const Text('Écoles à proximité'),
-        backgroundColor: AppColors.screenSurfaceThemed(context),
-        elevation: 0,
-        foregroundColor: AppColors.screenTextPrimaryThemed(context),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: const CustomSliverAppBar(
+          title: 'Écoles à proximité',
+          isSliver: false,
+        ),
       ),
       body: _buildBody(),
     );

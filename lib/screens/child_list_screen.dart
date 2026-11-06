@@ -98,6 +98,7 @@ import '../widgets/bottom_sheets/integration_request_bottom_sheet.dart';
 import '../widgets/custom_text_field.dart';
 import '../services/consultation_api_service.dart';
 import '../models/annee_consultation.dart';
+import '../models/classe_consultation.dart';
 import '../models/bulletin_consultation.dart';
 import '../models/travail_consultation.dart';
 import '../models/devoir_surveille_consultation.dart';
@@ -494,6 +495,15 @@ class _ChildListScreenState extends State<ChildListScreen>
   // que l'inscription en ligne utilise la bonne valeur sans attendre la
   // prochaine ouverture de l'écran (widget.child reste figé entre-temps).
   String? _correctedParamEcole;
+
+  // Cursus franco-arabe (doc API-CONSULTATION-MOBILE §4.6 bis/4.7) : un
+  // élève peut avoir deux classes la même année (ex. classe arabe + classe
+  // française), chacune avec son propre bulletin/notes/devoirs. On ne choisit
+  // jamais "la première" au hasard — on résout une fois par année (cache
+  // ci-dessous) via `_resolveClasseRefForAnnee`, en demandant à l'utilisateur
+  // de choisir si l'élève a effectivement deux classes.
+  final Map<String, String> _selectedClasseRefByAnnee = {};
+  final Map<String, Future<String?>> _classeResolutionInFlightByAnnee = {};
 
   // Filtres pour Bulletins
   List<AnneeConsultation> _bulletinsAnnees = [];
@@ -1535,17 +1545,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         orElse: () => annees.first,
       );
 
-      // La classe de l'élève pour CETTE année (doc §4.7) : plus fiable que
-      // la classe capturée à l'ajout de l'enfant, qui change chaque année
-      // (même correction que _loadProgressions).
+      // La classe de l'élève pour CETTE année (doc §4.6 bis/4.7) — demande
+      // à l'utilisateur de choisir si l'élève a deux classes (cursus
+      // franco-arabe) au lieu de prendre "la première" au hasard.
       String? classeRef;
       try {
-        final classes = await _consultationApi.getClasses(
-          schoolId,
-          matricule,
-          anneeRef: annee.ref,
-        );
-        classeRef = classes.isNotEmpty ? classes.first.classeRef : null;
+        classeRef = await _doResolveClasseRefForAnnee(schoolId, matricule, annee.ref);
       } catch (e) {
         if (e.toString().contains('inscrit dans aucune classe')) {
           throw Exception(
@@ -1681,17 +1686,12 @@ class _ChildListScreenState extends State<ChildListScreen>
         orElse: () => annees.first,
       );
 
-      // La classe de l'élève pour CETTE année (doc §4.7) : plus fiable que
-      // la classe capturée à l'ajout de l'enfant (même correction que
-      // _loadDevoirs/_loadProgressions).
+      // La classe de l'élève pour CETTE année (doc §4.6 bis/4.7) — demande
+      // à l'utilisateur de choisir si l'élève a deux classes (cursus
+      // franco-arabe) au lieu de prendre "la première" au hasard.
       String? classeRef;
       try {
-        final classes = await _consultationApi.getClasses(
-          schoolId,
-          matricule,
-          anneeRef: annee.ref,
-        );
-        classeRef = classes.isNotEmpty ? classes.first.classeRef : null;
+        classeRef = await _doResolveClasseRefForAnnee(schoolId, matricule, annee.ref);
       } catch (e) {
         if (e.toString().contains('inscrit dans aucune classe')) {
           throw Exception(
@@ -1756,14 +1756,10 @@ class _ChildListScreenState extends State<ChildListScreen>
         orElse: () => annees.first,
       );
 
-      // La classe de l'élève pour CETTE année (doc §4.7) : plus fiable que
-      // la classe capturée à l'ajout de l'enfant, qui change chaque année.
-      final classes = await _consultationApi.getClasses(
-        schoolId,
-        matricule,
-        anneeRef: annee.ref,
-      );
-      final classeRef = classes.isNotEmpty ? classes.first.classeRef : null;
+      // La classe de l'élève pour CETTE année (doc §4.6 bis/4.7) — demande
+      // à l'utilisateur de choisir si l'élève a deux classes (cursus
+      // franco-arabe) au lieu de prendre "la première" au hasard.
+      final classeRef = await _resolveClasseRefForAnnee(schoolId, matricule, annee.ref);
 
       final progressions = await _consultationApi.getProgressions(
         schoolId,
@@ -3120,7 +3116,11 @@ class _ChildListScreenState extends State<ChildListScreen>
       ),
       isDark: isDarkMode,
       expandedHeight: 70,
-      actions: [_buildNotificationButton(), _buildMoreButton()], //,
+      actions: [
+        _buildNotificationButton(),
+        _buildChangeEcoleClasseButton(),
+        _buildMoreButton(),
+      ], //,
       titleTextStyle: TextStyle(
         fontSize: _textSizeService.getScaledFontSize(16),
         fontWeight: FontWeight.w700,
@@ -3198,6 +3198,206 @@ class _ChildListScreenState extends State<ChildListScreen>
         ],
       ),
     );
+  }
+
+  /// Bouton permettant de revenir manuellement sur le choix d'établissement
+  /// ou de classe fait lors de la résolution automatique (voir
+  /// `_promptEcoleChoice`/`_promptClasseChoice`) — utile si l'utilisateur
+  /// s'est trompé, ou si la situation de l'élève a changé en cours d'année.
+  Widget _buildChangeEcoleClasseButton() {
+    final theme = Theme.of(context);
+    final isDarkMode = _themeService.isDarkMode;
+
+    Widget menuRow({
+      required IconData icon,
+      required Color iconColor,
+      required String label,
+    }) {
+      return Container(
+        margin: const EdgeInsets.all(8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppDimensions.getSettingsCardShadow(context),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: iconColor, size: 16),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.transparent,
+      elevation: 0,
+      onSelected: (value) {
+        if (value == 'changer_classe') {
+          _onChangeClasseRequested();
+        } else if (value == 'changer_ecole') {
+          _onChangeEcoleRequested();
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: 'changer_classe',
+          padding: EdgeInsets.zero,
+          child: menuRow(
+            icon: Icons.class_rounded,
+            iconColor: const Color(0xFF1976D2),
+            label: 'Changer de classe',
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'changer_ecole',
+          padding: EdgeInsets.zero,
+          child: menuRow(
+            icon: Icons.apartment_rounded,
+            iconColor: const Color(0xFF2E7D32),
+            label: 'Changer d\'établissement',
+          ),
+        ),
+      ],
+      child: Container(
+        width: 40,
+        height: 40,
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF2A2A2A) : AppColors.screenCard,
+          borderRadius: BorderRadius.circular(
+            AppDimensions.getSmallCardBorderRadius(context),
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.screenShadow,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(Icons.swap_horiz_rounded, size: 18, color: theme.iconTheme.color),
+      ),
+    );
+  }
+
+  /// Relance la résolution de classe pour l'année courante et laisse
+  /// l'utilisateur en choisir une autre, même si une seule classe existe
+  /// vraiment (dans ce cas, on le prévient plutôt que d'ouvrir un sélecteur
+  /// vide). Répercute le choix sur tous les écrans dépendants en rechargeant
+  /// les données de la fiche (`_loadData`).
+  Future<void> _onChangeClasseRequested() async {
+    final matricule = _matricule ?? widget.child.matricule;
+    if (matricule == null || matricule.isEmpty) {
+      NotificationHelper.showError('Matricule de l\'élève non disponible');
+      return;
+    }
+
+    final schoolId = await _resolveConsultationSchoolId();
+    if (schoolId == null) {
+      NotificationHelper.showError('Établissement introuvable pour le moment');
+      return;
+    }
+
+    List<AnneeConsultation> annees;
+    try {
+      annees = await _consultationApi.getAnnees(schoolId);
+    } catch (_) {
+      NotificationHelper.showError('Impossible de récupérer les années scolaires');
+      return;
+    }
+    if (annees.isEmpty) {
+      NotificationHelper.showError('Aucune année scolaire disponible');
+      return;
+    }
+    final annee = annees.firstWhere((a) => a.courante, orElse: () => annees.first);
+
+    List<ClasseConsultation> classes;
+    try {
+      classes = await _consultationApi.getClasses(
+        schoolId,
+        matricule,
+        anneeRef: annee.ref,
+        showNotification: false,
+      );
+    } catch (_) {
+      NotificationHelper.showError('Impossible de récupérer les classes de l\'élève');
+      return;
+    }
+
+    if (classes.length < 2) {
+      NotificationHelper.showInfo(
+        '${widget.child.firstName} n\'a qu\'une seule classe cette année',
+      );
+      return;
+    }
+
+    final chosen = await _promptClasseChoice(classes);
+    if (chosen == null) return;
+
+    setState(() {
+      _selectedClasseRefByAnnee[annee.ref] = chosen;
+    });
+    NotificationHelper.showSuccess('Classe mise à jour');
+    _loadData();
+  }
+
+  /// Relance la résolution d'établissement et laisse l'utilisateur en choisir
+  /// un autre parmi ceux partageant le même code vie-ecoles (voir
+  /// `ConsultationApiService.getCandidateEtablissementsForCode`), même si un
+  /// seul schoolId a été retenu automatiquement. Invalide les classes déjà
+  /// choisies (`_selectedClasseRefByAnnee`) : années/classeRef ne traversent
+  /// pas les écoles (doc API-CONSULTATION-MOBILE §4).
+  Future<void> _onChangeEcoleRequested() async {
+    final ecoleCode = _ecoleCode ?? _correctedParamEcole;
+    if (ecoleCode == null || ecoleCode.isEmpty) {
+      NotificationHelper.showError('Code école non disponible');
+      return;
+    }
+
+    List<EtablissementConsultation> candidates;
+    try {
+      candidates = await _consultationApi.getCandidateEtablissementsForCode(ecoleCode);
+    } catch (_) {
+      NotificationHelper.showError('Impossible de récupérer les établissements');
+      return;
+    }
+
+    if (candidates.length < 2) {
+      NotificationHelper.showInfo('Aucun autre établissement disponible pour ce code');
+      return;
+    }
+
+    final chosen = await _promptEcoleChoice(candidates);
+    if (chosen == null || chosen == _consultationSchoolId) return;
+
+    await DatabaseService.instance.updateChildSchoolId(widget.child.id, chosen);
+    setState(() {
+      _persistedSchoolId = chosen;
+      _consultationSchoolId = chosen;
+      _selectedClasseRefByAnnee.clear();
+      _classeResolutionInFlightByAnnee.clear();
+    });
+    NotificationHelper.showSuccess('Établissement mis à jour');
+    _loadData();
   }
 
   Widget _buildMoreButton() {
@@ -9126,28 +9326,176 @@ class _ChildListScreenState extends State<ChildListScreen>
     return _healMissingSchoolIdIfNeeded();
   }
 
-  /// La classe de l'élève pour l'année donnée (doc §4.7) : plus fiable que
-  /// `_persistedClasseRef` (capturé à l'ajout de l'enfant, jamais mis à jour
-  /// ensuite et pas toujours renseigné) — même correction que
-  /// `_loadProgressions`/le cahier de textes. Repli sur `_persistedClasseRef`
-  /// si la résolution échoue.
+  /// La classe de l'élève pour l'année donnée (doc §4.6 bis/4.7). Un élève
+  /// peut avoir DEUX classes la même année (cursus franco-arabe) : on ne
+  /// choisit jamais "la première" au hasard (chacune a son propre bulletin,
+  /// ses propres notes, son propre rang) — on demande à l'utilisateur de
+  /// trancher via `_promptClasseChoice`, une seule fois par année (résultat
+  /// mis en cache dans `_selectedClasseRefByAnnee`). Les appels concurrents
+  /// pour la même année (bulletins/devoirs/progressions chargés en parallèle
+  /// à l'ouverture de l'écran) partagent la même résolution en cours, pour ne
+  /// pas faire apparaître le dialogue plusieurs fois (même pattern que
+  /// `_healMissingSchoolIdIfNeeded`/`_schoolIdResolutionInFlight`).
+  ///
+  /// Repli sur `_persistedClasseRef` (capturé à l'ajout de l'enfant, jamais
+  /// mis à jour ensuite et pas toujours renseigné) uniquement si la résolution
+  /// échoue (erreur réseau) — jamais en cas d'ambiguïté réelle entre deux
+  /// classes, pour ne pas risquer d'afficher les notes de la mauvaise classe.
+  /// Utilisée par les appelants "tolérants" (ex. `_loadBulletins`,
+  /// `_loadDifficultes`, pièces jointes) pour qui un échec de résolution ne
+  /// doit pas bloquer tout l'écran.
   Future<String?> _resolveClasseRefForAnnee(
     String schoolId,
     String matricule,
     String anneeRef,
   ) async {
     try {
-      final classes = await _consultationApi.getClasses(
-        schoolId,
-        matricule,
-        anneeRef: anneeRef,
-        showNotification: false,
-      );
-      if (classes.isNotEmpty) return classes.first.classeRef;
+      return await _doResolveClasseRefForAnnee(schoolId, matricule, anneeRef);
     } catch (_) {
-      // Ignoré : repli sur _persistedClasseRef ci-dessous.
+      return _persistedClasseRef;
     }
-    return _persistedClasseRef;
+  }
+
+  /// Version "stricte" : propage les erreurs de `getClasses` (ex. "élève
+  /// inscrit dans aucune classe") au lieu de les avaler, pour les appelants
+  /// (`_loadDevoirs`, `_loadDevoirsSurveilles`, `_loadProgressions`) qui
+  /// affichent un message spécifique dans ce cas. Partage malgré tout le même
+  /// cache et la même dédup des appels concurrents que la version tolérante
+  /// (une seule résolution/un seul dialogue par année, quel que soit le point
+  /// d'entrée).
+  Future<String?> _doResolveClasseRefForAnnee(
+    String schoolId,
+    String matricule,
+    String anneeRef,
+  ) {
+    final cached = _selectedClasseRefByAnnee[anneeRef];
+    if (cached != null) return Future.value(cached);
+
+    return _classeResolutionInFlightByAnnee[anneeRef] ??=
+        _resolveClasseRefUncached(schoolId, matricule, anneeRef).whenComplete(() {
+      _classeResolutionInFlightByAnnee.remove(anneeRef);
+    });
+  }
+
+  Future<String?> _resolveClasseRefUncached(
+    String schoolId,
+    String matricule,
+    String anneeRef,
+  ) async {
+    final classes = await _consultationApi.getClasses(
+      schoolId,
+      matricule,
+      anneeRef: anneeRef,
+      showNotification: false,
+    );
+
+    if (classes.isEmpty) return _persistedClasseRef;
+    if (classes.length == 1) {
+      _selectedClasseRefByAnnee[anneeRef] = classes.first.classeRef;
+      return classes.first.classeRef;
+    }
+
+    final chosen = await _promptClasseChoice(classes);
+    if (chosen != null) {
+      _selectedClasseRefByAnnee[anneeRef] = chosen;
+    }
+    return chosen;
+  }
+
+  /// Demande à l'utilisateur de choisir sa classe quand il en a deux (cursus
+  /// franco-arabe) — ce n'est pas une erreur, c'est un choix à faire une
+  /// seule fois par année. Bottom sheet non-dismissible par balayage/tap
+  /// extérieur (`isDismissible: false`) : une classe doit être choisie pour
+  /// que les écrans dépendants (bulletins, notes, devoirs, progression)
+  /// puissent s'afficher — seul le bouton de fermeture du bottom sheet permet
+  /// d'annuler (retourne `null`, repli sur `_persistedClasseRef` côté appelant).
+  Future<String?> _promptClasseChoice(List<ClasseConsultation> classes) {
+    if (!mounted) return Future.value(null);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return ReusableBottomSheet.show<String>(
+      context: context,
+      title: 'Choisissez la classe',
+      subtitle: 'Cet élève est inscrit dans deux classes cette année',
+      icon: Icons.class_rounded,
+      iconColor: const Color(0xFF1976D2),
+      isDismissible: false,
+      useDraggable: false,
+      initialChildSize: 0.35,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Chacune a ses propres notes, son propre rang et son propre bulletin.',
+            style: TextStyle(
+              fontSize: 13,
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...classes.map(
+            (c) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                c.libelle,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: c.effectif != null ? Text('${c.effectif} élève(s)') : null,
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).pop(c.classeRef),
+            ),
+          ),
+          const BottomSpacer(),
+        ],
+      ),
+    );
+  }
+
+  /// Demande à l'utilisateur de choisir son établissement quand le même
+  /// matricule correspond à une inscription réelle dans plusieurs écoles à la
+  /// fois (doc API-CONSULTATION-MOBILE §4 : le matricule n'est unique que par
+  /// établissement, un enfant peut être inscrit dans deux écoles distinctes).
+  /// Comme pour `_promptClasseChoice`, ce n'est pas une erreur à masquer mais
+  /// un choix à nommer explicitement (§4 : "nommez-les").
+  Future<String?> _promptEcoleChoice(List<EtablissementConsultation> ecoles) {
+    if (!mounted) return Future.value(null);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return ReusableBottomSheet.show<String>(
+      context: context,
+      title: 'Choisissez l\'établissement',
+      subtitle: '${widget.child.firstName} semble inscrit(e) dans plusieurs écoles',
+      icon: Icons.apartment_rounded,
+      iconColor: const Color(0xFF2E7D32),
+      isDismissible: false,
+      useDraggable: false,
+      initialChildSize: 0.35,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Les notes et bulletins sont propres à chaque établissement.',
+            style: TextStyle(
+              fontSize: 13,
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...ecoles.map(
+            (e) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                e.nom,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).pop(e.schoolId),
+            ),
+          ),
+          const BottomSpacer(),
+        ],
+      ),
+    );
   }
 
   /// Corrige en arrière-plan un `paramEcole` enregistré à tort avec le code
@@ -9238,6 +9586,8 @@ class _ChildListScreenState extends State<ChildListScreen>
       final schoolId = await _consultationApi.findSchoolIdByCode(
         paramEcole,
         expectedName: widget.child.establishment,
+        matricule: widget.child.id,
+        onMultipleSchoolsFound: _promptEcoleChoice,
       );
       if (schoolId == null) {
         print('⚠️ Toujours introuvable — voir le détail ci-dessus (findSchoolIdByCode)');

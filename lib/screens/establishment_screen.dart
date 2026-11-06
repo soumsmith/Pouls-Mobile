@@ -995,36 +995,6 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
                         SizedBox(
                           width: double.infinity,
                           height: 50,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const NearbySchoolsMapScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.near_me_rounded, size: 20),
-                            label: const Text(
-                              'Écoles à proximité',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.screenOrange,
-                              side: const BorderSide(color: AppColors.screenOrange),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
                           child: ElevatedButton(
                             onPressed: () {
                               _applyAdvancedSearch();
@@ -1099,7 +1069,21 @@ class _EstablishmentScreenState extends State<EstablishmentScreen>
         ),
       ),
       SliverToBoxAdapter(child: const SizedBox(height: 0)),
-      SliverToBoxAdapter(child: SectionRow(title: 'Nos établissements')),
+      SliverToBoxAdapter(
+        child: SectionRow(
+          title: 'Nos établissements',
+          seeMoreText: 'Écoles à proximité',
+          seeMoreBackgroundColor: AppColors.screenOrange.withOpacity(0.1),
+          seeMoreTextColor: AppColors.screenOrange,
+          onSeeMore: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NearbySchoolsMapScreen(),
+              ),
+            );
+          },
+        ),
+      ),
       SliverToBoxAdapter(child: const SizedBox(height: 16)),
       // ── Filtre horizontal ─────────────────────────────
       SliverToBoxAdapter(

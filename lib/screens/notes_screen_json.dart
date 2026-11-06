@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import '../config/app_colors.dart';
 import '../models/annee_consultation.dart';
+import '../models/classe_consultation.dart';
 import '../models/periode_consultation.dart';
 import '../models/bulletin_consultation.dart';
 import '../services/consultation_api_service.dart';
@@ -62,6 +63,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   /// Classe de l'élève déjà résolue par année (voir [_resolveClasseRef]) :
   /// évite de rappeler GET .../classes à chaque changement de période.
   final Map<String, String?> _classeRefCache = {};
+  final Map<String, Future<String?>> _classeResolutionInFlight = {};
 
   List<BulletinConsultation> get _bulletinsAnnee => _periodesAnnee
       .map((p) => _bulletinsCache[p.ref])
@@ -147,29 +149,95 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
     }
   }
 
-  /// La classe de l'élève pour l'année donnée (doc §4.7) : plus fiable que
-  /// `widget.classeRef` (capturé à l'ajout de l'enfant, jamais mis à jour
-  /// ensuite et pas toujours renseigné) — même correction que
-  /// `_loadProgressions`/le cahier de textes dans child_list_screen.dart.
-  /// Repli sur `widget.classeRef` si la résolution échoue. Mise en cache par
-  /// année : ne rappelle pas GET .../classes à chaque changement de période.
-  Future<String?> _resolveClasseRef(String anneeRef) async {
+  /// La classe de l'élève pour l'année donnée (doc §4.6 bis/4.7). Un élève
+  /// peut avoir DEUX classes la même année (cursus franco-arabe, chacune avec
+  /// son propre bulletin/notes/rang) : on ne choisit jamais "la première" au
+  /// hasard, on demande à l'utilisateur de trancher via
+  /// [_promptClasseChoice]. Repli sur `widget.classeRef` uniquement si la
+  /// résolution échoue (erreur réseau), jamais en cas d'ambiguïté réelle.
+  /// Mise en cache par année (et dédup des appels concurrents) : ne rappelle
+  /// pas GET .../classes ni ne ré-affiche le dialogue à chaque changement de
+  /// période.
+  Future<String?> _resolveClasseRef(String anneeRef) {
     if (_classeRefCache.containsKey(anneeRef)) {
-      return _classeRefCache[anneeRef];
+      return Future.value(_classeRefCache[anneeRef]);
     }
-    String? resolved = widget.classeRef;
+    return _classeResolutionInFlight[anneeRef] ??=
+        _doResolveClasseRef(anneeRef).whenComplete(() {
+      _classeResolutionInFlight.remove(anneeRef);
+    });
+  }
+
+  Future<String?> _doResolveClasseRef(String anneeRef) async {
+    List<ClasseConsultation> classes;
     try {
-      final classes = await _consultationApi.getClasses(
+      classes = await _consultationApi.getClasses(
         widget.schoolId,
         widget.matricule,
         anneeRef: anneeRef,
       );
-      if (classes.isNotEmpty) resolved = classes.first.classeRef;
     } catch (_) {
-      // Ignoré : repli sur widget.classeRef.
+      _classeRefCache[anneeRef] = widget.classeRef;
+      return widget.classeRef;
+    }
+
+    String? resolved;
+    if (classes.isEmpty) {
+      resolved = widget.classeRef;
+    } else if (classes.length == 1) {
+      resolved = classes.first.classeRef;
+    } else {
+      resolved = await _promptClasseChoice(classes);
     }
     _classeRefCache[anneeRef] = resolved;
     return resolved;
+  }
+
+  /// Demande à l'utilisateur de choisir sa classe quand il en a deux (cursus
+  /// franco-arabe) — ce n'est pas une erreur, c'est un choix à faire une
+  /// seule fois par année. Bottom sheet non-dismissible par balayage/tap
+  /// extérieur : seul le bouton de fermeture permet d'annuler (repli sur
+  /// `widget.classeRef`).
+  Future<String?> _promptClasseChoice(List<ClasseConsultation> classes) {
+    if (!mounted) return Future.value(widget.classeRef);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return ReusableBottomSheet.show<String>(
+      context: context,
+      title: 'Choisissez la classe',
+      subtitle: 'Cet élève est inscrit dans deux classes cette année',
+      icon: Icons.class_rounded,
+      iconColor: const Color(0xFF1976D2),
+      isDismissible: false,
+      useDraggable: false,
+      initialChildSize: 0.35,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Chacune a ses propres notes, son propre rang et son propre bulletin.',
+            style: TextStyle(
+              fontSize: 13,
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...classes.map(
+            (c) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                c.libelle,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: c.effectif != null ? Text('${c.effectif} élève(s)') : null,
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).pop(c.classeRef),
+            ),
+          ),
+          const BottomSpacer(),
+        ],
+      ),
+    );
   }
 
   PeriodeConsultation? _findPeriode(String? periodeRef) {

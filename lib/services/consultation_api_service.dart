@@ -213,6 +213,21 @@ class ConsultationApiService {
     return codes;
   }
 
+  /// Liste les établissements partageant le même code vie-ecoles (ex.
+  /// "annour", "gnakan") — même filtre que celui utilisé en interne par
+  /// `findSchoolIdByCode`, exposé publiquement pour permettre à l'UI de
+  /// relister les candidats à la demande (ex. bouton "changer d'établissement"
+  /// dans la fiche élève), sans dupliquer la logique de comparaison.
+  Future<List<EtablissementConsultation>> getCandidateEtablissementsForCode(
+    String code,
+  ) async {
+    final etablissements = await getEtablissements();
+    final normalizedCode = code.trim().toLowerCase();
+    return etablissements
+        .where((e) => (e.paramEcole ?? '').trim().toLowerCase() == normalizedCode)
+        .toList();
+  }
+
   /// Retrouve le `schoolId` (référence opaque de l'API de consultation)
   /// correspondant au code d'établissement légataire (`Ecole.ecolecode`,
   /// lui-même issu de l'ancien `GET /connecte/ecole`).
@@ -224,7 +239,37 @@ class ConsultationApiService {
   /// est fourni, on exige en plus que le nom corresponde (comparaison
   /// insensible à la casse/aux espaces) parmi les établissements partageant
   /// ce code — sinon on refuse de choisir au hasard et on retourne `null`.
-  Future<String?> findSchoolIdByCode(String code, {String? expectedName}) async {
+  ///
+  /// Compare contre `e.paramEcole` (le vrai code vie-ecoles, résolu via
+  /// `GET /integrations/vie-ecoles/admin/schools`) et PAS contre `e.code`
+  /// (champ interne de l'API de consultation, sans rapport avec le code
+  /// legacy — les confondre laissait `schoolId` introuvable en permanence
+  /// pour les établissements dont les deux valeurs diffèrent). Comparaison
+  /// insensible à la casse/aux espaces des deux côtés (`e.paramEcole` est
+  /// parfois renseigné en majuscules, ex. "GNAKAN", alors que le code legacy
+  /// transmis par l'app est en minuscules, ex. "gnakan").
+  ///
+  /// Garde-fou supplémentaire (diagnostic uniquement, ne filtre aucun
+  /// candidat) : `e.indiceVieEcoles` vient d'un appel indépendant
+  /// (`GET /consultation/etablissements`, pas `admin/schools`) et expose les
+  /// 2 premiers caractères du même code vie-ecoles, masqués (ex. "GN••••"
+  /// pour "GNAKAN"). On vérifie que ce préfixe (en minuscule) correspond bien
+  /// au code recherché, et on logue un avertissement sinon — ça peut révéler
+  /// une incohérence de données entre les deux appels sans bloquer la
+  /// résolution, `paramEcole` restant la seule source faisant foi.
+  ///
+  /// Si le nom exact ne permet toujours pas de trancher entre plusieurs
+  /// candidats (groupe scolaire déclaré plusieurs fois pour ses branches
+  /// maternelle/primaire/collège/technique/professionnel, ex. "GNAKAN" ×3),
+  /// voir `_disambiguateCandidates` : exclusion des établissements archivés
+  /// puis, si [matricule] est fourni, vérification de l'inscription réelle
+  /// de l'élève plutôt qu'un matching de nom approximatif.
+  Future<String?> findSchoolIdByCode(
+    String code, {
+    String? expectedName,
+    String? matricule,
+    Future<String?> Function(List<EtablissementConsultation> ecoles)? onMultipleSchoolsFound,
+  }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('🔎 RÉSOLUTION SCHOOLID PAR CODE LEGACY (sans appel HTTP dédié :');
@@ -232,11 +277,16 @@ class ConsultationApiService {
     print('🏷️ Code recherché: $code');
     print('📛 Nom attendu: ${expectedName ?? "(aucun)"}');
 
-    final etablissements = await getEtablissements();
-    final candidates = etablissements.where((e) => e.code == code).toList();
+    final candidates = await getCandidateEtablissementsForCode(code);
     print('📋 Candidats trouvés pour ce code: ${candidates.length}');
+    final normalizedCode = code.trim().toLowerCase();
     for (final c in candidates) {
-      print('   - ${c.nom} (schoolId: ${c.schoolId})');
+      final indiceOk = _indiceVieEcolesMatchesCode(c.indiceVieEcoles, normalizedCode);
+      print(
+        '   - ${c.nom} (schoolId: ${c.schoolId}, indiceVieEcoles: '
+        '${c.indiceVieEcoles ?? "—"}'
+        '${indiceOk ? "" : " ⚠️ ne correspond pas au code recherché"})',
+      );
     }
 
     if (candidates.isEmpty) {
@@ -261,27 +311,147 @@ class ConsultationApiService {
           return c.schoolId;
         }
       }
-      print('⚠️ Aucun candidat ne correspond au nom attendu');
+      print('⚠️ Aucun candidat ne correspond exactement au nom attendu');
+    } else if (candidates.length == 1) {
+      print('✅ schoolId résolu (candidat unique, pas de nom à vérifier): ${candidates.first.schoolId}');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      return null;
+      return candidates.first.schoolId;
     }
 
-    // Pas de nom pour vérifier : ne faire confiance au code que s'il est
-    // sans ambiguïté côté API de consultation.
-    final result = candidates.length == 1 ? candidates.first.schoolId : null;
+    // Le nom exact n'a rien donné (ou aucun nom fourni et plusieurs
+    // candidats) : on tente de départager sans deviner au hasard, voir
+    // `_disambiguateCandidates`.
+    final disambiguated = await _disambiguateCandidates(
+      candidates,
+      matricule: matricule,
+      onMultipleSchoolsFound: onMultipleSchoolsFound,
+    );
     print(
-      result != null
-          ? '✅ schoolId résolu (candidat unique, pas de nom à vérifier): $result'
-          : '⚠️ Code ambigu (${candidates.length} candidats) et aucun nom fourni pour trancher',
+      disambiguated != null
+          ? '✅ schoolId résolu (désambiguïsation): $disambiguated'
+          : '⚠️ Toujours ambigu après désambiguïsation (${candidates.length} candidats au départ)',
     );
     print('═══════════════════════════════════════════════════════════');
     print('');
-    return result;
+    return disambiguated;
+  }
+
+  /// Départage plusieurs établissements candidats quand le nom exact ne
+  /// permet pas de trancher (ex. un groupe scolaire déclaré plusieurs fois
+  /// pour ses branches maternelle/primaire/collège/technique/professionnel,
+  /// parfois avec en plus un doublon archivé — voir RAPPORT_BUG_SCHOOLID_RESOLUTION.md
+  /// §3, cas "GNAKAN" ×3). Deux étapes, jamais de choix au hasard :
+  /// 1. Si un [matricule] est fourni : vérifier sur QUEL établissement
+  ///    (archivé ou non — un élève peut être historiquement rattaché à un
+  ///    établissement depuis archivé côté Pouls) l'élève est réellement
+  ///    inscrit (appel direct à `getAnnees`/`getClasses`), plus fiable qu'un
+  ///    matching textuel. Priorité à ce signal : `archive` n'est qu'une
+  ///    métadonnée, pas une preuve qu'un élève n'y est plus rattaché.
+  /// 2. Si l'élève est trouvé sur PLUSIEURS candidats à la fois (archivés
+  ///    exclus) : ce n'est plus forcément une ambiguïté de données, voir
+  ///    doc API-CONSULTATION-MOBILE §4 — un enfant peut être réellement
+  ///    inscrit dans deux établissements différents (le matricule n'est
+  ///    unique que par établissement). Si [onMultipleSchoolsFound] est
+  ///    fourni, on lui laisse le choix à l'utilisateur ; sinon on refuse de
+  ///    choisir au hasard et on retourne `null` (ex. `add_child_screen.dart`,
+  ///    où il n'y a pas encore d'UI pour ce choix à ce stade de l'ajout).
+  /// 3. Si ce test est inconcluant (pas de matricule, ou l'élève introuvable
+  ///    sur aucun candidat) : repli sur l'exclusion des établissements
+  ///    `archive: true` ; si un seul établissement actif reste, le retenir
+  ///    par défaut.
+  /// Retourne `null` si l'ambiguïté persiste malgré tout.
+  Future<String?> _disambiguateCandidates(
+    List<EtablissementConsultation> candidates, {
+    String? matricule,
+    Future<String?> Function(List<EtablissementConsultation> ecoles)? onMultipleSchoolsFound,
+  }) async {
+    if (matricule != null && matricule.isNotEmpty) {
+      print(
+        '🩺 Désambiguïsation: vérification de l\'inscription réelle de '
+        '"$matricule" sur ${candidates.length} candidat(s) (archivés inclus)',
+      );
+      final matches = <EtablissementConsultation>[];
+      for (final c in candidates) {
+        try {
+          final annees = await getAnnees(c.schoolId);
+          if (annees.isEmpty) throw StateError('aucune année disponible');
+          final anneeCourante = annees.firstWhere(
+            (a) => a.courante,
+            orElse: () => annees.first,
+          );
+          final classes = await getClasses(
+            c.schoolId,
+            matricule,
+            anneeRef: anneeCourante.ref,
+            showNotification: false,
+          );
+          if (classes.isNotEmpty) {
+            print(
+              '   ✓ ${c.nom} (schoolId: ${c.schoolId}, archive: ${c.archive}): '
+              'élève inscrit (${classes.length} classe(s))',
+            );
+            matches.add(c);
+          } else {
+            print('   ✗ ${c.nom} (schoolId: ${c.schoolId}): aucune classe pour ce matricule');
+          }
+        } catch (e) {
+          print('   ✗ ${c.nom} (schoolId: ${c.schoolId}): vérification échouée ($e)');
+        }
+      }
+
+      if (matches.length == 1) return matches.first.schoolId;
+      if (matches.length > 1) {
+        if (onMultipleSchoolsFound != null) {
+          print(
+            '🏫 Désambiguïsation: élève inscrit dans ${matches.length} établissements '
+            'à la fois — double inscription possible (doc §4), choix laissé à l\'utilisateur',
+          );
+          final chosen = await onMultipleSchoolsFound(matches);
+          print(
+            chosen != null
+                ? '✅ École choisie par l\'utilisateur: $chosen'
+                : '⚠️ Aucune école choisie',
+          );
+          return chosen;
+        }
+        print('⚠️ Désambiguïsation: élève trouvé sur ${matches.length} candidats à la fois — toujours ambigu');
+        return null;
+      }
+      print(
+        '⚠️ Désambiguïsation: élève introuvable via l\'inscription sur '
+        'aucun candidat — repli sur l\'exclusion des archivés',
+      );
+    }
+
+    final remaining = candidates.where((e) => !e.archive).toList();
+    if (remaining.length == 1) {
+      print(
+        '🩺 Désambiguïsation: ${candidates.length - remaining.length} '
+        'candidat(s) archivé(s) écarté(s), 1 restant retenu par défaut',
+      );
+      return remaining.first.schoolId;
+    }
+    print(
+      '⚠️ Désambiguïsation impossible : ${remaining.isEmpty ? candidates.length : remaining.length} '
+      'candidat(s) restant(s) sans signal décisif',
+    );
+    return null;
   }
 
   String _normalizeName(String name) =>
       name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+  /// `indice` est au format "xx••••" : les 2 premiers caractères du code
+  /// vie-ecoles, en clair, suivis de puces masquant le reste. `true` si
+  /// `indice` est absent/vide (rien à vérifier) ou si son préfixe visible
+  /// correspond bien au début de [normalizedCode] (déjà en minuscule).
+  bool _indiceVieEcolesMatchesCode(String? indice, String normalizedCode) {
+    if (indice == null) return true;
+    final visiblePrefix = indice.replaceAll('•', '').trim().toLowerCase();
+    if (visiblePrefix.isEmpty) return true;
+    return normalizedCode.startsWith(visiblePrefix);
+  }
 
   /// GET /consultation/etablissements/{schoolId}/annees
   Future<List<AnneeConsultation>> getAnnees(String schoolId) async {

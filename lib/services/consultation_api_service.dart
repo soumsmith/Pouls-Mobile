@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:parents_responsable/utils/app_http.dart' as http;
 import '../config/app_config.dart';
 import '../models/etablissement_consultation.dart';
+import '../models/ecole_avec_classes.dart';
 import '../models/annee_consultation.dart';
 import '../models/periode_consultation.dart';
 import '../models/eleve_consultation.dart';
@@ -228,6 +229,61 @@ class ConsultationApiService {
         .toList();
   }
 
+  /// Pour chaque établissement partageant le code vie-ecoles [code], vérifie
+  /// si [matricule] y est réellement inscrit (appel direct `getAnnees` +
+  /// `getClasses`, archivés inclus — un élève peut être historiquement
+  /// rattaché à un établissement depuis archivé) et renvoie, pour chacun où
+  /// c'est le cas, son établissement, son année courante et ses classes.
+  ///
+  /// Combine en une seule exploration la désambiguïsation "établissement"
+  /// (doc API-CONSULTATION-MOBILE §4, enfant inscrit dans deux écoles) et
+  /// "classe" (§4.6 bis, cursus franco-arabe) : le résultat est directement
+  /// la liste de tous les couples (établissement, classe) réels pour ce
+  /// matricule, sans avoir à choisir l'un puis l'autre séparément.
+  Future<List<EcoleAvecClasses>> getEcolesEtClassesPourMatricule(
+    String code,
+    String matricule,
+  ) async {
+    final candidates = await getCandidateEtablissementsForCode(code);
+    return _findRealEnrollments(candidates, matricule);
+  }
+
+  /// Pour chaque [candidates], vérifie par appel direct si [matricule] y est
+  /// réellement inscrit (archivés inclus) et renvoie, pour chacun où c'est le
+  /// cas, son année courante et ses classes. Logique partagée par
+  /// `getEcolesEtClassesPourMatricule` et `_disambiguateCandidates`.
+  Future<List<EcoleAvecClasses>> _findRealEnrollments(
+    List<EtablissementConsultation> candidates,
+    String matricule,
+  ) async {
+    final result = <EcoleAvecClasses>[];
+    for (final c in candidates) {
+      try {
+        final annees = await getAnnees(c.schoolId);
+        if (annees.isEmpty) throw StateError('aucune année disponible');
+        final annee = annees.firstWhere((a) => a.courante, orElse: () => annees.first);
+        final classes = await getClasses(
+          c.schoolId,
+          matricule,
+          anneeRef: annee.ref,
+          showNotification: false,
+        );
+        if (classes.isNotEmpty) {
+          print(
+            '   ✓ ${c.nom} (schoolId: ${c.schoolId}, archive: ${c.archive}): '
+            'élève inscrit (${classes.length} classe(s))',
+          );
+          result.add(EcoleAvecClasses(ecole: c, annee: annee, classes: classes));
+        } else {
+          print('   ✗ ${c.nom} (schoolId: ${c.schoolId}): aucune classe pour ce matricule');
+        }
+      } catch (e) {
+        print('   ✗ ${c.nom} (schoolId: ${c.schoolId}): vérification échouée ($e)');
+      }
+    }
+    return result;
+  }
+
   /// Retrouve le `schoolId` (référence opaque de l'API de consultation)
   /// correspondant au code d'établissement légataire (`Ecole.ecolecode`,
   /// lui-même issu de l'ancien `GET /connecte/ecole`).
@@ -268,7 +324,7 @@ class ConsultationApiService {
     String code, {
     String? expectedName,
     String? matricule,
-    Future<String?> Function(List<EtablissementConsultation> ecoles)? onMultipleSchoolsFound,
+    Future<String?> Function(List<EcoleAvecClasses> options)? onMultipleSchoolsFound,
   }) async {
     print('');
     print('═══════════════════════════════════════════════════════════');
@@ -364,43 +420,16 @@ class ConsultationApiService {
   Future<String?> _disambiguateCandidates(
     List<EtablissementConsultation> candidates, {
     String? matricule,
-    Future<String?> Function(List<EtablissementConsultation> ecoles)? onMultipleSchoolsFound,
+    Future<String?> Function(List<EcoleAvecClasses> options)? onMultipleSchoolsFound,
   }) async {
     if (matricule != null && matricule.isNotEmpty) {
       print(
         '🩺 Désambiguïsation: vérification de l\'inscription réelle de '
         '"$matricule" sur ${candidates.length} candidat(s) (archivés inclus)',
       );
-      final matches = <EtablissementConsultation>[];
-      for (final c in candidates) {
-        try {
-          final annees = await getAnnees(c.schoolId);
-          if (annees.isEmpty) throw StateError('aucune année disponible');
-          final anneeCourante = annees.firstWhere(
-            (a) => a.courante,
-            orElse: () => annees.first,
-          );
-          final classes = await getClasses(
-            c.schoolId,
-            matricule,
-            anneeRef: anneeCourante.ref,
-            showNotification: false,
-          );
-          if (classes.isNotEmpty) {
-            print(
-              '   ✓ ${c.nom} (schoolId: ${c.schoolId}, archive: ${c.archive}): '
-              'élève inscrit (${classes.length} classe(s))',
-            );
-            matches.add(c);
-          } else {
-            print('   ✗ ${c.nom} (schoolId: ${c.schoolId}): aucune classe pour ce matricule');
-          }
-        } catch (e) {
-          print('   ✗ ${c.nom} (schoolId: ${c.schoolId}): vérification échouée ($e)');
-        }
-      }
+      final matches = await _findRealEnrollments(candidates, matricule);
 
-      if (matches.length == 1) return matches.first.schoolId;
+      if (matches.length == 1) return matches.first.ecole.schoolId;
       if (matches.length > 1) {
         if (onMultipleSchoolsFound != null) {
           print(

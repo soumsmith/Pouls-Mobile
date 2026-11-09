@@ -62,7 +62,7 @@ dependencies:
   youtube_player_flutter: ^9.0.1
   
   # File picker
-  file_picker: ^8.1.2
+  file_picker: ^8.1.2 
   
   # Loading animations
   loading_animation_widget: ^1.2.0

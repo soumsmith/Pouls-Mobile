@@ -14,6 +14,7 @@ import '../widgets/custom_loader.dart';
 import '../widgets/custom_sliver_app_bar.dart';
 import '../widgets/components/bottom_spacer.dart';
 import '../widgets/bottom_sheets/reusable_bottom_sheet.dart';
+import '../widgets/bottom_sheets/classe_choice_bottom_sheet.dart';
 import '../widgets/components/custom_error_state.dart';
 import '../widgets/scroll_to_top_fab.dart';
 
@@ -65,6 +66,15 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   final Map<String, String?> _classeRefCache = {};
   final Map<String, Future<String?>> _classeResolutionInFlight = {};
 
+  // Bouton "changer de classe" (FAB) : visible uniquement si l'élève a
+  // réellement plusieurs classes pour l'année affichée — mis à jour par
+  // `_doResolveClasseRef` dès que les classes sont connues. Se replie en
+  // icône seule pendant un défilement vers le bas (comme sur l'écran de
+  // détail de l'enfant) — voir `_handleScrollForChangeFab`.
+  bool _hasMultipleClasses = false;
+  bool _isChangeFabExpanded = true;
+  double _lastScrollOffsetForFab = 0;
+
   List<BulletinConsultation> get _bulletinsAnnee => _periodesAnnee
       .map((p) => _bulletinsCache[p.ref])
       .whereType<BulletinConsultation>()
@@ -93,6 +103,7 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _scrollController.addListener(_handleScrollForChangeFab);
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -108,11 +119,27 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
 
   @override
   void dispose() {
+    _scrollController.removeListener(_handleScrollForChangeFab);
     _scrollController.dispose();
     _fadeController.dispose();
     _pageController.dispose();
     _autoPlayTimer?.cancel();
     super.dispose();
+  }
+
+  /// Replie le FAB "changer de classe" en icône seule pendant un défilement
+  /// vers le bas, le réétend dès qu'on remonte ou s'arrête — même
+  /// comportement que sur l'écran de détail de l'enfant.
+  void _handleScrollForChangeFab() {
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    final delta = offset - _lastScrollOffsetForFab;
+    if (delta > 6 && _isChangeFabExpanded) {
+      setState(() => _isChangeFabExpanded = false);
+    } else if (delta < -6 && !_isChangeFabExpanded) {
+      setState(() => _isChangeFabExpanded = true);
+    }
+    _lastScrollOffsetForFab = offset;
   }
 
   // ─── CHARGEMENT ───────────────────────────────────────────────────────────
@@ -181,6 +208,10 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       return widget.classeRef;
     }
 
+    if (mounted && classes.length > 1 != _hasMultipleClasses) {
+      setState(() => _hasMultipleClasses = classes.length > 1);
+    }
+
     String? resolved;
     if (classes.isEmpty) {
       resolved = widget.classeRef;
@@ -198,46 +229,51 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
   /// seule fois par année. Bottom sheet non-dismissible par balayage/tap
   /// extérieur : seul le bouton de fermeture permet d'annuler (repli sur
   /// `widget.classeRef`).
-  Future<String?> _promptClasseChoice(List<ClasseConsultation> classes) {
-    if (!mounted) return Future.value(widget.classeRef);
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return ReusableBottomSheet.show<String>(
-      context: context,
-      title: 'Choisissez la classe',
-      subtitle: 'Cet élève est inscrit dans deux classes cette année',
-      icon: Icons.class_rounded,
-      iconColor: const Color(0xFF1976D2),
-      isDismissible: false,
-      useDraggable: false,
-      initialChildSize: 0.35,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Chacune a ses propres notes, son propre rang et son propre bulletin.',
-            style: TextStyle(
-              fontSize: 13,
-              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...classes.map(
-            (c) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                c.libelle,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: c.effectif != null ? Text('${c.effectif} élève(s)') : null,
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).pop(c.classeRef),
-            ),
-          ),
-          const BottomSpacer(),
-        ],
-      ),
+  Future<String?> _promptClasseChoice(List<ClasseConsultation> classes) async {
+    if (!mounted) return widget.classeRef;
+    final chosen = await ClasseChoiceBottomSheet.showClasses(
+      context,
+      classes: classes,
     );
+    return chosen?.classeRef;
+  }
+
+  /// Rouvre le sélecteur de classe à la demande (bouton "changer", FAB) pour
+  /// l'année affichée — revérifie l'inscription réelle (pas de cache) pour
+  /// que l'utilisateur voie des données à jour, comme sur l'écran de détail.
+  /// Invalide les bulletins déjà chargés (`_bulletinsCache`, indexés par
+  /// période mais pas par classe) et recharge l'année en cours.
+  Future<void> _onChangeClasseRequested() async {
+    final annee = _selectedAnnee;
+    if (annee == null) return;
+
+    List<ClasseConsultation> classes;
+    try {
+      classes = await _consultationApi.getClasses(
+        widget.schoolId,
+        widget.matricule,
+        anneeRef: annee.ref,
+        showNotification: false,
+      );
+    } catch (e) {
+      _showError('lors de la vérification des classes: $e');
+      return;
+    }
+
+    if (mounted && classes.length > 1 != _hasMultipleClasses) {
+      setState(() => _hasMultipleClasses = classes.length > 1);
+    }
+    if (classes.length < 2) {
+      _showInfo('Une seule classe disponible pour cette année');
+      return;
+    }
+
+    final chosen = await _promptClasseChoice(classes);
+    if (chosen == null || chosen == _classeRefCache[annee.ref]) return;
+
+    _classeRefCache[annee.ref] = chosen;
+    _bulletinsCache.clear();
+    await _loadBulletinsForSelectedYear();
   }
 
   PeriodeConsultation? _findPeriode(String? periodeRef) {
@@ -641,7 +677,47 @@ class _NotesScreenJsonState extends State<NotesScreenJson>
       ),
       child: Scaffold(
         backgroundColor: AppColors.screenBg(context),
-        floatingActionButton: ScrollToTopFab(scrollController: _scrollController),
+        floatingActionButton: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_hasMultipleClasses) ...[
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOut,
+                child: _isChangeFabExpanded
+                    ? FloatingActionButton.extended(
+                        key: const ValueKey('notes_change_classe_fab_extended'),
+                        heroTag: 'notes_change_classe_fab',
+                        elevation: 0,
+                        highlightElevation: 0,
+                        focusElevation: 0,
+                        hoverElevation: 0,
+                        disabledElevation: 0,
+                        onPressed: _onChangeClasseRequested,
+                        icon: const Icon(Icons.swap_horiz_rounded),
+                        label: const Text('Changer de classe'),
+                      )
+                    : FloatingActionButton(
+                        key: const ValueKey('notes_change_classe_fab_collapsed'),
+                        heroTag: 'notes_change_classe_fab',
+                        elevation: 0,
+                        highlightElevation: 0,
+                        focusElevation: 0,
+                        hoverElevation: 0,
+                        disabledElevation: 0,
+                        onPressed: _onChangeClasseRequested,
+                        child: const Icon(Icons.swap_horiz_rounded),
+                      ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            SizedBox(
+              width: 40,
+              child: ScrollToTopFab(scrollController: _scrollController),
+            ),
+          ],
+        ),
         body: CustomScrollView(
           controller: _scrollController,
           slivers: [
